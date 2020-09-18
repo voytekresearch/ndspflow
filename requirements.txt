@@ -1,0 +1,4 @@
+nipype >= 1.5.1                                                                      ~/Projects/ndspflow(master)@neuro
+bycycle >=0.1.3                                                                       ~/Projects/ndspflow(master)@neuro
+fooof >= 1.0.0
+pytest >= 6.0.2
