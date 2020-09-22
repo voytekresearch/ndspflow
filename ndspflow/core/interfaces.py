@@ -1,23 +1,24 @@
 """ Interface definitions."""
 
+import os
 import numpy as np
 from nipype.interfaces.base import (
+    BaseInterface,
     BaseInterfaceInputSpec,
-    TraitedSpec,
-    File,
-    traits,
     SimpleInterface,
+    TraitedSpec,
+    traits
 )
 
 
-class _FOOOFInputSpec(BaseInterfaceInputSpec):
-    """Input interface wrapper for FOOOF"""
+class FOOOFInputSpec(BaseInterfaceInputSpec):
+    """Input interface for FOOOF."""
 
     # Input/Output
     input_dir = traits.Directory(
         argstr='%s',
-        exists=False,
-        resolve=True
+        exists=True,
+        resolve=True,
         desc='Input directory containing timeseries and/or spectra .npy files to read.',
         mandatory=True,
         position=0
@@ -25,7 +26,7 @@ class _FOOOFInputSpec(BaseInterfaceInputSpec):
     output_dir = traits.Directory(
         argstr='%s',
         exists=False,
-        resolve=True
+        resolve=True,
         desc='Output directory to write results and BIDS derivatives to write.',
         mandatory=True,
         position=1
@@ -33,10 +34,10 @@ class _FOOOFInputSpec(BaseInterfaceInputSpec):
 
     # Init params
     peak_width_limits = traits.Tuple((0.5, 12.0), mandatory=False, usedefault=True)
-    max_n_peaks = traits.Int(np.inf, mandatory=False, usedefault=True)
+    max_n_peaks = traits.Int(100, mandatory=False, usedefault=True)
     min_peak_height = traits.Float(0.0, mandatory=False, usedefault=True)
-    peak_threshold = traits.Int(2.0, mandatory=False, usedefault=True)
-    periodic_mode = traits.Str('fixed', mandatory=False, usedefault=True)
+    peak_threshold = traits.Float(2.0, mandatory=False, usedefault=True)
+    aperiodic_mode = traits.Str('fixed', mandatory=False, usedefault=True)
 
     # Fit params
     freqs = traits.File(mandatory=True, usedefault=False)
@@ -44,17 +45,18 @@ class _FOOOFInputSpec(BaseInterfaceInputSpec):
     freq_range = traits.Tuple((-np.inf, np.inf), mandatory=False, usedefault=True)
 
 
-class _FOOOFOutputSpec(TraitedSpec):
-    """Output interface wrapper for FOOOF"""
+class FOOOFOutputSpec(TraitedSpec):
+    """Output interface for FOOOF"""
 
     fm = traits.Any(mandatory=True)
+    fm_results = traits.Directory(mandatory=True)
 
 
 class FOOOF(SimpleInterface):
     """Interface wrapper for FOOOF."""
 
-    input_spec = _FOOOFInputSpec
-    output_spec = _FOOOFOutputSpec
+    input_spec = FOOOFInputSpec
+    output_spec = FOOOFOutputSpec
 
     def _run_interface(self, runtime):
 
@@ -67,11 +69,15 @@ class FOOOF(SimpleInterface):
                    aperiodic_mode=self.inputs.aperiodic_mode,
                    verbose=False)
 
-        freq_range = None if self.inputs.freq_range == (-np.inf, np.inf) else self.inputs.freq_range
+        freqs = np.load(os.path.join(os.getcwd(), self.inputs.input_dir, self.inputs.freqs))
+        power_spectrum = np.load(os.path.join(self.inputs.input_dir, self.inputs.power_spectrum))
 
-        freqs = np.load(self.inputs.freqs)
-        power_spectrum = np.load(self.inputs.power_spectrum)
+        fm.fit(freqs, power_spectrum, freq_range=self.inputs.freq_range)
 
-        fm.fit(freqs, power_spectrum, freq_range=freq_range)
+        fm.save('fooof_results', file_path=self.inputs.output_dir, append=False,
+                save_results=True, save_settings=True)
 
         self._results["fm"] = fm
+        self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof_results')
+
+        return runtime
