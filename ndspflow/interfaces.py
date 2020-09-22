@@ -13,6 +13,24 @@ from nipype.interfaces.base import (
 class _FOOOFInputSpec(BaseInterfaceInputSpec):
     """Input interface wrapper for FOOOF"""
 
+    # Input/Output
+    input_dir = traits.Directory(
+        argstr='%s',
+        exists=False,
+        resolve=True
+        desc='Input directory containing timeseries and/or spectra .npy files to read.',
+        mandatory=True,
+        position=0
+    )
+    output_dir = traits.Directory(
+        argstr='%s',
+        exists=False,
+        resolve=True
+        desc='Output directory to write results and BIDS derivatives to write.',
+        mandatory=True,
+        position=1
+    )
+
     # Init params
     peak_width_limits = traits.Tuple((0.5, 12.0), mandatory=False, usedefault=True)
     max_n_peaks = traits.Int(np.inf, mandatory=False, usedefault=True)
@@ -33,10 +51,10 @@ class _FOOOFOutputSpec(TraitedSpec):
 
 
 class FOOOF(SimpleInterface):
-    """Interface wrapper for FetchNodesLabels."""
+    """Interface wrapper for FOOOF."""
 
-    input_spec = _BycycleInputSpec
-    output_spec = _BycycleOutputSpec
+    input_spec = _FOOOFInputSpec
+    output_spec = _FOOOFOutputSpec
 
     def _run_interface(self, runtime):
 
