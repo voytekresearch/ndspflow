@@ -49,6 +49,6 @@ def plot_fooof_fit(fm):
         margin=dict(l=20, r=20, t=40, b=20)
     )
 
-    graph = fig.to_html(full_html=False, default_height='675', default_width='900')
+    graph = fig.to_html(full_html=False, default_height='475', default_width='700')
 
     return graph
