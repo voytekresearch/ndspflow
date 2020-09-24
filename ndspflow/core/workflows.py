@@ -57,7 +57,7 @@ def wf_fooof(fooof_params):
     Parameters
     ----------
     fooof_params : list
-        List of parameters definied in the init and fit methods of a FOOOF object.
+        List of parameters defined in the init and fit methods of a FOOOF object.
 
     Returns
     -------

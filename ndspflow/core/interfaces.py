@@ -10,6 +10,9 @@ from nipype.interfaces.base import (
     traits
 )
 
+from ndspflow.plts.fooof import plot_fooof_fit
+from ndspflow.reports.html import generate_report
+
 
 class FOOOFInputSpec(BaseInterfaceInputSpec):
     """Input interface for FOOOF."""
@@ -74,8 +77,11 @@ class FOOOF(SimpleInterface):
 
         fm.fit(freqs, power_spectrum, freq_range=self.inputs.freq_range)
 
-        fm.save('fooof_results', file_path=self.inputs.output_dir, append=False,
+        fm.save('sub-001_fooof_results', file_path=self.inputs.output_dir, append=False,
                 save_results=True, save_settings=True)
+
+        generate_report(fm, plot_fooof_fit(fm), 'sub-001', 1, 0, self.inputs.output_dir,
+                        'sub-001_report.html')
 
         self._results["fm"] = fm
         self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof_results')
