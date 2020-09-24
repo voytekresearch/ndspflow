@@ -45,5 +45,6 @@ def test_FOOOF():
 
     # Run the node and assert output exists
     fooof_node.run()
-    assert 'fooof_results.json' in os.listdir(test_dir.name)
+    assert 'sub-001_fooof_results.json' in os.listdir(test_dir.name)
+    assert 'sub-001_report.html' in os.listdir(test_dir.name)
     test_dir.cleanup()
