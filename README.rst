@@ -42,7 +42,7 @@ Usage
                       [-periodic_mode {fixed,knee}] [-run_nodes {fooof,bycycle} [{fooof,bycycle} ...]]
                       /path/to/input /path/to/output
 
-      A Nipype workflow for FOOOOF and Bycycle.
+      A Nipype workflow for FOOOF and Bycycle.
 
       positional arguments:
       /path/to/input        Input directory containing timeseries and/or spectra .npy files to read (default: None).
