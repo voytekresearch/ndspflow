@@ -4,7 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 
-def plot_fooof_fit(fm):
+def plot_fooof(fm):
     """Plot a individual FOOOF fits using plotly.
 
     Parameters
@@ -22,7 +22,6 @@ def plot_fooof_fit(fm):
     fig = go.Figure()
 
     config = {'responsive': True}
-
 
     # Original
     fig.add_trace(go.Scatter(x=fm.freqs, y=fm.power_spectrum, mode='lines',

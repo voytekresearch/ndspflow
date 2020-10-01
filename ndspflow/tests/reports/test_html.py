@@ -5,8 +5,8 @@ import pytest
 import numpy as np
 
 from fooof import FOOOF
-from ndspflow.plts.fooof import plot_fooof_fit
-from ndspflow.reports.html import generate_report, generate_header, generate_fooof_report
+from ndspflow.plts.fooof import plot_fooof
+from ndspflow.reports.html import generate_1d_report, generate_header, generate_fooof_report
 from ndspflow.tests.settings import TEST_DATA_PATH
 
 
@@ -25,12 +25,12 @@ def fooof_outs(input_dir=TEST_DATA_PATH):
     fm.fit(freqs, spectrum, freq_range)
 
     # Plot
-    fooof_graph = plot_fooof_fit(fm)
+    fooof_graph = plot_fooof(fm)
 
     return [fm, fooof_graph]
 
 
-def test_generate_report(fooof_outs):
+def test_generate_1d_report(fooof_outs):
 
     # Load data from fixture
     fm, fooof_graph = fooof_outs[0], fooof_outs[1]
@@ -41,7 +41,7 @@ def test_generate_report(fooof_outs):
 
     # Embed plots
     subject = 'sub-001'
-    generate_report(fm, fooof_graph, subject, 0, 1, out_dir, fname)
+    generate_1d_report(fm, fooof_graph, subject, 0, 1, out_dir, fname)
 
     # Assert that the html file was generated
     assert os.path.isfile(os.path.join(out_dir, fname))

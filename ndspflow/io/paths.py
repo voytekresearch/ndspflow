@@ -1,6 +1,7 @@
 """Input/output utility functions."""
 
 import os
+from shutil import rmtree
 
 
 def check_dirs(input_dir, output_dir):
@@ -9,9 +10,9 @@ def check_dirs(input_dir, output_dir):
     Parameters
     ----------
     input_dir : str
-        Path to input BIDS directory.
+        Absolute path to input BIDS directory.
     output_dir : str
-        Path to write results or BIDS deriavates to.
+        Absolute path to write results or BIDS deriavates to.
     """
 
     if not os.path.isdir(input_dir):
@@ -19,3 +20,18 @@ def check_dirs(input_dir, output_dir):
 
     if not os.path.isdir(output_dir):
         os.makedirs(output_dir)
+
+
+def clean_mkdir(dir_path):
+    """Cleanly make new directories by deleting pre-existing.
+
+    Parameters
+    ----------
+    dir_path : str
+       Absoulte directory location path to clean.
+    """
+
+    if os.path.isdir(dir_path):
+        rmtree(os.path.join(dir_path))
+
+    os.makedirs(dir_path)

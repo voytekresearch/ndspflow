@@ -10,8 +10,8 @@ from nipype.interfaces.base import (
     traits
 )
 
-from ndspflow.plts.fooof import plot_fooof_fit
-from ndspflow.reports.html import generate_report
+from ndspflow.core.fit import fit_fooof
+from ndspflow.io.save import save_fooof
 
 
 class FOOOFInputSpec(BaseInterfaceInputSpec):
@@ -46,6 +46,7 @@ class FOOOFInputSpec(BaseInterfaceInputSpec):
     freqs = traits.File(mandatory=True, usedefault=False)
     power_spectrum = traits.File(mandatory=True, usedefault=False)
     freq_range = traits.Tuple((-np.inf, np.inf), mandatory=False, usedefault=True)
+    n_jobs = traits.Int(1, mandatory=False, usedefault=True)
 
 
 class FOOOFOutputSpec(TraitedSpec):
@@ -63,27 +64,22 @@ class FOOOF(SimpleInterface):
 
     def _run_interface(self, runtime):
 
-        from fooof import FOOOF
-
-        fm = FOOOF(peak_width_limits=self.inputs.peak_width_limits,
-                   max_n_peaks=self.inputs.max_n_peaks,
-                   min_peak_height=self.inputs.min_peak_height,
-                   peak_threshold=self.inputs.peak_threshold,
-                   aperiodic_mode=self.inputs.aperiodic_mode,
-                   verbose=False)
-
         freqs = np.load(os.path.join(os.getcwd(), self.inputs.input_dir, self.inputs.freqs))
-        power_spectrum = np.load(os.path.join(self.inputs.input_dir, self.inputs.power_spectrum))
+        powers = np.load(os.path.join(self.inputs.input_dir, self.inputs.power_spectrum))
 
-        fm.fit(freqs, power_spectrum, freq_range=self.inputs.freq_range)
+        init_kwargs = {'peak_width_limits': self.inputs.peak_width_limits,
+                       'max_n_peaks': self.inputs.max_n_peaks,
+                       'min_peak_height': self.inputs.min_peak_height,
+                       'peak_threshold': self.inputs.peak_threshold,
+                       'aperiodic_mode': self.inputs.aperiodic_mode,
+                       'verbose': False}
+        # Fit
+        model = fit_fooof(freqs, powers, self.inputs.freq_range, init_kwargs, self.inputs.n_jobs)
 
-        fm.save('sub-001_fooof_results', file_path=self.inputs.output_dir, append=False,
-                save_results=True, save_settings=True)
+        # Save
+        save_fooof(model, self.inputs.output_dir)
 
-        generate_report(fm, plot_fooof_fit(fm), 'sub-001', 1, 0, self.inputs.output_dir,
-                        'sub-001_report.html')
-
-        self._results["fm"] = fm
-        self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof_results')
+        self._results["fm"] = model
+        self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof')
 
         return runtime

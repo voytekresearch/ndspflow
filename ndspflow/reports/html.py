@@ -4,11 +4,10 @@ import os
 from pathlib import Path
 
 from fooof.core.strings import gen_settings_str, gen_results_fm_str
-from ndspflow.plts.fooof import plot_fooof_fit
 
 
-def generate_report(fm, fooof_graph, subject, n_fooofs, n_bycycles, out_dir, fname):
-    """Write fooof and/or bycycle reports.
+def generate_1d_report(fm, fooof_graph, subject,  n_fooofs, n_bycycles, out_dir, fname):
+    """Generate reports for a single spectrum.
 
     Parameters
     ----------
@@ -67,7 +66,7 @@ def generate_header(subject, n_fooofs, n_bycycles):
     # Subject info
     subject_template = """\
     \t<ul class="elem-desc">
-    \t\t<li>Subject ID: {subject_id}</li>
+    \t\t<li>Spectrum ID: {subject_id}</li>
     \t\t<li>FOOOF Fits: {n_fooofs}</li>
     \t\t<li>Bycycle Fits: {n_bycycles}</li>
     \t</ul>
