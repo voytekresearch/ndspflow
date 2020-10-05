@@ -6,6 +6,9 @@ from argparse import RawTextHelpFormatter
 import numpy as np
 from ndspflow.core.workflows import create_workflow
 
+import warnings
+warnings.filterwarnings("ignore")
+
 
 def get_parser():
     """Parse command-line arguments."""
@@ -147,6 +150,7 @@ def main():
 
     wf = create_workflow(input_dir, output_dir, run_nodes=run_nodes,
                          fooof_params=fooof_params, n_jobs=n_jobs)
+
 
     wf.run()
 

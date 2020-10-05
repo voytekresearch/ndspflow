@@ -1,5 +1,8 @@
 <html>
 <body>
+<head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
 <div class="masthead">
     <div class="masthead__inner-wrap">
         <div class="masthead__menu">
@@ -28,19 +31,7 @@
         </div>
     </div>
 </div>
-
-<div class="container-body">
-    <div class="sub-container">
-        <h1>Subject Info</h1>
-        {% SUBJECT_TEMPLATE %}
-    </div>
-    <div class="sub-container" id="fooof-container">
-        <h1>FOOOF</h1>
-        <p><center>{% fooof_settings %}</center></p>
-        <p><center>{% fooof_results %}</center></p>
-        <p><center>{% fooof_graph %}</center></p>
-    </div>
-</div>
+{% BODY %}
 </body>
 </html>
 

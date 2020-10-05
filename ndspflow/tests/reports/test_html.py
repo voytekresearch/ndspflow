@@ -41,7 +41,7 @@ def test_generate_1d_report(fooof_outs):
 
     # Embed plots
     subject = 'sub-001'
-    generate_1d_report(fm, fooof_graph, subject, 0, 1, out_dir, fname)
+    generate_1d_report(fm, fooof_graph, subject, out_dir, fname)
 
     # Assert that the html file was generated
     assert os.path.isfile(os.path.join(out_dir, fname))

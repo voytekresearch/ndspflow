@@ -11,7 +11,7 @@ from ndspflow.core.interfaces import FOOOF
 
 
 def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
-                    fooof_params=None, bycyle_params=None, n_jobs=1):
+                    fooof_params={}, bycyle_params={}, n_jobs=1):
     """Connects nodes into an overall nipype workflow.
 
     Parameters

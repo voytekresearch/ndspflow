@@ -10,8 +10,10 @@ from nipype.interfaces.base import (
     traits
 )
 
+from fooof import FOOOF, FOOOFGroup
 from ndspflow.core.fit import fit_fooof
 from ndspflow.io.save import save_fooof
+from ndspflow.reports.html import generate_report
 
 
 class FOOOFInputSpec(BaseInterfaceInputSpec):
@@ -74,12 +76,16 @@ class FOOOF(SimpleInterface):
                        'aperiodic_mode': self.inputs.aperiodic_mode,
                        'verbose': False}
         # Fit
-        model = fit_fooof(freqs, powers, self.inputs.freq_range, init_kwargs, self.inputs.n_jobs)
+        fms = fit_fooof(freqs, powers, self.inputs.freq_range, init_kwargs, self.inputs.n_jobs)
 
-        # Save
-        save_fooof(model, self.inputs.output_dir)
+        # Save model
+        save_fooof(fms, self.inputs.output_dir)
 
-        self._results["fm"] = model
+         # Save reports
+        generate_report(self.inputs.output_dir, fms)
+
+
+        self._results["fm"] = fms
         self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof')
 
         return runtime
