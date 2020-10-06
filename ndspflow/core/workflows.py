@@ -11,7 +11,7 @@ from ndspflow.core.interfaces import FOOOF
 
 
 def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
-                    fooof_params={}, bycyle_params={}, n_jobs=1):
+                    fooof_params=None, bycyle_params=None, n_jobs=1):
     """Connects nodes into an overall nipype workflow.
 
     Parameters
@@ -26,6 +26,8 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
         Parameters to pass into the init and fit methods of a fooof object.
     bycycle_params : dict, optional, default: None
         Parameters to passing into a bycycle fit.
+    n_jobs : int
+        The number of jobs to run in parrallel for 2d or 3d arrays.
 
     Returns
     -------
@@ -69,6 +71,7 @@ def wf_fooof(fooof_params):
         A nipype node for running fooof.
     """
 
+    fooof_params = {} if type(fooof_params) is None else fooof_params
     fooof_node = pe.Node(FOOOF(), name='fooof_node')
 
     # Fit params

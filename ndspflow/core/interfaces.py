@@ -81,9 +81,8 @@ class FOOOF(SimpleInterface):
         # Save model
         save_fooof(fms, self.inputs.output_dir)
 
-         # Save reports
+        # Save reports
         generate_report(self.inputs.output_dir, fms)
-
 
         self._results["fm"] = fms
         self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof')

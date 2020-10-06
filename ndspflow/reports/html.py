@@ -10,12 +10,17 @@ from ndspflow.core.fit import flatten_fms
 from ndspflow.plts.fooof import plot_fm, plot_fg
 
 
-def generate_report(output_dir, fms=None, bms=None):
-    """
+def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
+    """Generate all FOOOF and/or Bycycle reports.
 
-
-    fm_labels : list of str
-        Spectrum identifiers.
+    Parameters
+    ----------
+    output_dir : str
+        The path to write the reports to.
+    fms : fooof FOOOF, FOOOFGroup, or list of FOOOFGroup, optional, default: None
+        FOOOF object(s) that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
+    bms : bycycle objects
+        Bycycle object(s) that have been fit.
     """
 
     # Generate fooof reports
@@ -24,19 +29,22 @@ def generate_report(output_dir, fms=None, bms=None):
         fooof_dir = os.path.join(output_dir, 'fooof')
         fm_list, fm_paths, fm_labels = flatten_fms(fms, fooof_dir)
 
+        group_url = str('file://' + os.path.join(fooof_dir, group_fname)) \
+            if len(fm_list) > 1 else None
+
         for fm, fm_path, fm_label in zip(fm_list, fm_paths, fm_labels):
 
-            generate_1d_report(fm, fm_label, plot_fm(fm), fm_path, 'report.html')
+            generate_1d_report(fm, fm_label, plot_fm(fm), fm_path,
+                               fname='report.html', group_link=group_url)
 
         if len(fm_list) > 1:
 
-            urls =  [str('file://' + os.path.join(fm_path, 'report.html')) for fm_path, fm_label in zip(fm_paths, fm_labels)]
-            graph = plot_fg(fms, urls)
+            urls =  [str('file://' + os.path.join(fm_path, 'report.html')) for fm_path in fm_paths]
+            generate_2d_report(fms, plot_fg(fms, urls), len(fm_list), 0,
+                               fooof_dir, fname=group_fname)
 
-            generate_2d_report(fms, graph, len(fm_list), 0, fooof_dir)
 
-
-def generate_1d_report(fm, fm_label, fooof_graph, out_dir, fname='report.html'):
+def generate_1d_report(fm, fm_label, fooof_graph, out_dir, fname='report.html', group_link=None):
     """Generate reports for a single spectrum.
 
     Parameters
@@ -54,7 +62,7 @@ def generate_1d_report(fm, fm_label, fooof_graph, out_dir, fname='report.html'):
     """
 
     # Inject header and fooof report
-    html_report = generate_header('subject',fm_label=fm_label)
+    html_report = generate_header('subject',fm_label=fm_label, group_link=group_link)
     html_report = generate_fooof_report(fm, fooof_graph, html_report)
 
     # Write the html to a file
@@ -82,7 +90,8 @@ def generate_2d_report(fg, fooof_graph, n_fooofs, n_bycycles, out_dir, fname='re
     """
 
     # Inject header
-    html_report = generate_header('group', n_fooofs=len(fg), n_bycycles=0)
+    group_link = str('file://' + os.path.join(out_dir, fname))
+    html_report = generate_header('group', n_fooofs=len(fg), n_bycycles=0, group_link=group_link)
     html_report = generate_fooof_report(fg, fooof_graph, html_report)
 
     # Write the html to a file
@@ -90,7 +99,7 @@ def generate_2d_report(fg, fooof_graph, n_fooofs, n_bycycles, out_dir, fname='re
         html.write(html_report)
 
 
-def generate_header(report_type, fm_label=None, n_fooofs=None, n_bycycles=None):
+def generate_header(report_type, fm_label=None, n_fooofs=None, n_bycycles=None, group_link=None):
     """Include masthead and subject info in a HTML string.
 
     Parameters
@@ -127,7 +136,7 @@ def generate_header(report_type, fm_label=None, n_fooofs=None, n_bycycles=None):
         # Set meta string
         meta_template = """\
         \t<ul class="elem-desc">
-        \t\t<li>Subject Report</li>
+        \t\t<li>Individual Report</li>
         \t\t<li>Spectrum ID: {spectrum_id}</li>
         \t</ul>
         """.format(spectrum_id=fm_label)
@@ -147,6 +156,8 @@ def generate_header(report_type, fm_label=None, n_fooofs=None, n_bycycles=None):
         \t</ul>
         """.format(n_fooofs=n_fooofs, n_bycycles=n_bycycles)
 
+    group_link = "" if group_link is None else group_link
+    html_report = html_report.replace("{% GROUP %}", group_link)
     html_report = html_report.replace("{% BODY %}", body_template)
     html_report = html_report.replace("{% META_TEMPLATE %}", meta_template)
 
