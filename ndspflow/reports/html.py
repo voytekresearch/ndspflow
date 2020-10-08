@@ -7,7 +7,7 @@ from fooof import FOOOF, FOOOFGroup
 from fooof.core.strings import gen_settings_str, gen_results_fm_str, gen_results_fg_str
 
 from ndspflow.core.fit import flatten_fms
-from ndspflow.plts.fooof import plot_fm, plot_fg
+from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 
 
 def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
@@ -37,10 +37,16 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
             generate_1d_report(fm, fm_label, plot_fm(fm), fm_path,
                                fname='report.html', group_link=group_url)
 
-        if len(fm_list) > 1:
+        urls =  [str('file://' + os.path.join(fm_path, 'report.html')) for fm_path in fm_paths]
 
-            urls =  [str('file://' + os.path.join(fm_path, 'report.html')) for fm_path in fm_paths]
+        if type(fms) is FOOOFGroup:
+
             generate_2d_report(fms, plot_fg(fms, urls), len(fm_list), 0,
+                               fooof_dir, fname=group_fname)
+
+        elif type(fms) is list:
+
+            generate_3d_report(fms, plot_fgs(fms, urls), int(len(fms)*len(fms[0])), 0,
                                fooof_dir, fname=group_fname)
 
 
@@ -71,7 +77,7 @@ def generate_1d_report(fm, fm_label, fooof_graph, out_dir, fname='report.html', 
 
 
 def generate_2d_report(fg, fooof_graph, n_fooofs, n_bycycles, out_dir, fname='report_group.html'):
-    """ Generate group report for a 2d array input.
+    """ Generate a group report for 2d arrays.
 
     Parameters
     ----------
@@ -93,6 +99,36 @@ def generate_2d_report(fg, fooof_graph, n_fooofs, n_bycycles, out_dir, fname='re
     group_link = str('file://' + os.path.join(out_dir, fname))
     html_report = generate_header('group', n_fooofs=len(fg), n_bycycles=0, group_link=group_link)
     html_report = generate_fooof_report(fg, fooof_graph, html_report)
+
+    # Write the html to a file
+    with open(os.path.join(out_dir, fname), "w+") as html:
+        html.write(html_report)
+
+
+def generate_3d_report(fgs, fooof_graph, n_fooofs, n_bycycles, out_dir, fname='report_group.html'):
+    """ Generate a group report for 3d arrays.
+
+    Parameters
+    ----------
+    fgs : list of fooof FOOOFGroup
+        FOOOFGroup object that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
+    fooof_graph : list of str
+        FOOOOF plot in the form of strings containing html generated from plotly.
+    n_fooofs : int
+        The number of fooof fits.
+    n_bycycles : int
+        The number of bycycle fits.
+    out_dir : str
+        Directory to write the html page to.
+    fname : str, optional, default: 'report_group.html'
+        Name of the html file.
+    """
+
+    # Inject header
+    group_link = str('file://' + os.path.join(out_dir, fname))
+    html_report = generate_header('group', n_fooofs=int(len(fgs)*len(fgs[0])),
+                                  n_bycycles=0, group_link=group_link)
+    html_report = generate_fooof_report(fgs, fooof_graph, html_report)
 
     # Write the html to a file
     with open(os.path.join(out_dir, fname), "w+") as html:
@@ -164,14 +200,14 @@ def generate_header(report_type, fm_label=None, n_fooofs=None, n_bycycles=None, 
     return html_report
 
 
-def generate_fooof_report(model, fooof_graph, html_report):
+def generate_fooof_report(model, fooof_graphs, html_report):
     """Include fooof settings, results, and plots in a HTML string.
 
     Parameters
     ----------
     model : FOOOF, FOOOFGroup, or list of FOOOFGroup objects.
         A FOOOF object that has been fit using :func:`ndspflow.core.fit.fit_fooof`.
-    fooof_graph : list of str
+    fooof_graphs : 2d list of str
         FOOOOF plot in the form of strings containing html generated from plotly.
     html_report : str
         A string containing the html fooof report.
@@ -193,12 +229,34 @@ def generate_fooof_report(model, fooof_graph, html_report):
         settings = gen_settings_str(model, False, True)
         results = gen_results_fg_str(model, True)
 
-    settings = settings.replace("\n","<br />\n")
-    results = results.replace("\n","<br />\n")
+    elif type(model) is list:
 
-    # FOOOF plots
+        settings = gen_settings_str(model[0], False, True)
+        results = [gen_results_fg_str(fg, True) for fg in model]
+
+    # String formatting
+    if type(model) is list:
+
+        # Merge results and graphs together
+        results = [result.replace("\n", "<br />\n") for result in results]
+
+        for idx, graph in enumerate(fooof_graphs[::2].copy()):
+            fooof_graphs.insert(fooof_graphs.index(graph) + 1, results[idx])
+
+        results = "<br />\n".join(fooof_graphs)
+
+        # Results now contain graphs, so drop liquid variable for graphs
+        html_report = html_report.replace("{% fooof_graph %}", "")
+
+    else:
+        results = results.replace("\n", "<br />\n")
+        html_report = html_report.replace("{% fooof_graph %}", fooof_graphs)
+
+
+    settings = settings.replace("\n", "<br />\n")
+
+    # Inject settings and results
     html_report = html_report.replace("{% fooof_settings %}", settings)
     html_report = html_report.replace("{% fooof_results %}", results)
-    html_report = html_report.replace("{% fooof_graph %}", fooof_graph)
 
     return html_report
