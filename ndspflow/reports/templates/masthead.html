@@ -1,5 +1,8 @@
 <html>
 <body>
+<head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
 <div class="masthead">
     <div class="masthead__inner-wrap">
         <div class="masthead__menu">
@@ -20,7 +23,7 @@
                     <ul class="navbar-links">
                       <li class="navbar-item"><a class="navbar-link" href="#fooof-container">FOOOF</a></li>
                       <li class="navbar-item"><a class="navbar-link" href="">Bycycle</a></li>
-                      <li class="navbar-item"><a class="navbar-link" href="">Group</a></li>
+                      <li class="navbar-item"><a class="navbar-link" href="{% GROUP %}">Group</a></li>
                     </ul>
                   </div>
                 </nav>
@@ -28,19 +31,7 @@
         </div>
     </div>
 </div>
-
-<div class="container-body">
-    <div class="sub-container">
-        <h1>Subject Info</h1>
-        {% SUBJECT_TEMPLATE %}
-    </div>
-    <div class="sub-container" id="fooof-container">
-        <h1>FOOOF</h1>
-        <p><center>{% fooof_settings %}</center></p>
-        <p><center>{% fooof_results %}</center></p>
-        <p><center>{% fooof_graph %}</center></p>
-    </div>
-</div>
+{% BODY %}
 </body>
 </html>
 
@@ -74,6 +65,20 @@
     });
 
     navbarMenu.addEventListener("click", closeMobileNavbar);
+
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
+    for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.display === "block") {
+                content.style.display = "none";
+            } else {
+                content.style.display = "block";
+            }
+        });
+    }
 </script>
 
 <style>
@@ -128,7 +133,6 @@
         display: inline;
         margin-left: 0.25em;
         margin-right: 0.25em;
-        /*@include fontx(1.5rem, $primary-color, lighter);*/
         font-size: 1.5rem;
         color: #555555;
         font-family: 'Roboto Condensed', sans-serif;;
@@ -150,7 +154,6 @@
         color:  mix(#000, #de8435, 10%);
     }
     .site-title{
-        /*@include fontx(2em, $primary-color, bold);*/
         font-size: 2rem;
         color: #555555;
         font-family: 'Roboto Condensed', sans-serif;;
@@ -158,7 +161,6 @@
 
     }
     .site-title__sub{
-        /*@include fontx(1.5em, $secondary-color, bold);*/
         font-size: 1.5rem;
         color: #de8435;
         font-family: 'Roboto Condensed', sans-serif;;
@@ -191,7 +193,6 @@
         width: 100%;
     }
     .navbar-link {
-        /*@include fontx(1.4rem, $primary-color, lighter);*/
         font-size: 1.4rem;
         color: #555555;
         font-family: 'Roboto Condensed', sans-serif;;
@@ -360,5 +361,28 @@
     .sub-container{
         border-bottom: 1px solid #f2f3f3;
         margin-bottom: 2em;
+    }
+    .plot-row {
+    display: flex;
+        flex-wrap: wrap;
+    }
+    .plot-column {
+        flex: 0 0 50%;
+        padding: 10px;
+    }
+    .collapsible {
+        background-color: #ffffff;
+        cursor: pointer;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+    }
+    .collapsible:hover {
+        background-color: #f2f2f2;
+    }
+    .content {
+        display: none;
+        overflow: hidden;
     }
 </style>

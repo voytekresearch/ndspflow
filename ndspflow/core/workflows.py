@@ -11,7 +11,7 @@ from ndspflow.core.interfaces import FOOOF
 
 
 def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
-                    fooof_params=None, bycyle_params=None):
+                    fooof_params=None, bycyle_params=None, n_jobs=1):
     """Connects nodes into an overall nipype workflow.
 
     Parameters
@@ -26,6 +26,8 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
         Parameters to pass into the init and fit methods of a fooof object.
     bycycle_params : dict, optional, default: None
         Parameters to passing into a bycycle fit.
+    n_jobs : int
+        The number of jobs to run in parrallel for 2d or 3d arrays.
 
     Returns
     -------
@@ -38,15 +40,19 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
     # Prepare read/write directories
     check_dirs(input_dir, output_dir)
 
-    io_node = pe.Node(niu.IdentityInterface(fields=['input_dir', 'output_dir']),
+    # Entry node
+    io_node = pe.Node(niu.IdentityInterface(fields=['input_dir', 'output_dir', 'n_jobs']),
                       name='io_node')
     io_node.inputs.input_dir = input_dir
     io_node.inputs.output_dir = output_dir
+    io_node.inputs.n_jobs = n_jobs
 
+    # FOOOF node
     if 'fooof' in run_nodes:
         fooof_node = wf_fooof(fooof_params)
         wf.connect([(io_node, fooof_node, [('input_dir', 'input_dir'),
-                                           ('output_dir', 'output_dir')])])
+                                           ('output_dir', 'output_dir'),
+                                           ('n_jobs', 'n_jobs')])])
 
     return wf
 
@@ -65,6 +71,7 @@ def wf_fooof(fooof_params):
         A nipype node for running fooof.
     """
 
+    fooof_params = {} if type(fooof_params) is None else fooof_params
     fooof_node = pe.Node(FOOOF(), name='fooof_node')
 
     # Fit params
