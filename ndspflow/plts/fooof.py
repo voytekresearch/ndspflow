@@ -57,43 +57,6 @@ def plot_fm(fm):
     return graph
 
 
-def plot_fgs(fgs, urls):
-    """Plot a list of FOOOFGroup parameters distributions using plotly.
-
-    Parameters
-    ----------
-    fgs : list of fooof FOOOFGroup
-        FOOOFGroup objects that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
-    urls : list of str
-        Local html paths to link points to their individual reports.
-
-    Returns
-    -------
-    graphs : str
-        Multiple FOOOFGroup plots as a string containing html.
-    """
-
-    graphs = []
-
-    urls_reshape = np.reshape(urls, (len(fgs), int(len(urls)/len(fgs))))
-
-    for idx, (fg, url) in enumerate(zip(fgs, urls_reshape)):
-
-        #graphs.append("<br><br><h1 style=\"text-align:left\">Group Index: {idx}</h1>"\
-        #    .format(idx=str(idx).zfill(4)))
-
-        graphs.append(
-            "<br><br><button type=\"button\" class=\"collapsible\">"\
-            "<h1 style=\"text-align:left\">▼ Group Index: {idx}</h1></button>"\
-            "<div class=\"content\">"\
-            .format(idx=str(idx).zfill(4))
-        )
-
-        graphs.append(plot_fg(fg, url) + "</div>")
-
-    return graphs
-
-
 def plot_fg(fg, urls):
     """Plot FOOOFGroup parameters distributions using plotly.
 
@@ -155,6 +118,39 @@ def plot_fg(fg, urls):
 
     return graphs
 
+
+def plot_fgs(fgs, urls):
+    """Plot a list of FOOOFGroup parameters distributions using plotly.
+
+    Parameters
+    ----------
+    fgs : list of fooof FOOOFGroup
+        FOOOFGroup objects that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
+    urls : list of str
+        Local html paths to link points to their individual reports.
+
+    Returns
+    -------
+    graphs : list of str
+        Multiple FOOOFGroup plots as a string containing html.
+    """
+
+    graphs = []
+
+    urls_reshape = np.reshape(urls, (len(fgs), int(len(urls)/len(fgs))))
+
+    for idx, (fg, url) in enumerate(zip(fgs, urls_reshape)):
+
+        graphs.append(
+            "<br><br><button type=\"button\" class=\"collapsible\">"\
+            "<h1 style=\"text-align:left\">▼ Group Index: {idx}</h1></button>"\
+            "<div class=\"content\">"\
+            .format(idx=str(idx).zfill(4))
+        )
+
+        graphs.append(plot_fg(fg, url) + "</div>")
+
+    return graphs
 
 
 def plot_scatter(param, label, urls, yfmt=".3f"):
