@@ -3,14 +3,18 @@
 import os
 from pathlib import Path
 
-from fooof import FOOOF, FOOOFGroup
-from fooof.core.strings import gen_settings_str, gen_results_fm_str, gen_results_fg_str
+import numpy as np
+import pandas as pd
 
-from ndspflow.core.fit import flatten_fms
+from fooof import FOOOF, FOOOFGroup
+from fooof.core.strings import gen_results_fm_str, gen_results_fg_str
+from fooof.core.strings import gen_settings_str as gen_settings_fm_str
+
+from ndspflow.core.utils import flatten_fms
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 
 
-def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
+def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html', settings=None):
     """Generate all FOOOF and/or Bycycle reports.
 
     Parameters
@@ -19,130 +23,94 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         The path to write the reports to.
     fms : fooof FOOOF, FOOOFGroup, or list of FOOOFGroup, optional, default: None
         FOOOF object(s) that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
-    bms : bycycle objects
-        Bycycle object(s) that have been fit.
+    bms : tuple of dataframes
+        Bycycle dataframes organized as (df_feature, df_sample, compute_features_kwargs).
+    group_fname : str, optional, default: 'report_group.html'
+        The name of the group report file.
+    settings : dict, optional, default: None
+        Bycycle settings to embed in reports.
     """
 
-    # Generate fooof reports
     if fms is not None:
 
-        fooof_dir = os.path.join(output_dir, 'fooof')
+        # Generate fooof reports
+        fooof_dir = os.path.join(output_dir, "fooof")
         fm_list, fm_paths, fm_labels = flatten_fms(fms, fooof_dir)
 
         group_url = str('file://' + os.path.join(fooof_dir, group_fname)) \
             if len(fm_list) > 1 else None
 
+        urls =  [str('file://' + os.path.join(fm_path, "report.html")) for fm_path in fm_paths]
+        n_bycycles = 0 if bms is None else len(bms)
+
+        # Individual spectrum reports
         for fm, fm_path, fm_label in zip(fm_list, fm_paths, fm_labels):
 
-            generate_1d_report(fm, fm_label, plot_fm(fm), fm_path,
-                               fname='report.html', group_link=group_url)
+            # Inject header and fooof report
+            html_report = generate_header("subject", "fooof", label=fm_label, group_link=group_url)
+            html_report = generate_fooof_report(fm, plot_fm(fm), html_report)
 
-        urls =  [str('file://' + os.path.join(fm_path, 'report.html')) for fm_path in fm_paths]
+            # Write the html to a file
+            fname = fm_label if len(fm_list) > 1 else 'report.html'
+            with open(os.path.join(fm_path, fname), "w+") as html:
+                html.write(html_report)
 
+        # Group spectra reports
         if type(fms) is FOOOFGroup:
 
-            generate_2d_report(fms, plot_fg(fms, urls), len(fm_list), 0,
-                               fooof_dir, fname=group_fname)
+            # Inject header and fooof report
+            html_report = generate_header("group", "fooof", n_fooofs=len(fms),
+                                          n_bycycles=n_bycycles, group_link=group_url)
+
+            html_report = generate_fooof_report(fms, plot_fg(fms, urls), html_report)
 
         elif type(fms) is list:
 
-            generate_3d_report(fms, plot_fgs(fms, urls), int(len(fms)*len(fms[0])), 0,
-                               fooof_dir, fname=group_fname)
+            # Inject header
+            html_report = generate_header("group", "fooof", n_bycycles=n_bycycles,
+                                          n_fooofs=int(len(fms)*len(fms[0])), group_link=group_url)
+
+            html_report = generate_fooof_report(fms, plot_fgs(fms, urls), html_report)
+
+        if type(fms) is FOOOFGroup or type(fms) is list:
+
+            # Write the html to a file
+            with open(os.path.join(fooof_dir, group_fname), "w+") as html:
+                html.write(html_report)
+
+    if bms is not None:
+
+        # Generate bycycle reports
+        bycycle_dir = os.path.join(output_dir, "bycycle")
+        df_features, df_samples, bc_labels, bc_paths = flatten_bycycles(bms[0], bms[1], output_dir)
+
+        group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) \
+            if len(fm_list) > 1 else None
+
+        # Individual signal reports
+        for feature, sample, label, paths in zip(df_features, df_samples, bc_labels, bc_paths):
+
+            # Inject header and bycycle report
+            html_report = generate_header("subject", "bycycle", label=label, group_link=group_url)
+
+            html_report = generate_bycycle_report(df_features, df_samples, settings, html_report)
+
+            # Write the html to a file
+            with open(os.path.join(bycycle_dir, group_fname), "w+") as html:
+                html.write(html_report)
 
 
-def generate_1d_report(fm, fm_label, fooof_graph, out_dir, fname='report.html', group_link=None):
-    """Generate reports for a single spectrum.
-
-    Parameters
-    ----------
-    fm : fooof FOOOF
-        A FOOOF object that has been fit.
-    fm_label : list of str, optional, default: None
-        Spectrum identifier.
-    fooof_graph : list of str
-        FOOOOF plot in the form of strings containing html generated from plotly.
-    out_dir : str
-        Directory to write the html page to.
-    fname : str, optional, default: 'report.html'
-        Name of the html file.
-    """
-
-    # Inject header and fooof report
-    html_report = generate_header('subject',fm_label=fm_label, group_link=group_link)
-    html_report = generate_fooof_report(fm, fooof_graph, html_report)
-
-    # Write the html to a file
-    with open(os.path.join(out_dir, fname), "w+") as html:
-        html.write(html_report)
-
-
-def generate_2d_report(fg, fooof_graph, n_fooofs, n_bycycles, out_dir, fname='report_group.html'):
-    """ Generate a group report for 2d arrays.
-
-    Parameters
-    ----------
-    fg : fooof FOOOFGroup
-        FOOOFGroup object that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
-    fooof_graph : list of str
-        FOOOOF plot in the form of strings containing html generated from plotly.
-    n_fooofs : int
-        The number of fooof fits.
-    n_bycycles : int
-        The number of bycycle fits.
-    out_dir : str
-        Directory to write the html page to.
-    fname : str, optional, default: 'report_group.html'
-        Name of the html file.
-    """
-
-    # Inject header
-    group_link = str('file://' + os.path.join(out_dir, fname))
-    html_report = generate_header('group', n_fooofs=len(fg), n_bycycles=0, group_link=group_link)
-    html_report = generate_fooof_report(fg, fooof_graph, html_report)
-
-    # Write the html to a file
-    with open(os.path.join(out_dir, fname), "w+") as html:
-        html.write(html_report)
-
-
-def generate_3d_report(fgs, fooof_graph, n_fooofs, n_bycycles, out_dir, fname='report_group.html'):
-    """ Generate a group report for 3d arrays.
-
-    Parameters
-    ----------
-    fgs : list of fooof FOOOFGroup
-        FOOOFGroup object that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
-    fooof_graph : list of str
-        FOOOOF plot in the form of strings containing html generated from plotly.
-    n_fooofs : int
-        The number of fooof fits.
-    n_bycycles : int
-        The number of bycycle fits.
-    out_dir : str
-        Directory to write the html page to.
-    fname : str, optional, default: 'report_group.html'
-        Name of the html file.
-    """
-
-    # Inject header
-    group_link = str('file://' + os.path.join(out_dir, fname))
-    html_report = generate_header('group', n_fooofs=int(len(fgs)*len(fgs[0])),
-                                  n_bycycles=0, group_link=group_link)
-    html_report = generate_fooof_report(fgs, fooof_graph, html_report)
-
-    # Write the html to a file
-    with open(os.path.join(out_dir, fname), "w+") as html:
-        html.write(html_report)
-
-
-def generate_header(report_type, fm_label=None, n_fooofs=None, n_bycycles=None, group_link=None):
+def generate_header(report_type, dtype, label=None, n_fooofs=None,
+                    n_bycycles=None, group_link=None):
     """Include masthead and subject info in a HTML string.
 
     Parameters
     ----------
     report_type : str, {subject, group}
         Specifices header metadata for 1d arrays versus 2d/3d arrays.
-    fm_label : list of str, optional, default: None
+    dtype : str, {fooof, bycycle}
+        Specifices header metadata for fooof versus bycycle reports.
+    label : list of str, optional, default: None
         Spectrum identifier.
     n_fooofs : int, optional, default: None
         The number of fooof fits.
@@ -173,9 +141,9 @@ def generate_header(report_type, fm_label=None, n_fooofs=None, n_bycycles=None, 
         meta_template = """\
         \t<ul class="elem-desc">
         \t\t<li>Individual Report</li>
-        \t\t<li>Spectrum ID: {spectrum_id}</li>
+        \t\t<li>{dtype} ID: {label}</li>
         \t</ul>
-        """.format(spectrum_id=fm_label)
+        """.format(dtype=dtype, label=label)
 
     if report_type == "group":
         # Read in body
@@ -212,7 +180,7 @@ def generate_fooof_report(model, fooof_graphs, html_report):
     html_report : str
         A string containing the html fooof report.
 
-     Returns
+    Returns
     -------
     html_report : str
         A string containing the html fooof_report.
@@ -221,17 +189,17 @@ def generate_fooof_report(model, fooof_graphs, html_report):
     # Get html-ready strings for settings and results
     if type(model) is FOOOF:
 
-        settings = gen_settings_str(model, False, True)
+        settings = gen_settings_fm_str(model, False, True)
         results = gen_results_fm_str(model, True)
 
     elif type(model) is FOOOFGroup:
 
-        settings = gen_settings_str(model, False, True)
+        settings = gen_settings_fm_str(model, False, True)
         results = gen_results_fg_str(model, True)
 
     elif type(model) is list:
 
-        settings = gen_settings_str(model[0], False, True)
+        settings = gen_settings_fm_str(model[0], False, True)
         results = [gen_results_fg_str(fg, True) for fg in model]
 
     # String formatting
@@ -246,17 +214,63 @@ def generate_fooof_report(model, fooof_graphs, html_report):
         results = "<br />\n".join(fooof_graphs)
 
         # Results now contain graphs, so drop liquid variable for graphs
-        html_report = html_report.replace("{% fooof_graph %}", "")
+        html_report = html_report.replace("{% graph %}", "")
 
     else:
         results = results.replace("\n", "<br />\n")
-        html_report = html_report.replace("{% fooof_graph %}", fooof_graphs)
+        html_report = html_report.replace("{% graph %}", fooof_graphs)
 
 
     settings = settings.replace("\n", "<br />\n")
 
     # Inject settings and results
-    html_report = html_report.replace("{% fooof_settings %}", settings)
-    html_report = html_report.replace("{% fooof_results %}", results)
+    html_report = html_report.replace("{% model_type %}", 'FOOOF')
+    html_report = html_report.replace("{% settings %}", settings)
+    html_report = html_report.replace("{% results %}", results)
+
+    return html_report
+
+
+def generate_bycycle_report(df_features, df_samples, compute_features_kwargs, html_report):
+    """Include bycycle settings, results, and plots in a HTML string.
+
+    Parameters
+    ----------
+    df_features : pandas.DataFrame
+        A dataframe containing shape and burst features for each cycle.
+    df_samples : pandas.DataFrame, optional, default: True
+        An optionally returned dataframe containing cyclepoints for each cycle.
+    compute_features_kwargs : dict
+        Keyword arguments used to compute features.
+    html_report : str
+        A string containing the html bycycle report.
+
+    Returns
+    -------
+    html_report : str
+        A string containing the html bycycle report.
+    """
+
+    # Create a settings string
+    settings = ["="] * 70
+
+    for key, value in compute_features_kwargs.items():
+        settings.append("{key}: {value}".format(key=key, value=value))
+
+    settings = ["="] * 70
+
+    settings = "<br />\n".join(settings)
+
+    if type(df_features) is pd.DataFrame:
+        pass
+        # REPLACE THIS WITH PROPER PLOTLY CODE
+
+    #elif type(df_features) is list and len(np.shape(df_features)) == 1:
+    #elif type(df_features) is list and len(np.shape(df_features)) == 2:
+
+    # Inject settings and results
+    html_report = html_report.replace("{% model_type %}", 'bycycle')
+    html_report = html_report.replace("{% settings %}", settings)
+    #html_report = html_report.replace("{% results %}", results)
 
     return html_report

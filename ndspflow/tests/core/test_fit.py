@@ -60,4 +60,4 @@ def test_fit_fooof(ndim, test_data):
         # Check that results exist
         for fg in model:
             for fm_idx in range(len(fg)):
-                assert fg.get_fooof(fm_idx).has_data
+                assert fg.get_fooof(fm_idx).has_model

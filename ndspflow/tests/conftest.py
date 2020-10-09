@@ -40,8 +40,7 @@ def fm_outs(input_dir=TEST_DATA_PATH):
     freq_range = (1, 40)
 
     # Fit
-    fm = FOOOF(peak_width_limits=(0.5, 12.0), max_n_peaks=np.inf, min_peak_height=0.0,
-               peak_threshold=2.0, aperiodic_mode='fixed', verbose=False)
+    fm = fit_fooof(freqs, spectrum, (1, 40), {'verbose': False}, 1)
 
     fm.fit(freqs, spectrum, freq_range)
 
@@ -62,7 +61,7 @@ def fg_outs(input_dir=TEST_DATA_PATH):
     powers_2d = np.array([powers_1d for dim1 in range(2)])
 
     # Fit
-    fg = fit_fooof(freqs, powers_2d, (1, 40), {}, 1)
+    fg = fit_fooof(freqs, powers_2d, (1, 40), {'verbose': False}, 1)
 
     # Plot
     fooof_graph = plot_fg(fg, ['' for i in range(len(fg))])
@@ -84,7 +83,7 @@ def fgs_outs(input_dir=TEST_DATA_PATH):
     powers_3d =  np.array([[powers_1d for dim1 in range(2)] for dim2 in range(2)])
 
     # Fit
-    fgs = fit_fooof(freqs, powers_3d, (1, 40), {}, 1)
+    fgs = fit_fooof(freqs, powers_3d, (1, 40), {'verbose': False}, 1)
 
     # Plot
     fooof_graph = plot_fgs(fgs, ['' for i in range(int(len(fgs)*len(fgs[0])))])

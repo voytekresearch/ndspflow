@@ -8,12 +8,12 @@ import numpy as np
 import nipype.pipeline.engine as pe
 
 from ndspflow.tests.settings import TEST_DATA_PATH
-from ndspflow.core.interfaces import FOOOF
+from ndspflow.core.interfaces import FOOOFNode
 
 
 def test_FOOOF():
 
-    fooof = FOOOF()
+    fooof = FOOOFNode()
 
     # Check required params
     assert hasattr(fooof.inputs, 'power_spectrum')

@@ -2,10 +2,12 @@
 
 import os
 from fooof import FOOOF, FOOOFGroup, fit_fooof_3d
+from bycycle.features import compute_features
+from bycycle.group import compute_features_2d, compute_features_3d
 
 
 def fit_fooof(freqs, powers, freq_range, init_kwargs, n_jobs):
-    """A generalized fit function to handle 1d, 2d, or 3d arrays.
+    """A generalized FOOOF fit function to handle 1d, 2d, or 3d arrays.
 
     Parameters
     ----------
@@ -49,63 +51,77 @@ def fit_fooof(freqs, powers, freq_range, init_kwargs, n_jobs):
     return model
 
 
-def flatten_fms(model, output_dir):
-    """Flatten various oranizations of fooof models into a 1d list.
+def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles', burst_kwargs=None,
+                threshold_kwargs=None, find_extrema_kwargs=None, return_samples=True, n_jobs=1):
+    """A generalized bycycle compute_features function to handle 1d, 2d, or 3d arrays.
 
     Parameters
     ----------
-    model : FOOOF, FOOOFGroup, or list of FOOOFGroup objects.
-        A FOOOF object that has been fit using :func:`ndspflow.core.fit.fit_fooof`.
-    output_dir : str
-        Path to write FOOOF results to.
+    sig : 1d array
+        Time series.
+    fs : float
+        Sampling rate, in Hz.
+    f_range : tuple of (float, float)
+        Frequency range for narrowband signal of interest (Hz).
+    center_extrema : {'peak', 'trough'}
+        The center extrema in the cycle.
+    burst_method : string, optional, default: 'cycles'
+        Method for detecting bursts.
+    burst_kwargs : dict, optional, default: None
+        Additional keyword arguments defined in :func:`~.compute_burst_fraction` for dual
+        amplitude threshold burst detection (i.e. when burst_method == 'amp').
+    threshold_kwargs : dict, optional, default: None
+        Feature thresholds for cycles to be considered bursts.
+    find_extrema_kwargs : dict, optional, default: None
+        Keyword arguments for function to find peaks an troughs (``find_extrema``)
+        to change filter Parameters or boundary. By default, it sets the filter length to three
+        cycles of the low cutoff frequency (``f_range[0]``).
+    return_samples : bool, optional, default: True
+        Returns samples indices of cyclepoints used for determining features if True.
+    n_jobs : int, optional, default: -1
+        The number of jobs, one per cpu, to compute features in parallel.
 
     Returns
     -------
-    fms : list of fooof FOOOF
-        A flattened list of FOOOF objects.
-    fm_paths : list of str
-        Sub-directories to write fooof reports to.
-    fm_labels : list of str
-        Spectrum identifiers.
+    df_features : pandas.DataFrame
+        A dataframe containing shape and burst features for each cycle.
+    df_samples : pandas.DataFrame, optional, default: True
+        An optionally returned dataframe containing cyclepoints for each cycle.
+
+    Notes
+    -----
+    See bycycle documentation for more details.
     """
 
-    # Flatten the models and output dirs into a 1d list
-    fms = []
-    fm_paths = []
-    fm_labels = []
+    compute_kwargs = dict(
+        center_extrema=center_extrema, burst_method=burst_method, burst_kwargs=burst_kwargs,
+        threshold_kwargs=threshold_kwargs, find_extrema_kwargs=find_extrema_kwargs,
+        return_samples=return_samples
+    )
 
-    if type(model) is FOOOF:
+    if sig.ndim == 1:
 
-        # For 1d arrays
-        fm_paths.append(output_dir)
-        fms.append(model)
-        fm_labels.append("spectrum_{fm_idx}".format(fm_idx=str(0).zfill(4)))
+        df_features, df_samples = compute_features(sig, fs, f_range, **compute_kwargs)
 
-    elif type(model) is FOOOFGroup:
+    elif sig.ndim == 2:
 
-        # For 2d arrays
-        label_template = "spectrum_dim1-{dim_a}"
-        for fm_idx in range(len(model)):
+        return_samples = compute_kwargs.pop(return_samples)
 
-            label = label_template.format(dim_a=str(fm_idx).zfill(4))
-            fm_labels.append(label)
+        df_features, df_samples = compute_features_2d(
+            sig, fs, f_range, compute_features_kwargs=compute_kwargs,
+            return_samples=return_samples, n_jobs=n_jobs, progress=None
+        )
 
-            fm_paths.append(os.path.join(output_dir, label))
-            fms.append(model.get_fooof(fm_idx))
+    elif sig.ndim == 3:
 
-    elif type(model) is list:
+        return_samples = compute_kwargs.pop(return_samples)
 
-        # For 3d arrays
-        label_template = "spectrum_dim1-{dim_a}_dim2-{dim_b}"
+        df_features, df_samples = compute_features_2d(
+            sig, fs, f_range, compute_features_kwargs=compute_kwargs,
+            return_samples=return_samples, n_jobs=n_jobs, progress=None
+        )
 
-        for fg_idx in range(len(model)):
+    else:
+        raise ValueError('The sig argument must specify a 1d, 2d, or 3d array.')
 
-            for fm_idx in range(len(model[0].get_results())):
-
-                label = label_template.format(dim_a=str(fg_idx).zfill(4),
-                                              dim_b=str(fm_idx).zfill(4))
-                fm_labels.append(label)
-                fm_paths.append(os.path.join(output_dir, label))
-                fms.append(model[fg_idx].get_fooof(fm_idx))
-
-    return fms, fm_paths, fm_labels
+    return df_features, df_samples
