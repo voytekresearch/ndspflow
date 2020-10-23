@@ -1,6 +1,7 @@
 """Utility functions for organizing fooof and bycycle outputs."""
 
 import os
+import numpy as np
 import pandas as pd
 from fooof import FOOOF, FOOOFGroup, fit_fooof_3d
 
@@ -21,21 +22,17 @@ def flatten_fms(model, output_dir):
         A flattened list of FOOOF objects.
     fm_paths : list of str
         Sub-directories to write fooof reports to.
-    fm_labels : list of str
-        Spectrum identifiers.
     """
 
     # Flatten the models and output dirs into a 1d list
     fms = []
     fm_paths = []
-    fm_labels = []
 
     if type(model) is FOOOF:
 
         # For 1d arrays results
         fm_paths.append(output_dir)
         fms.append(model)
-        fm_labels.append("spectrum_{fm_idx}".format(fm_idx=str(0).zfill(4)))
 
     elif type(model) is FOOOFGroup:
 
@@ -44,8 +41,6 @@ def flatten_fms(model, output_dir):
         for fm_idx in range(len(model)):
 
             label = label_template.format(dim_a=str(fm_idx).zfill(4))
-            fm_labels.append(label)
-
             fm_paths.append(os.path.join(output_dir, label))
             fms.append(model.get_fooof(fm_idx))
 
@@ -60,14 +55,12 @@ def flatten_fms(model, output_dir):
 
                 label = label_template.format(dim_a=str(fg_idx).zfill(4),
                                               dim_b=str(fm_idx).zfill(4))
-                fm_labels.append(label)
                 fm_paths.append(os.path.join(output_dir, label))
                 fms.append(model[fg_idx].get_fooof(fm_idx))
 
-    return fms, fm_paths, fm_labels
+    return fms, fm_paths
 
-
-def flatten_bycycles(df_features, df_samples, output_dir):
+def flatten_bms(df_features, df_samples, output_dir):
     """Flatten various oranizations of bycycle dataframes into a 1d list.
 
     Parameters
@@ -85,21 +78,20 @@ def flatten_bycycles(df_features, df_samples, output_dir):
         Dataframes containing shape and burst features for each cycle.
     df_samples : 1d list of pandas.DataFrame
         Dataframes containing cyclepoints for each cycle.
-    bc_labels : list of str
-       Bycycle dataframe labels.
     bc_paths : list of str
         Sub-directories to write bycycle dataframes to.
     """
 
-    bc_labels =[]
     bc_paths = []
 
     if type(df_features) is pd.DataFrame:
 
         # For 1d array results
-        bc_labels.append("signal_{fm_idx}".format(fm_idx=str(0).zfill(4)))
-        bc_paths.append(output_dir)
+        bc_paths.append(os.path.join(output_dir, "signal_{fm_idx}".format(fm_idx=str(0).zfill(4))))
 
+        # Make dataframe an iterable list
+        df_features = [df_features]
+        df_samples = [df_samples]
 
     elif type(df_features) is list and len(np.shape(df_features)) == 1:
 
@@ -108,7 +100,6 @@ def flatten_bycycles(df_features, df_samples, output_dir):
         for fm_idx in range(len(df_features)):
 
             label = label_template.format(dim_a=str(fm_idx).zfill(4))
-            bc_labels.append(label)
             bc_paths.append(os.path.join(output_dir, label))
 
     elif type(df_features) is list and len(np.shape(df_features)) == 2:
@@ -122,7 +113,6 @@ def flatten_bycycles(df_features, df_samples, output_dir):
 
                 label = label_template.format(dim_a=str(bg_idx).zfill(4),
                                               dim_b=str(bc_idx).zfill(4))
-                bc_labels.append(label)
                 bc_paths.append(os.path.join(output_dir, label))
 
     # Ensure dataframe(s) are in a 1D list
@@ -135,4 +125,4 @@ def flatten_bycycles(df_features, df_samples, output_dir):
     df_samples = [df for dfs in df_samples for df in dfs] if len(np.shape(df_samples)) == 2 \
         else df_samples
 
-    return df_features, df_samples, bc_labels, bc_paths
+    return df_features, df_samples, bc_paths

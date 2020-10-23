@@ -34,7 +34,7 @@ def get_parser():
         help='Output directory to write results and BIDS derivatives to write (default: %(default)s).'
     )
 
-    # FOOOF fit params
+    # FOOOF required params
     parser.add_argument(
         '-power_spectrum',
         type=str,
@@ -53,7 +53,7 @@ def get_parser():
              "Required if 'fooof' in 'run_nodes argument' (default: %(default)s)."
     )
     parser.add_argument(
-        '-freq_range',
+        '-fooof_f_range',
         type=float,
         nargs=2,
         default=(-np.inf, np.inf),
@@ -61,16 +61,35 @@ def get_parser():
         help="Frequency range of the power spectrum, as: lower_freq, upper_freq.\n"
              "Recommended if 'fooof' in 'run_nodes argument' (default: %(default)s)."
     )
+
+    # Bycycle required params
     parser.add_argument(
         '-sig',
         type=str,
         default=None,
         metavar="signal.npy",
         help="Filename of neural signal or timeseries, located inside of 'input_dir'.\n"
-             "Required if 'bycycle' in 'run_nodes argument' (default: %(default)s).\n "
+             "Required if 'bycycle' in 'run_nodes argument' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-fs',
+        type=int,
+        default=None,
+        metavar="int",
+        help="Sampling rate, in Hz.\n"
+             "Required if 'bycycle' in 'run_nodes argument'."
+    )
+    parser.add_argument(
+        '-bycycle_f_range',
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=("lower_freq", "upper_freq"),
+        help="Frequency range for narrowband signal of interest (Hz).\n"
+             "Required if 'bycycle' in 'run_nodes argument'.\n "
     )
 
-    # FOOOF init params
+    # FOOOF optional params
     parser.add_argument(
         '-peak_width_limits',
         type=float,
@@ -113,6 +132,8 @@ def get_parser():
         help="Which approach to take for fitting the aperiodic component.\n"
              "Recommended if 'fooof' in 'run_nodes argument' (default: %(default)s)."
     )
+
+    # Parallel computation
     parser.add_argument(
         '-n_jobs',
         type=int,
@@ -146,20 +167,23 @@ def main():
     run_nodes = args['run_nodes']
 
     if 'fooof' in run_nodes:
-        fooof_params = {}
-        fooof_params['freqs'] = args['freqs']
-        fooof_params['power_spectrum'] = args['power_spectrum']
-        fooof_params['freq_range'] = args['freq_range']
-        fooof_params['peak_width_limits'] = args['peak_width_limits']
-        fooof_params['max_n_peaks'] = args['max_n_peaks']
-        fooof_params['min_peak_height'] = args['min_peak_height']
-        fooof_params['peak_threshold'] = args['peak_threshold']
-        fooof_params['aperiodic_mode'] = args['aperiodic_mode']
+
+        fooof_params = dict(
+            freqs=args['freqs'], power_spectrum=args['power_spectrum'],
+            freq_range=args['fooof_f_range'], peak_width_limits=args['peak_width_limits'],
+            max_n_peaks=args['max_n_peaks'], min_peak_height=args['min_peak_height'],
+            peak_threshold=args['peak_threshold'], aperiodic_mode=args['aperiodic_mode']
+        )
+
     else:
         fooof_params = None
 
     if 'bycycle' in run_nodes:
-        bycycle_params = {}
+
+        bycycle_params = dict(
+            sig=args['sig'], fs=args['fs'], f_range=(args['bycycle_f_range'])
+        )
+
     else:
         bycycle_params=None
 
@@ -167,7 +191,6 @@ def main():
 
     wf = create_workflow(input_dir, output_dir, run_nodes=run_nodes, fooof_params=fooof_params,
                          bycycle_params=bycycle_params, n_jobs=n_jobs)
-
 
     wf.run()
 

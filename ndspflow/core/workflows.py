@@ -91,7 +91,7 @@ def wf_fooof(fooof_params):
     # Fit params
     fooof_node.inputs.freqs = fooof_params.pop('freqs')
     fooof_node.inputs.power_spectrum = fooof_params.pop('power_spectrum')
-    fooof_node.inputs.freq_range = fooof_params.pop('freq_range', (-np.inf, np.inf))
+    fooof_node.inputs.fooof_f_range = fooof_params.pop('fooof_f_range', (-np.inf, np.inf))
 
     # Init params
     fooof_node.inputs.peak_width_limits = fooof_params.pop('peak_width_limits', (0.5, 12.0))
@@ -129,15 +129,15 @@ def wf_bycycle(bycycle_params):
     bycycle_node = pe.Node(BycycleNode(), name='bycycle_node')
 
     # Required arguments
-    bycycle.node.inputs.sig = bycycle_param.pop("sig")
-    bycycle.node.inputs.fs = bycycle_param.pop("fs")
-    bycycle.node.inputs.f_range = bycycle_param.pop("f_range")
+    bycycle_node.inputs.sig = bycycle_params.pop("sig")
+    bycycle_node.inputs.fs = bycycle_params.pop("fs")
+    bycycle_node.inputs.bycycle_f_range = bycycle_params.pop("f_range")
 
     # Optional arguments
-    bycycle.node.inputs.center_extrema = bycycle_param.pop("center_extrema", "peak")
-    bycycle.node.inputs.burst_method = bycycle_param.pop("burst_method", "cycles")
-    bycycle.node.inputs.burst_kwargs = bycycle_param.pop("burst_kwargs", {})
-    bycycle.node.inputs.threshold_kwargs = bycycle_param.pop("threshold_kwargs", {})
-    bycycle.node.inputs.find_extrema_kwargs = bycycle_param.pop("find_extrema_kwargs", {})
+    bycycle_node.inputs.center_extrema = bycycle_params.pop("center_extrema", "peak")
+    bycycle_node.inputs.burst_method = bycycle_params.pop("burst_method", "cycles")
+    bycycle_node.inputs.burst_kwargs = bycycle_params.pop("burst_kwargs", {})
+    bycycle_node.inputs.threshold_kwargs = bycycle_params.pop("threshold_kwargs", {})
+    bycycle_node.inputs.find_extrema_kwargs = bycycle_params.pop("find_extrema_kwargs", {})
 
     return bycycle_node

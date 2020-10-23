@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from fooof import FOOOF, FOOOFGroup
-from ndspflow.core.utils import flatten_fms
+from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.io.paths import clean_mkdir
 
 
@@ -24,10 +24,10 @@ def save_fooof(model, output_dir):
     clean_mkdir(fooof_dir)
 
     # Flatten model(s) and create output paths and sub-dir labels
-    fms, out_paths, labels = flatten_fms(model, fooof_dir)
+    fms, out_paths = flatten_fms(model, fooof_dir)
 
     # Save outputs
-    for fm, out_path, label in zip(fms, out_paths, labels):
+    for fm, out_path in zip(fms, out_paths):
 
         # Make the output directory
         clean_mkdir(out_path)
@@ -48,18 +48,17 @@ def save_bycycle(df_features, df_samples, output_dir):
     """
 
     # Make the bycycle output dir
-    fooof_dir = os.path.join(output_dir, 'bycycle')
-    clean_mkdir(fooof_dir)
+    bycycle_dir = os.path.join(output_dir, 'bycycle')
+    clean_mkdir(bycycle_dir)
 
-    df_features, df_samples, bc_labels, bc_paths = flatten_bycycles(df_features, df_samples,
-                                                                    output_dir)
+    df_features, df_samples, bc_paths = flatten_bms(df_features, df_samples, output_dir)
 
     # Save outputs
-    for df_feature, df_sample, label, path in zip(df_features, df_samples, bc_labels, bc_paths):
+    for df_feature, df_sample, bc_path in zip(df_features, df_samples, bc_paths):
 
         # Make the output directory
-        clean_mkdir(out_path)
+        clean_mkdir(bc_path)
 
         # Save the dataframes
-        df_feature.to_csv(os.path.join(path, label, 'results_features.csv'), index=False)
-        df_sample.to_csv(os.path.join(path, label, 'results_samples.csv'), index=False)
+        df_feature.to_csv(os.path.join(bc_path, 'results_features.csv'), index=False)
+        df_sample.to_csv(os.path.join(bc_path, 'results_samples.csv'), index=False)

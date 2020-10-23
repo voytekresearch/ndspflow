@@ -23,7 +23,7 @@ def test_FOOOF():
 
     # Check default params
     assert fooof.inputs.aperiodic_mode == 'fixed'
-    assert fooof.inputs.freq_range == (-np.inf, np.inf)
+    assert fooof.inputs.fooof_f_range == (-np.inf, np.inf)
     assert fooof.inputs.max_n_peaks == 100
     assert fooof.inputs.min_peak_height == 0.0
     assert fooof.inputs.peak_threshold == 2.0

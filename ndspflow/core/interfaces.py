@@ -12,7 +12,7 @@ from nipype.interfaces.base import (
 
 from fooof import FOOOF, FOOOFGroup
 from ndspflow.core.fit import fit_fooof, fit_bycycle
-from ndspflow.io.save import save_fooof
+from ndspflow.io.save import save_fooof, save_bycycle
 from ndspflow.reports.html import generate_report
 
 
@@ -47,7 +47,7 @@ class FOOOFNodeInputSpec(BaseInterfaceInputSpec):
     # Fit params
     freqs = traits.File(mandatory=True, usedefault=False)
     power_spectrum = traits.File(mandatory=True, usedefault=False)
-    freq_range = traits.Tuple((-np.inf, np.inf), mandatory=False, usedefault=True)
+    fooof_f_range = traits.Tuple((-np.inf, np.inf), mandatory=False, usedefault=True)
     n_jobs = traits.Int(1, mandatory=False, usedefault=True)
 
 
@@ -76,7 +76,8 @@ class FOOOFNode(SimpleInterface):
                        'aperiodic_mode': self.inputs.aperiodic_mode,
                        'verbose': False}
         # Fit
-        fms = fit_fooof(freqs, powers, self.inputs.freq_range, init_kwargs, self.inputs.n_jobs)
+        fms = fit_fooof(freqs, powers, self.inputs.fooof_f_range, init_kwargs,
+                        self.inputs.n_jobs)
 
         # Save model
         save_fooof(fms, self.inputs.output_dir)
@@ -114,7 +115,7 @@ class BycycleNodeInputSpec(BaseInterfaceInputSpec):
     # Required arguments
     sig = traits.File(mandatory=True, usedefault=False)
     fs = traits.Float(mandatory=True, usedefault=False)
-    f_range = traits.Tuple(mandatory=True, usedefault=False)
+    bycycle_f_range = traits.Tuple(mandatory=True, usedefault=False)
 
     # Optional arguments
     center_extrema = traits.Str('peak', mandatory=False, usedefault=True)
@@ -132,11 +133,12 @@ class BycycleNodeOutputSpec(TraitedSpec):
     df_samples = traits.Any(mandatory=True)
     bycycle_results = traits.Directory(mandatory=True)
 
+
 class BycycleNode(SimpleInterface):
     """Interface wrapper for bycycle."""
 
-    input_spec = FOOOFNodeInputSpec
-    output_spec = FOOOFNodeOutputSpec
+    input_spec = BycycleNodeInputSpec
+    output_spec = BycycleNodeOutputSpec
 
     def _run_interface(self, runtime):
 
@@ -149,17 +151,18 @@ class BycycleNode(SimpleInterface):
         )
 
         # Fit
-        df_features, df_samples = fit_bycycle(sig, self.fs, self.f_range, **fit_kwargs)
+        df_features, df_samples = fit_bycycle(sig, self.inputs.fs,
+                                              self.inputs.bycycle_f_range, **fit_kwargs)
 
         # Save dataframes
-        save_bycycle(df_features, df_samples, output_dir)
+        save_bycycle(df_features, df_samples, self.inputs.output_dir)
 
         # Save reports
-        settings = fit_kwargs.copy()
-        settings['f_range'] = f_range
+        fit_args = dict(sig=sig, fs=self.inputs.fs, f_range=self.inputs.bycycle_f_range,
+                        **fit_kwargs)
 
         # CREATING RESULTS STRINGS FOR BYCYCLE COULD BE HELPFUL HERE
-        generate_report(self.inputs.output_dir, (df_features, df_samples, settings))
+        generate_report(self.inputs.output_dir, (df_features, df_samples, fit_args))
 
         self._results["df_features"] = df_features
         self._results["df_samples"] = df_samples

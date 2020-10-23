@@ -20,15 +20,16 @@ def test_flatten_fms(ndim, fm_outs, fg_outs, fgs_outs):
 
     output_dir = '/path/to/output'
 
-    fms, fm_paths, fm_labels = flatten_fms(model, output_dir)
+    fms, fm_paths = flatten_fms(model, output_dir)
 
-    assert len(fms) == len(fm_paths) == len(fm_labels)
+    assert len(fms) == len(fm_paths)
 
-    for fm, fm_path, fm_label in zip(fms, fm_paths, fm_labels):
+    for fm, fm_path in zip(fms, fm_paths):
 
         assert type(fm) is FOOOF
         assert fm.has_model
 
-        assert '/path/to/output' in fm_path
-
-        assert 'spectrum' in fm_label
+        if len(fm_paths) > 1:
+            assert '/path/to/output/spectrum' in fm_path
+        else:
+            assert '/path/to/output' in fm_path
