@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   python: circleci/python@0.2.1
+  codecov: codecov/codecov@1.0.2
 
 jobs:
   build-and-test:
@@ -12,10 +13,13 @@ jobs:
       - python/install-deps
       - python/save-cache
       - run:
-          command: ./manage.py test
-          name: Test
+          command: python -m pytest --cov=ndspflow --cov-report=term-missing --junitxml="ndspflow/tests/result.xml" ndspflow/tests
+          name: Tests
+      - store_test_results:
+          path: ndspflow/tests
 
 workflows:
   main:
     jobs:
       - build-and-test
+
