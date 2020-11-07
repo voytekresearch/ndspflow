@@ -36,13 +36,13 @@ def save_fooof(model, output_dir):
         fm.save('results', file_path=out_path, append=False, save_results=True, save_settings=True)
 
 
-def save_bycycle(df_features, df_samples, output_dir):
+def save_bycycle(df_features, output_dir):
     """Make output directories and save bycycle dataframes.
 
     Parameters
     ----------
-    model : FOOOF, FOOOFGroup, or list of FOOOFGroup objects.
-        A FOOOF object that has been fit using :func:`ndspflow.core.fit.fit_fooof`.
+    df_features : pandas.DataFrame or list of pandas.DataFrame
+        Dataframes containing shape and burst features for each cycle.
     output_dir : str
         Path to write FOOOF results to.
     """
@@ -51,14 +51,13 @@ def save_bycycle(df_features, df_samples, output_dir):
     bycycle_dir = os.path.join(output_dir, 'bycycle')
     clean_mkdir(bycycle_dir)
 
-    df_features, df_samples, bc_paths = flatten_bms(df_features, df_samples, output_dir)
+    df_features, bc_paths = flatten_bms(df_features, output_dir)
 
     # Save outputs
-    for df_feature, df_sample, bc_path in zip(df_features, df_samples, bc_paths):
+    for df_feature, bc_path in zip(df_features, bc_paths):
 
         # Make the output directory
         clean_mkdir(bc_path)
 
         # Save the dataframes
         df_feature.to_csv(os.path.join(bc_path, 'results_features.csv'), index=False)
-        df_sample.to_csv(os.path.join(bc_path, 'results_samples.csv'), index=False)

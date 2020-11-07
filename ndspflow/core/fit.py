@@ -51,8 +51,8 @@ def fit_fooof(freqs, powers, freq_range, init_kwargs, n_jobs):
     return model
 
 
-def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles', burst_kwargs=None,
-                threshold_kwargs=None, find_extrema_kwargs=None, return_samples=True, n_jobs=1):
+def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
+                threshold_kwargs=None, find_extrema_kwargs=None, axis=0,  n_jobs=1):
     """A generalized bycycle compute_features function to handle 1d, 2d, or 3d arrays.
 
     Parameters
@@ -67,26 +67,19 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles', 
         The center extrema in the cycle.
     burst_method : string, optional, default: 'cycles'
         Method for detecting bursts.
-    burst_kwargs : dict, optional, default: None
-        Additional keyword arguments defined in :func:`~.compute_burst_fraction` for dual
-        amplitude threshold burst detection (i.e. when burst_method == 'amp').
     threshold_kwargs : dict, optional, default: None
         Feature thresholds for cycles to be considered bursts.
     find_extrema_kwargs : dict, optional, default: None
         Keyword arguments for function to find peaks an troughs (``find_extrema``)
         to change filter Parameters or boundary. By default, it sets the filter length to three
         cycles of the low cutoff frequency (``f_range[0]``).
-    return_samples : bool, optional, default: True
-        Returns samples indices of cyclepoints used for determining features if True.
     n_jobs : int, optional, default: -1
         The number of jobs, one per cpu, to compute features in parallel.
 
     Returns
     -------
     df_features : pandas.DataFrame
-        A dataframe containing shape and burst features for each cycle.
-    df_samples : pandas.DataFrame, optional, default: True
-        An optionally returned dataframe containing cyclepoints for each cycle.
+        A dataframe containing cycle features.
 
     Notes
     -----
@@ -94,34 +87,29 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles', 
     """
 
     compute_kwargs = dict(
-        center_extrema=center_extrema, burst_method=burst_method, burst_kwargs=burst_kwargs,
-        threshold_kwargs=threshold_kwargs, find_extrema_kwargs=find_extrema_kwargs,
-        return_samples=return_samples
+        center_extrema=center_extrema, burst_method=burst_method,
+        threshold_kwargs=threshold_kwargs, find_extrema_kwargs=find_extrema_kwargs
     )
 
     if sig.ndim == 1:
 
-        df_features, df_samples = compute_features(sig, fs, f_range, **compute_kwargs)
+        df_features = compute_features(sig, fs, f_range, **compute_kwargs)
 
     elif sig.ndim == 2:
 
-        return_samples = compute_kwargs.pop(return_samples)
-
-        df_features, df_samples = compute_features_2d(
+        df_features = compute_features_2d(
             sig, fs, f_range, compute_features_kwargs=compute_kwargs,
-            return_samples=return_samples, n_jobs=n_jobs, progress=None
+            return_samples=return_samples, axis=axis, n_jobs=n_jobs
         )
 
     elif sig.ndim == 3:
 
-        return_samples = compute_kwargs.pop(return_samples)
-
-        df_features, df_samples = compute_features_2d(
+        df_features = compute_features_3d(
             sig, fs, f_range, compute_features_kwargs=compute_kwargs,
-            return_samples=return_samples, n_jobs=n_jobs, progress=None
+            return_samples=return_samples, axis=axis, n_jobs=n_jobs
         )
 
     else:
         raise ValueError('The sig argument must specify a 1d, 2d, or 3d array.')
 
-    return df_features, df_samples
+    return df_features

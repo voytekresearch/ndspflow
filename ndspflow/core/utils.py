@@ -60,15 +60,13 @@ def flatten_fms(model, output_dir):
 
     return fms, fm_paths
 
-def flatten_bms(df_features, df_samples, output_dir):
+def flatten_bms(df_features, output_dir):
     """Flatten various oranizations of bycycle dataframes into a 1d list.
 
     Parameters
     ----------
     df_features : pandas.DataFrame or list of pandas.DataFrame
         Dataframes containing shape and burst features for each cycle.
-    df_samples : pandas.DataFrame or list of pandas.DataFrame
-        Dataframes containing cyclepoints for each cycle.
     output_dir : str
         Path to write bycycle results to.
 
@@ -76,8 +74,6 @@ def flatten_bms(df_features, df_samples, output_dir):
     -------
     df_features : 1d list of pandas.DataFrame
         Dataframes containing shape and burst features for each cycle.
-    df_samples : 1d list of pandas.DataFrame
-        Dataframes containing cyclepoints for each cycle.
     bc_paths : list of str
         Sub-directories to write bycycle dataframes to.
     """
@@ -91,7 +87,6 @@ def flatten_bms(df_features, df_samples, output_dir):
 
         # Make dataframe an iterable list
         df_features = [df_features]
-        df_samples = [df_samples]
 
     elif type(df_features) is list and len(np.shape(df_features)) == 1:
 
@@ -117,12 +112,8 @@ def flatten_bms(df_features, df_samples, output_dir):
 
     # Ensure dataframe(s) are in a 1D list
     df_features =  df_features if type(df_features) is list else list(df_features)
-    df_samples =  df_samples if type(df_samples) is list else list(df_samples)
 
     df_features = [df for dfs in df_features for df in dfs] if len(np.shape(df_features)) == 2 \
         else df_features
 
-    df_samples = [df for dfs in df_samples for df in dfs] if len(np.shape(df_samples)) == 2 \
-        else df_samples
-
-    return df_features, df_samples, bc_paths
+    return df_features, bc_paths

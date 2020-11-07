@@ -47,7 +47,7 @@ class FOOOFNodeInputSpec(BaseInterfaceInputSpec):
     # Fit params
     freqs = traits.File(mandatory=True, usedefault=False)
     power_spectrum = traits.File(mandatory=True, usedefault=False)
-    fooof_f_range = traits.Tuple((-np.inf, np.inf), mandatory=False, usedefault=True)
+    f_range_fooof = traits.Tuple((-np.inf, np.inf), mandatory=False, usedefault=True)
     n_jobs = traits.Int(1, mandatory=False, usedefault=True)
 
 
@@ -76,14 +76,14 @@ class FOOOFNode(SimpleInterface):
                        'aperiodic_mode': self.inputs.aperiodic_mode,
                        'verbose': False}
         # Fit
-        fms = fit_fooof(freqs, powers, self.inputs.fooof_f_range, init_kwargs,
+        fms = fit_fooof(freqs, powers, self.inputs.f_range_fooof, init_kwargs,
                         self.inputs.n_jobs)
 
         # Save model
         save_fooof(fms, self.inputs.output_dir)
 
         # Save reports
-        generate_report(self.inputs.output_dir, fms)
+        generate_report(self.inputs.output_dir, fms=fms)
 
         self._results["fm"] = fms
         self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof')
@@ -115,14 +115,18 @@ class BycycleNodeInputSpec(BaseInterfaceInputSpec):
     # Required arguments
     sig = traits.File(mandatory=True, usedefault=False)
     fs = traits.Float(mandatory=True, usedefault=False)
-    bycycle_f_range = traits.Tuple(mandatory=True, usedefault=False)
+    f_range_bycycle = traits.Tuple(mandatory=True, usedefault=False)
 
     # Optional arguments
     center_extrema = traits.Str('peak', mandatory=False, usedefault=True)
     burst_method = traits.Str('cycles', mandatory=False, usedefault=True)
-    burst_kwargs = traits.Dict({}, mandatory=False, usedefault=True)
-    threshold_kwargs = traits.Dict({}, mandatory=False, usedefault=True)
-    find_extrema_kwargs = traits.Dict({}, mandatory=False, usedefault=True)
+    amp_fraction_threshold = traits.Float(mandatory=False, usedefault=True)
+    amp_consistency_threshold = traits.Float(mandatory=False, usedefault=True)
+    period_consistency_threshold = traits.Float(mandatory=False, usedefault=True)
+    monotonicity_threshold = traits.Float(mandatory=False, usedefault=True)
+    min_n_cycles = traits.Int(mandatory=False, usedefault=True)
+    burst_fraction_threshold = traits.Float(mandatory=False, usedefault=True)
+    axis = traits.Str('None', mandatory=False, usedefault=True)
     n_jobs = traits.Int(1, mandatory=False, usedefault=True)
 
 
@@ -130,7 +134,6 @@ class BycycleNodeOutputSpec(TraitedSpec):
     """Output interface for bycycle."""
 
     df_features = traits.Any(mandatory=True)
-    df_samples = traits.Any(mandatory=True)
     bycycle_results = traits.Directory(mandatory=True)
 
 
@@ -144,26 +147,49 @@ class BycycleNode(SimpleInterface):
 
         sig = np.load(os.path.join(os.getcwd(), self.inputs.input_dir, self.inputs.sig))
 
+        # Infer axis type from string (traits doesn't support multi-type)
+        axis = None if 'None' in self.inputs.axis else self.inputs.axis
+        axis = (0, 1) if '0' in self.inputs.axis and '1' in self.inputs.axis else self.inputs.axis
+        axis = int(self.inputs.axis) if isinstance(self.inputs.axis, str) else self.inputs.axis
+
+        # Get thresholds
+        if self.inputs.burst_method == 'cycles':
+
+            threshold_kwargs = dict(
+                amp_fraction_threshold = self.inputs.amp_fraction_threshold,
+                amp_consistency_threshold = self.inputs.amp_consistency_threshold,
+                period_consistency_threshold = self.inputs.period_consistency_threshold,
+                monotonicity_threshold = self.inputs.monotonicity_threshold,
+                min_n_cycles = self.inputs.min_n_cycles
+            )
+
+        else:
+
+            threshold_kwargs = dict(
+                burst_fraction_threshold = self.inputs.burst_fraction_threshold,
+                min_n_cycles = self.inputs.min_n_cycles
+            )
+
+        # Organize all kwargs
         fit_kwargs = dict(
             center_extrema=self.inputs.center_extrema, burst_method=self.inputs.burst_method,
-            burst_kwargs=self.inputs.burst_kwargs, threshold_kwargs=self.inputs.threshold_kwargs,
-            find_extrema_kwargs=self.inputs.find_extrema_kwargs, n_jobs=self.inputs.n_jobs
+            threshold_kwargs=threshold_kwargs, axis=axis, n_jobs=self.inputs.n_jobs
         )
 
         # Fit
-        df_features, df_samples = fit_bycycle(sig, self.inputs.fs,
-                                              self.inputs.bycycle_f_range, **fit_kwargs)
+        df_features = fit_bycycle(sig, self.inputs.fs, self.inputs.f_range_bycycle, **fit_kwargs)
 
         # Save dataframes
-        save_bycycle(df_features, df_samples, self.inputs.output_dir)
+        save_bycycle(df_features, self.inputs.output_dir)
 
         # Save reports
-        fit_args = dict(sig=sig, fs=self.inputs.fs, f_range=self.inputs.bycycle_f_range,
+        fit_args = dict(sig=sig, fs=self.inputs.fs, f_range=self.inputs.f_range_bycycle,
                         **fit_kwargs)
 
-        # CREATING RESULTS STRINGS FOR BYCYCLE COULD BE HELPFUL HERE
-        generate_report(self.inputs.output_dir, (df_features, df_samples, fit_args))
+        # CREATING BYCYCLE RESULTS STRINGS TO REPORT COULD BE HELPFUL HERE
+        generate_report(self.inputs.output_dir, bms=(df_features, fit_args))
 
         self._results["df_features"] = df_features
-        self._results["df_samples"] = df_samples
         self._results["bycycle_results"] = os.path.join(self.inputs.output_dir, 'bycycle')
+
+        return runtime

@@ -5,7 +5,6 @@ from scipy.stats import truncnorm
 import plotly.graph_objects as go
 
 
-
 def plot_scatter(param, label, urls, yfmt=".3f"):
     """Plot an interactive scatterplot for a fit parameter.
 
@@ -21,7 +20,6 @@ def plot_scatter(param, label, urls, yfmt=".3f"):
     yfmt : str, optional, default: ".3f"
         The format to the y-axis labels used to ensure labels are all the same length, ensuring
         plots are aligned.
-
 
     Returns
     -------
@@ -104,8 +102,8 @@ def two_column_layout(fig_left, fig_right, graphs):
     graphs : list of str
         Html plot strings with the double column plots appended.
 
-    Note
-    ----
+    Notes
+    -----
     The css is defined in reports/templates/masthead.html.
     """
 

@@ -11,16 +11,13 @@ from bycycle.utils import limit_df, limit_signal, get_extrema_df
 
 
 
-def plot_bycycle(df_features, df_samples, sig, fs, threshold_kwargs,
-                 xlim=None, plot_only_result=True):
+def plot_bycycle(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=True):
     """Plot a individual bycycle fits.
 
     Parameters
     ----------
     df_features : pandas.DataFrame
         A dataframe containing shape and burst features for each cycle.
-    df_samples : pandas.DataFrame, optional, default: True
-        An optionally returned dataframe containing cyclepoints for each cycle.
     sig : 1d array
         Time series.
     fs : float
@@ -46,7 +43,7 @@ def plot_bycycle(df_features, df_samples, sig, fs, threshold_kwargs,
     xlim = (times[0], times[-1]) if xlim is None else xlim
 
     # Determine if peak of troughs are the sides of an oscillation
-    _, side_e = get_extrema_df(df_samples)
+    center_e, side_e = get_extrema_df(df_features)
 
     # Remove this kwarg since it isn't stored cycle by cycle in the df (nothing to plot)
     if 'min_n_cycles' in threshold_kwargs.keys():
@@ -65,8 +62,7 @@ def plot_bycycle(df_features, df_samples, sig, fs, threshold_kwargs,
 
     # Determine which samples are defined as bursting
     is_osc = np.zeros(len(sig), dtype=bool)
-    df_burst = df_samples[df_features['is_burst'].values]
-    df_non_burst = ~df_samples[df_features['is_burst'].values]
+    df_burst = df_features[df_features['is_burst'].values]
 
     # Plot non-burst signal
     for _, cyc in df_burst.iterrows():
@@ -89,11 +85,9 @@ def plot_bycycle(df_features, df_samples, sig, fs, threshold_kwargs,
                                  line=dict(color='red', width=2)), row=1, col=1)
 
     # Plot cycle points
-    center_e, side_e = get_extrema_df(df_samples)
-
-    peaks = df_samples['sample_' + center_e].values
-    troughs = np.append(df_samples['sample_last_' + side_e].values,
-                        df_samples['sample_next_' + side_e].values[-1])
+    peaks = df_features['sample_' + center_e].values
+    troughs = np.append(df_features['sample_last_' + side_e].values,
+                        df_features['sample_next_' + side_e].values[-1])
 
     for color, points in zip(['rgb(191, 0, 191, 1)', 'rgb(0, 191, 191, 1)'], [peaks, troughs]):
 

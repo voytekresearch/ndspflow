@@ -91,7 +91,7 @@ def wf_fooof(fooof_params):
     # Fit params
     fooof_node.inputs.freqs = fooof_params.pop('freqs')
     fooof_node.inputs.power_spectrum = fooof_params.pop('power_spectrum')
-    fooof_node.inputs.fooof_f_range = fooof_params.pop('fooof_f_range', (-np.inf, np.inf))
+    fooof_node.inputs.f_range_fooof = fooof_params.pop('f_range_fooof', (-np.inf, np.inf))
 
     # Init params
     fooof_node.inputs.peak_width_limits = fooof_params.pop('peak_width_limits', (0.5, 12.0))
@@ -121,7 +121,7 @@ def wf_bycycle(bycycle_params):
     if bycycle_params is None:
         raise ValueError("Undefined required bycycle parameters.")
 
-    for param in ['sig', 'fs', 'f_range']:
+    for param in ['sig', 'fs', 'f_range_bycycle']:
         if param not in bycycle_params:
              raise ValueError("Undefined required bycycle parameters.")
 
@@ -131,13 +131,20 @@ def wf_bycycle(bycycle_params):
     # Required arguments
     bycycle_node.inputs.sig = bycycle_params.pop("sig")
     bycycle_node.inputs.fs = bycycle_params.pop("fs")
-    bycycle_node.inputs.bycycle_f_range = bycycle_params.pop("f_range")
+    bycycle_node.inputs.f_range_bycycle = bycycle_params.pop("f_range_bycycle")
 
     # Optional arguments
     bycycle_node.inputs.center_extrema = bycycle_params.pop("center_extrema", "peak")
     bycycle_node.inputs.burst_method = bycycle_params.pop("burst_method", "cycles")
-    bycycle_node.inputs.burst_kwargs = bycycle_params.pop("burst_kwargs", {})
-    bycycle_node.inputs.threshold_kwargs = bycycle_params.pop("threshold_kwargs", {})
-    bycycle_node.inputs.find_extrema_kwargs = bycycle_params.pop("find_extrema_kwargs", {})
+    bycycle_node.inputs.amp_fraction_threshold = bycycle_params.pop("amp_fraction_threshold", 0)
+    bycycle_node.inputs.amp_consistency_threshold = \
+        bycycle_params.pop("amp_consistency_threshold", 0.5)
+    bycycle_node.inputs.period_consistency_threshold = \
+        bycycle_params.pop("period_consistency_threshold", 0.5)
+    bycycle_node.inputs.monotonicity_threshold = bycycle_params.pop("monotonicity_threshold", 0.8)
+    bycycle_node.inputs.min_n_cycles = bycycle_params.pop("min_n_cycles", 3)
+    bycycle_node.inputs.burst_fraction_threshold = \
+        bycycle_params.pop("burst_fraction_threshold", 1.0)
+    bycycle_node.inputs.axis = bycycle_params.pop("axis", 0)
 
     return bycycle_node

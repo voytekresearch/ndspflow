@@ -53,7 +53,7 @@ def get_parser():
              "Required if 'fooof' in 'run_nodes argument' (default: %(default)s)."
     )
     parser.add_argument(
-        '-fooof_f_range',
+        '-f_range_fooof',
         type=float,
         nargs=2,
         default=(-np.inf, np.inf),
@@ -80,7 +80,7 @@ def get_parser():
              "Required if 'bycycle' in 'run_nodes argument'."
     )
     parser.add_argument(
-        '-bycycle_f_range',
+        '-f_range_bycycle',
         type=float,
         nargs=2,
         default=None,
@@ -130,7 +130,84 @@ def get_parser():
         default='fixed',
         choices=['fixed', 'knee'],
         help="Which approach to take for fitting the aperiodic component.\n"
-             "Recommended if 'fooof' in 'run_nodes argument' (default: %(default)s)."
+             "Recommended if 'fooof' in 'run_nodes argument' (default: %(default)s).\n "
+    )
+
+    # Bycycle optional arguments
+    parser.add_argument(
+        '-center_extrema',
+        type=str,
+        default='peak',
+        choices=['peak', 'trough'],
+        help="Determines if cycles or peak or trough centered.\n"
+             "Recommended if 'bycycle' in 'run_nodes argument' (default: %(default)s)."
+    )
+
+    # Burst method and thresholds
+    parser.add_argument(
+        '-burst_method',
+        type=str,
+        default='cycles',
+        choices=['cycles', 'amp'],
+        help="Method for burst detection.\n"
+             "Recommended if 'bycycle' in 'run_nodes argument' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-amp_fraction_threshold',
+        type=float,
+        metavar="float",
+        default=0,
+        help="Amplitude fraction threshold for detecting bursts.\n"
+             "Recommended if 'burst_method' is 'cycles' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-amp_consistency_threshold',
+        type=float,
+        metavar="float",
+        default=0.5,
+        help="Amplitude consistency threshold for detecting bursts.\n"
+             "Recommended if 'burst_method' is 'cycles' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-period_consistency_threshold',
+        type=float,
+        metavar="float",
+        default=0.5,
+        help="Period consistency threshold for detecting bursts.\n"
+             "Recommended if 'burst_method' is 'cycles' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-monotonicity_threshold',
+        type=float,
+        metavar="float",
+        default=0.8,
+        help="Monotonicicity threshold for detecting bursts.\n"
+             "Recommended if 'burst_method' is 'cycles' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-min_n_cycles',
+        type=int,
+        metavar="int",
+        default=3,
+        help="Minium number of cycles for detecting bursts\n"
+             "Recommended for either 'burst_method' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-burst_fraction_threshold',
+        type=float,
+        metavar="float",
+        default=1,
+        help="Minimum fraction of a cycle identified as a burst.\n"
+             "Recommended if 'burst_method' is 'amp' (default: %(default)s)."
+    )
+    parser.add_argument(
+        '-axis',
+        type=str,
+        metavar="{0, 1, (0, 1), None}",
+        default='0',
+        help="The axis to compute features across for 2D and 3D signal arrays.\n"
+             "Ignored if signal is 1D. 1 and (0, 1) only availble for 3D signals\n"
+             "(default: %(default)s).\n "
     )
 
     # Parallel computation
@@ -170,7 +247,7 @@ def main():
 
         fooof_params = dict(
             freqs=args['freqs'], power_spectrum=args['power_spectrum'],
-            freq_range=args['fooof_f_range'], peak_width_limits=args['peak_width_limits'],
+            f_range_fooof=args['f_range_fooof'], peak_width_limits=args['peak_width_limits'],
             max_n_peaks=args['max_n_peaks'], min_peak_height=args['min_peak_height'],
             peak_threshold=args['peak_threshold'], aperiodic_mode=args['aperiodic_mode']
         )
@@ -181,7 +258,14 @@ def main():
     if 'bycycle' in run_nodes:
 
         bycycle_params = dict(
-            sig=args['sig'], fs=args['fs'], f_range=(args['bycycle_f_range'])
+            sig=args['sig'], fs=args['fs'], f_range_bycycle=args['f_range_bycycle'],
+            center_extrema=args['center_extrema'], burst_method=args['burst_method'],
+            amp_fraction_threshold=args['amp_fraction_threshold'],
+            amp_consistency_threshold=args['amp_consistency_threshold'],
+            period_consistency_threshold=args['period_consistency_threshold'],
+            monotonicity_threshold=args['monotonicity_threshold'],
+            burst_fraction_threshold=args['burst_fraction_threshold'],
+            min_n_cycles=args['min_n_cycles'], axis=args['axis']
         )
 
     else:

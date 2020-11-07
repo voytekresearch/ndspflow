@@ -10,8 +10,9 @@ from fooof import FOOOF, FOOOFGroup
 from fooof.core.strings import gen_results_fm_str, gen_results_fg_str
 from fooof.core.strings import gen_settings_str as gen_settings_fm_str
 
-from ndspflow.core.utils import flatten_fms
+from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
+from ndspflow.plts.bycycle import plot_bycycle
 
 
 def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
@@ -28,8 +29,6 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         df_sample are returned, using bycycle_args as arg and kwargs, from func:`~.fit_bycycle`.
     group_fname : str, optional, default: 'report_group.html'
         The name of the group report file.
-    settings : dict, optional, default: None
-        Bycycle settings to embed in reports.
     """
 
     if fms is not None:
@@ -82,23 +81,24 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
     if bms is not None:
 
         # Unpack tuple
-        (df_features, df_samples, fit_kwargs) = bms
+        (df_features, fit_kwargs) = bms
 
         # Generate bycycle reports
         bycycle_dir = os.path.join(output_dir, "bycycle")
 
-        df_features, df_samples, bc_labels = flatten_bycycles(df_features, df_samples, output_dir)
+        df_features, bc_paths = flatten_bms(df_features, output_dir)
 
         group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) \
-            if len(fm_list) > 1 else None
+            if len(df_features) > 1 else None
 
         # Individual signal reports
-        for feature, sample, label, paths in zip(df_features, df_samples, bc_paths):
+        for feature, bc_path in zip(df_features, bc_paths):
 
             # Inject header and bycycle report
-            html_report = generate_header("subject", "bycycle", label=label, group_link=group_url)
+            html_report = generate_header("subject", "bycycle", label=bc_path.split('/')[-1],
+                                          group_link=group_url)
 
-            html_report = generate_bycycle_report(df_features, df_samples, fit_kwargs, html_report)
+            html_report = generate_bycycle_report(df_features, fit_kwargs, html_report)
 
             # Write the html to a file
             with open(os.path.join(bycycle_dir, group_fname), "w+") as html:
@@ -235,15 +235,13 @@ def generate_fooof_report(model, fooof_graphs, html_report):
     return html_report
 
 
-def generate_bycycle_report(df_features, df_samples, fit_kwargs, html_report):
+def generate_bycycle_report(df_features, fit_kwargs, html_report):
     """Include bycycle settings, results, and plots in a HTML string.
 
     Parameters
     ----------
     df_features : pandas.DataFrame
         A dataframe containing shape and burst features for each cycle.
-    df_samples : pandas.DataFrame, optional, default: True
-        An optionally returned dataframe containing cyclepoints for each cycle.
     fit_kwargs : dict
         All args and kwargs used in :func:`~.fit_bycycle`.
     html_report : str
@@ -269,9 +267,9 @@ def generate_bycycle_report(df_features, df_samples, fit_kwargs, html_report):
     settings = "<br />\n".join(settings)
 
     # Plot
-    if type(df_features) is pd.DataFrame:
+    if len(df_features) == 1:
 
-        graph = plot_bycycle(df_features, df_samples, sig, fs, fit_kwargs['threshold_kwargs'])
+        graph = plot_bycycle(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'])
 
         html_report = html_report.replace("{% graph %}", graph)
 
@@ -279,8 +277,8 @@ def generate_bycycle_report(df_features, df_samples, fit_kwargs, html_report):
     #elif type(df_features) is list and len(np.shape(df_features)) == 2:
 
     # Inject settings and results
-    html_report = html_report.replace("{% model_type %}", 'bycycle')
-    html_report = html_report.replace("{% settings %}", settings)
+    html_report = html_report.replace("{% model_type %}", 'Bycycle')
+    html_report = html_report.replace("{% settings %}", 'ADD SETTINGS STRING HERE')
     #html_report = html_report.replace("{% results %}", results)
 
     return html_report
