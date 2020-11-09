@@ -13,10 +13,13 @@ jobs:
       - python/install-deps
       - python/save-cache
       - run:
-          command: python -m pytest --cov=ndspflow --cov-report=term-missing --junitxml="ndspflow/tests/result.xml" ndspflow/tests
+          command: python -m pytest --cov=ndspflow --cov-report=xml:ndspflow/tests/results.xml ndspflow/tests
           name: Tests
       - store_test_results:
           path: ndspflow/tests
+      - codecov/upload:
+          file: ndspflow/tests/results.xml
+          token: 96bef1cf-9e97-4f4c-a373-190c3fe420bb
 
 workflows:
   main:
