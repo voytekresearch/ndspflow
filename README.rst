@@ -2,6 +2,14 @@
 ndspflow
 ========
 
+|CircleCI|_ |Codecov|_
+
+.. |CircleCI| image:: https://circleci.com/gh/voytekresearch/ndspflow.svg?style=svg&circle-token=b26555544cf83f79a4aa45f6f4b98423e2ee06d0
+.. _CircleCI: https://circleci.com/gh/voytekresearch/ndspflow
+
+.. |Codecov| image:: https://codecov.io/gh/voytekresearch/ndspflow/branch/master/graph/badge.svg?token=I9Z7OPIZ7J
+.. _Codecov: https://codecov.io/gh/voytekresearch/ndspflow
+
 A `nipype <https://github.com/nipy/nipype>`_ powered workflow for running a pre-processed neural timeseries
 through either `FOOOF <https://github.com/fooof-tools/fooof>`_ and/or `bycycle <https://github.com/bycycle-tools/bycycle>`_.
 
