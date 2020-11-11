@@ -102,7 +102,7 @@ def plot_fg(fg, urls):
     pws = fg.get_params('peak_params', 'PW')[:, 0]
 
     fig_bws = plot_scatter(bws, 'Band Width', urls_peaks)
-    fig_pws = plot_scatter(bws, 'Peak Width', urls_peaks)
+    fig_pws = plot_scatter(pws, 'Peak Width', urls_peaks)
 
     graphs = two_column_layout(fig_bws, fig_pws, graphs)
 
