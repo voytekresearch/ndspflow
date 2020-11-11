@@ -51,7 +51,7 @@ def save_bycycle(df_features, output_dir):
     bycycle_dir = os.path.join(output_dir, 'bycycle')
     clean_mkdir(bycycle_dir)
 
-    df_features, bc_paths = flatten_bms(df_features, output_dir)
+    df_features, bc_paths = flatten_bms(df_features, bycycle_dir)
 
     # Save outputs
     for df_feature, bc_path in zip(df_features, bc_paths):
@@ -60,4 +60,4 @@ def save_bycycle(df_features, output_dir):
         clean_mkdir(bc_path)
 
         # Save the dataframes
-        df_feature.to_csv(os.path.join(bc_path, 'results_features.csv'), index=False)
+        df_feature.to_csv(os.path.join(bc_path, 'results.csv'), index=False)

@@ -120,12 +120,12 @@ class BycycleNodeInputSpec(BaseInterfaceInputSpec):
     # Optional arguments
     center_extrema = traits.Str('peak', mandatory=False, usedefault=True)
     burst_method = traits.Str('cycles', mandatory=False, usedefault=True)
-    amp_fraction_threshold = traits.Float(mandatory=False, usedefault=True)
-    amp_consistency_threshold = traits.Float(mandatory=False, usedefault=True)
-    period_consistency_threshold = traits.Float(mandatory=False, usedefault=True)
-    monotonicity_threshold = traits.Float(mandatory=False, usedefault=True)
-    min_n_cycles = traits.Int(mandatory=False, usedefault=True)
-    burst_fraction_threshold = traits.Float(mandatory=False, usedefault=True)
+    amp_fraction_threshold = traits.Float(0.0, mandatory=False, usedefault=True)
+    amp_consistency_threshold = traits.Float(0.5, mandatory=False, usedefault=True)
+    period_consistency_threshold = traits.Float(0.5, mandatory=False, usedefault=True)
+    monotonicity_threshold = traits.Float(0.8, mandatory=False, usedefault=True)
+    min_n_cycles = traits.Int(3, mandatory=False, usedefault=True)
+    burst_fraction_threshold = traits.Float(1.0, mandatory=False, usedefault=True)
     axis = traits.Str('None', mandatory=False, usedefault=True)
     n_jobs = traits.Int(1, mandatory=False, usedefault=True)
 
@@ -134,7 +134,7 @@ class BycycleNodeOutputSpec(TraitedSpec):
     """Output interface for bycycle."""
 
     df_features = traits.Any(mandatory=True)
-    bycycle_results = traits.Directory(mandatory=True)
+    bm_results = traits.Directory(mandatory=True)
 
 
 class BycycleNode(SimpleInterface):
@@ -148,9 +148,18 @@ class BycycleNode(SimpleInterface):
         sig = np.load(os.path.join(os.getcwd(), self.inputs.input_dir, self.inputs.sig))
 
         # Infer axis type from string (traits doesn't support multi-type)
-        axis = None if 'None' in self.inputs.axis else self.inputs.axis
-        axis = (0, 1) if '0' in self.inputs.axis and '1' in self.inputs.axis else self.inputs.axis
-        axis = int(self.inputs.axis) if isinstance(self.inputs.axis, str) else self.inputs.axis
+        axis = None  if 'None' in self.inputs.axis else self.inputs.axis
+        axis = (0, 1) if '(0,1)' == self.inputs.axis.replace(' ', '') else axis
+
+        axis_error = ValueError("Axis must be 0, 1, (0, 1), or None.")
+        if axis is not None and axis != (0, 1):
+            try:
+                axis = int(self.inputs.axis)
+            except:
+                raise axis_error
+
+        if axis not in [0, 1, (0, 1), None]:
+            raise axis_error
 
         # Get thresholds
         if self.inputs.burst_method == 'cycles':
@@ -190,6 +199,6 @@ class BycycleNode(SimpleInterface):
         generate_report(self.inputs.output_dir, bms=(df_features, fit_args))
 
         self._results["df_features"] = df_features
-        self._results["bycycle_results"] = os.path.join(self.inputs.output_dir, 'bycycle')
+        self._results["bm_results"] = os.path.join(self.inputs.output_dir, 'bycycle')
 
         return runtime

@@ -11,7 +11,7 @@ from bycycle.utils import limit_df, limit_signal, get_extrema_df
 
 
 
-def plot_bycycle(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=True):
+def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=True):
     """Plot a individual bycycle fits.
 
     Parameters
@@ -57,32 +57,34 @@ def plot_bycycle(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_re
     else:
         fig = make_subplots(rows=5, cols=1)
 
-    fig.add_trace(go.Scatter(x=times, y=sig, mode='lines',  line=dict(color='black', width=2)),
-                  row=1, col=1)
+    fig.add_trace(
+        go.Scatter(
+                x=times, y=sig, mode='lines', line=dict(color='black', width=2),
+                name="Signal"
+        ),
+        row=1, col=1
+    )
 
     # Determine which samples are defined as bursting
     is_osc = np.zeros(len(sig), dtype=bool)
     df_burst = df_features[df_features['is_burst'].values]
 
-    # Plot non-burst signal
-    for _, cyc in df_burst.iterrows():
-
-        samp_start = int(cyc['sample_last_' + side_e])
-        samp_end = int(cyc['sample_next_' + side_e] + 1)
-
-        fig.add_trace(go.Scatter(x=times[samp_start:samp_end],
-                                 y=sig[samp_start:samp_end], mode='lines',
-                                 line=dict(color='red', width=2)), row=1, col=1)
-
     # Plot bursting signal
-    for _, cyc in df_burst.iterrows():
+    n_bursts = len(df_burst)
+    zeropad = 2 if n_bursts < 100 else 0
+    zeropad = 3 if n_bursts < 1000 else 0
+    zeropad = 4 if n_bursts >= 1000 else zeropad
+
+    for idx, (_, cyc) in enumerate(df_burst.iterrows()):
 
         samp_start_burst = int(cyc['sample_last_' + side_e])
         samp_end_burst = int(cyc['sample_next_' + side_e] + 1)
 
+        trace_name = 'Burst: {idx_fmt}'.format(idx_fmt=str(idx).zfill(zeropad))
+
         fig.add_trace(go.Scatter(x=times[samp_start_burst:samp_end_burst],
                                  y=sig[samp_start_burst:samp_end_burst], mode='lines',
-                                 line=dict(color='red', width=2)), row=1, col=1)
+                                 line=dict(color='red', width=2), name=trace_name), row=1, col=1)
 
     # Plot cycle points
     peaks = df_features['sample_' + center_e].values
@@ -98,7 +100,9 @@ def plot_bycycle(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_re
         autosize=False,
         width=1000,
         height=300,
-        showlegend=False
+        showlegend=False,
+        yaxis_title="Voltage (normalized)",
+        xaxis_title="Time",
     )
 
     graph = fig.to_html()

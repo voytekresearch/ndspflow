@@ -86,6 +86,9 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
     See bycycle documentation for more details.
     """
 
+    threshold_kwargs = {} if not threshold_kwargs else threshold_kwargs
+    find_extrema_kwargs = {} if not find_extrema_kwargs else find_extrema_kwargs
+
     compute_kwargs = dict(
         center_extrema=center_extrema, burst_method=burst_method,
         threshold_kwargs=threshold_kwargs, find_extrema_kwargs=find_extrema_kwargs
@@ -99,14 +102,14 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
 
         df_features = compute_features_2d(
             sig, fs, f_range, compute_features_kwargs=compute_kwargs,
-            return_samples=return_samples, axis=axis, n_jobs=n_jobs
+            return_samples=True, axis=axis, n_jobs=n_jobs
         )
 
     elif sig.ndim == 3:
 
         df_features = compute_features_3d(
             sig, fs, f_range, compute_features_kwargs=compute_kwargs,
-            return_samples=return_samples, axis=axis, n_jobs=n_jobs
+            return_samples=True, axis=axis, n_jobs=n_jobs
         )
 
     else:

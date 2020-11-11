@@ -12,7 +12,7 @@ from fooof.core.strings import gen_settings_str as gen_settings_fm_str
 
 from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
-from ndspflow.plts.bycycle import plot_bycycle
+from ndspflow.plts.bycycle import plot_bm
 
 
 def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
@@ -24,24 +24,35 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         The path to write the reports to.
     fms : fooof FOOOF, FOOOFGroup, or list of FOOOFGroup, optional, default: None
         FOOOF object(s) that have been fit using :func:`ndspflow.core.fit.fit_fooof`.
-    bms : tuple of (pd.DataFrame, pd.DataFrame, dict)
-        Bycycle dataframes organized as (df_feature, df_sample, bycycle_args), where df_features and
-        df_sample are returned, using bycycle_args as arg and kwargs, from func:`~.fit_bycycle`.
+    bms : tuple of (pd.DataFrame or list of pd.DataFrame, dict)
+        Bycycle dataframes organized as (df_features, bycycle_args), where df_features is returned
+        using bycycle_args as arg and kwargs, from func:`~.fit_bycycle`.
     group_fname : str, optional, default: 'report_group.html'
         The name of the group report file.
     """
 
+    # Infer number of bycycle models
+    n_bms = 0 if bms is None else None
+    n_bms = 1 if n_bms is None and isinstance(bms[0], pd.DataFrame) else n_bms
+    n_bms = len(bms) if n_bms is None and isinstance(bms[0][0], pd.DataFrame) else n_bms
+    n_bms = int(np.prod(np.shape(bms)[:2])) if n_bms is None and \
+        isinstance(bms[0][0][0], pd.DataFrame) else n_bms
+
+    # Infer number of fooof models
+    n_fms = 0 if fms is None else None
+    n_fms = 1 if isinstance(fms, FOOOF) else n_fms
+    n_fms = len(fms) if isinstance(fms, FOOOFGroup) else n_fms
+    n_fms = int(len(fms) * len(fms[0])) if isinstance(fms, list) else n_fms
+
+    # Generate fooof reports
     if fms is not None:
 
-        # Generate fooof reports
         fooof_dir = os.path.join(output_dir, "fooof")
         fm_list, fm_paths = flatten_fms(fms, fooof_dir)
 
-        group_url = str('file://' + os.path.join(fooof_dir, group_fname)) \
-            if len(fm_list) > 1 else None
+        group_url = str('file://' + os.path.join(fooof_dir, group_fname)) if n_fms > 0 else None
 
         urls =  [str('file://' + os.path.join(fm_path, "report.html")) for fm_path in fm_paths]
-        n_bycycles = 0 if bms is None else len(bms)
 
         # Individual spectrum reports
         for fm, fm_path in zip(fm_list, fm_paths):
@@ -59,16 +70,16 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         if type(fms) is FOOOFGroup:
 
             # Inject header and fooof report
-            html_report = generate_header("group", "fooof", n_fooofs=len(fms),
-                                          n_bycycles=n_bycycles, group_link=group_url)
+            html_report = generate_header("group", "fooof", n_fooofs=n_fms,
+                                          n_bycycles=n_bms, group_link=group_url)
 
             html_report = generate_fooof_report(fms, plot_fg(fms, urls), html_report)
 
         elif type(fms) is list:
 
             # Inject header
-            html_report = generate_header("group", "fooof", n_bycycles=n_bycycles,
-                                          n_fooofs=int(len(fms)*len(fms[0])), group_link=group_url)
+            html_report = generate_header("group", "fooof", n_fooofs=n_fms,
+                                          n_bycycles=n_bms, group_link=group_url)
 
             html_report = generate_fooof_report(fms, plot_fgs(fms, urls), html_report)
 
@@ -86,10 +97,9 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         # Generate bycycle reports
         bycycle_dir = os.path.join(output_dir, "bycycle")
 
-        df_features, bc_paths = flatten_bms(df_features, output_dir)
+        df_features, bc_paths = flatten_bms(df_features, bycycle_dir)
 
-        group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) \
-            if len(df_features) > 1 else None
+        group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) if n_bms > 1 else None
 
         # Individual signal reports
         for feature, bc_path in zip(df_features, bc_paths):
@@ -101,7 +111,7 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
             html_report = generate_bycycle_report(df_features, fit_kwargs, html_report)
 
             # Write the html to a file
-            with open(os.path.join(bycycle_dir, group_fname), "w+") as html:
+            with open(os.path.join(bc_path, 'report.html'), "w+") as html:
                 html.write(html_report)
 
 
@@ -258,18 +268,15 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
 
     # Create a settings string
     settings = ["="] * 70
-
     for key, value in fit_kwargs.items():
         settings.append("{key}: {value}".format(key=key, value=value))
-
     settings = ["="] * 70
-
     settings = "<br />\n".join(settings)
 
     # Plot
     if len(df_features) == 1:
 
-        graph = plot_bycycle(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'])
+        graph = plot_bm(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'])
 
         html_report = html_report.replace("{% graph %}", graph)
 
@@ -277,8 +284,9 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     #elif type(df_features) is list and len(np.shape(df_features)) == 2:
 
     # Inject settings and results
+
     html_report = html_report.replace("{% model_type %}", 'Bycycle')
     html_report = html_report.replace("{% settings %}", 'ADD SETTINGS STRING HERE')
-    #html_report = html_report.replace("{% results %}", results)
+    html_report = html_report.replace("{% results %}", 'ADD RESULTS STRING HERE')
 
     return html_report

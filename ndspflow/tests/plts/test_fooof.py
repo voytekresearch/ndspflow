@@ -3,9 +3,9 @@
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 
 
-def test_plot_fm(fm_outs):
+def test_plot_fm(fooof_outs):
 
-    graph = plot_fm(fm_outs['fm'])
+    graph = plot_fm(fooof_outs['fm'])
 
     assert type(graph) is str
 
@@ -15,9 +15,9 @@ def test_plot_fm(fm_outs):
     for term in html_contains:
         assert term in graph
 
-def test_plot_fg(fg_outs):
+def test_plot_fg(fooof_outs):
 
-    fg = fg_outs['fg']
+    fg = fooof_outs['fg']
     urls = ['' for i in range(len(fg))]
 
     graph = plot_fg(fg, urls)
@@ -31,9 +31,9 @@ def test_plot_fg(fg_outs):
         assert term in graph
 
 
-def test_plot_fgs(fgs_outs):
+def test_plot_fgs(fooof_outs):
 
-    fgs = fgs_outs['fgs']
+    fgs = fooof_outs['fgs']
     urls = ['' for fg in fgs for fm in fg]
 
     graphs = plot_fgs(fgs, urls)

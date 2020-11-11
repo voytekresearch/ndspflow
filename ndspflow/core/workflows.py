@@ -145,6 +145,6 @@ def wf_bycycle(bycycle_params):
     bycycle_node.inputs.min_n_cycles = bycycle_params.pop("min_n_cycles", 3)
     bycycle_node.inputs.burst_fraction_threshold = \
         bycycle_params.pop("burst_fraction_threshold", 1.0)
-    bycycle_node.inputs.axis = bycycle_params.pop("axis", 0)
+    bycycle_node.inputs.axis = bycycle_params.pop("axis", '0')
 
     return bycycle_node
