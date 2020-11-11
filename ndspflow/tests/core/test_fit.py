@@ -3,9 +3,10 @@
 import os
 import pytest
 import numpy as np
+import pandas as pd
 
 from fooof import FOOOF, FOOOFGroup
-from ndspflow.core.fit import fit_fooof
+from ndspflow.core.fit import fit_fooof, fit_bycycle
 
 
 @pytest.mark.parametrize("ndim", [1, 2, 3, pytest.param(4, marks=pytest.mark.xfail)])
@@ -60,4 +61,35 @@ def test_fit_fooof(ndim, test_data):
         # Check that results exist
         for fg in model:
             for fm_idx in range(len(fg)):
-                assert fg.get_fooof(fm_idx).has_data
+                assert fg.get_fooof(fm_idx).has_model
+
+
+@pytest.mark.parametrize("ndim", [1, 2, 3, pytest.param(4, marks=pytest.mark.xfail)])
+def test_fit_bycycle(ndim, test_data):
+
+    # Get signals from fixture
+    if ndim == 1:
+        sig = test_data['sig_1d']
+    elif ndim == 2:
+        sig = test_data['sig_2d']
+    elif ndim == 3:
+        sig = test_data['sig_3d']
+    elif ndim == 4:
+        sig = test_data['sig_4d']
+
+    # Fit
+    fs = test_data['fs']
+    f_range = test_data['f_range']
+    df = fit_bycycle(sig, fs, f_range)
+
+    if ndim == 1:
+        assert isinstance(df, pd.DataFrame)
+
+    elif ndim == 2:
+        assert isinstance(df[0], pd.DataFrame)
+
+    elif ndim == 3:
+        assert isinstance(df[0][0], pd.DataFrame)
+
+
+

@@ -4,7 +4,7 @@ import os
 import numpy as np
 
 from fooof import FOOOF, FOOOFGroup
-from ndspflow.core.fit import flatten_fms
+from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.io.paths import clean_mkdir
 
 
@@ -24,13 +24,40 @@ def save_fooof(model, output_dir):
     clean_mkdir(fooof_dir)
 
     # Flatten model(s) and create output paths and sub-dir labels
-    fms, out_paths, labels = flatten_fms(model, fooof_dir)
+    fms, out_paths = flatten_fms(model, fooof_dir)
 
     # Save outputs
-    for fm, out_path, label in zip(fms, out_paths, labels):
+    for fm, out_path in zip(fms, out_paths):
 
         # Make the output directory
         clean_mkdir(out_path)
 
         # Save the model
         fm.save('results', file_path=out_path, append=False, save_results=True, save_settings=True)
+
+
+def save_bycycle(df_features, output_dir):
+    """Make output directories and save bycycle dataframes.
+
+    Parameters
+    ----------
+    df_features : pandas.DataFrame or list of pandas.DataFrame
+        Dataframes containing shape and burst features for each cycle.
+    output_dir : str
+        Path to write FOOOF results to.
+    """
+
+    # Make the bycycle output dir
+    bycycle_dir = os.path.join(output_dir, 'bycycle')
+    clean_mkdir(bycycle_dir)
+
+    df_features, bc_paths = flatten_bms(df_features, bycycle_dir)
+
+    # Save outputs
+    for df_feature, bc_path in zip(df_features, bc_paths):
+
+        # Make the output directory
+        clean_mkdir(bc_path)
+
+        # Save the dataframes
+        df_feature.to_csv(os.path.join(bc_path, 'results.csv'), index=False)
