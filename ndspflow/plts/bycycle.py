@@ -167,8 +167,13 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
             # Axes settings
             ylabel = str(ylabels[idx] + "<br>threshold={thresh}").format(thresh=thresh)
             fig.update_yaxes(title_text=ylabel, range=[0, 1.1], dtick=.2, row=idx+2, col=1)
-            fig.update_xaxes(showticklabels=False, row=idx+2, col=1)
             fig.update_yaxes(range=[smin+.1, smax+.1], row=1, col=1)
+
+            if idx == len(burst_params)-1:
+                fig.update_xaxes(title_text='Time', showticklabels=True, row=idx+2, col=1)
+            else:
+                fig.update_xaxes(showticklabels=False, row=idx+2, col=1)
+
 
         # Add time label to last subplot
         fig.update_xaxes(title_text='Time', showticklabels=True, row=len(burst_params)+2, col=1)
