@@ -276,7 +276,8 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     # Plot
     if len(df_features) == 1:
 
-        graph = plot_bm(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'])
+        graph = plot_bm(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'],
+                        plot_only_result=False)
 
         html_report = html_report.replace("{% graph %}", graph)
 
