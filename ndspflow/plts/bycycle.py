@@ -1,6 +1,3 @@
-"""FOOOF plotting functions for returning ready-to-embed html."""
-
-import re
 from itertools import cycle
 
 import numpy as np
@@ -54,59 +51,11 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
 
     # Create figure and subplots
     if plot_only_result:
-        fig = make_subplots(rows=1, cols=1)
+        fig = go.FigureWidget(make_subplots(rows=1, cols=1))
     else:
-        fig = make_subplots(rows=5, cols=1, vertical_spacing=0.01)
+        fig = go.FigureWidget(make_subplots(rows=5, cols=1, vertical_spacing=0.01))
 
-    # Plot normalized signal
-    fig.add_trace(
-        go.Scatter(x=times, y=sig, mode='lines', line=dict(color='black', width=2), name="Signal"),
-        row=1, col=1
-    )
-
-    # Determine which samples are defined as bursting
-    is_osc = np.zeros(len(sig), dtype=bool)
-    df_burst = df_features[df_features['is_burst'].values]
-
-    # Plot bursting signal
-    n_bursts = len(df_burst)
-    zeropad = 2 if n_bursts < 100 else 0
-    zeropad = 3 if n_bursts < 1000 else 0
-    zeropad = 4 if n_bursts >= 1000 else zeropad
-
-    for idx, (_, cyc) in enumerate(df_burst.iterrows()):
-
-        samp_start_burst = int(cyc['sample_last_' + side_e])
-        samp_end_burst = int(cyc['sample_next_' + side_e] + 1)
-
-        trace_name = 'Burst: {idx_fmt}'.format(idx_fmt=str(idx).zfill(zeropad))
-
-        fig.add_trace(go.Scatter(x=times[samp_start_burst:samp_end_burst],
-                                 y=sig[samp_start_burst:samp_end_burst], mode='lines',
-                                 line=dict(color='red', width=2), name=trace_name), row=1, col=1)
-
-    # Plot cycle points
-    peaks = df_features['sample_' + center_e].values
-    troughs = np.append(df_features['sample_last_' + side_e].values,
-                        df_features['sample_next_' + side_e].values[-1])
-
-    for color, points in zip(['rgb(191, 0, 191, 1)', 'rgb(0, 191, 191, 1)'], [peaks, troughs]):
-
-        fig.add_trace(go.Scatter(x=times[points], y=sig[points], mode='markers',
-                                 marker=dict(color=color, size=6)), row=1, col=1)
-
-    if plot_only_result:
-
-        fig.update_layout(
-            autosize=False,
-            width=1000,
-            height=325,
-            showlegend=False,
-            yaxis_title="Voltage<br>(normalized)",
-            xaxis_title="Time",
-        )
-
-    else:
+    if not plot_only_result:
 
         # Plot burst features
         burst_params = ['amp_fraction', 'amp_consistency', 'period_consistency', 'monotonicity',
@@ -120,19 +69,12 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
 
         for idx, burst_param in enumerate(burst_params):
 
-            # Burst parameter
-            fig.add_trace(
-                go.Scatter(
-                    x=times[df_features['sample_' + center_e]], y=df_features[burst_param],
-                    mode='lines+markers', marker=dict(color='black')
-                ),
-                row=idx+2, col=1
-            )
-
             # Horizontal threshold line
             thresh = threshold_kwargs[burst_param + '_threshold']
-            fig.add_shape(type="line", x0=0, y0=thresh, x1=len(sig)/fs, y1=thresh,
-                          line=dict(dash="dash"), row=idx+2, col=1)
+
+            fig.add_trace(go.Scatter(x=[0, len(sig)/fs], y=[thresh, thresh], mode='lines',
+                                     line=dict(dash="dash", color="black")),
+                          row=idx+2, col=1)
 
             # Highlight sub-threshold regions
             rects_x = np.array([])
@@ -150,30 +92,87 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
             # Highlight signal
             smax = np.max(sig)
             smin = np.min(sig)
+            sstd = np.std(sig)
 
             sig_rects_y = np.repeat([[smax*2, smin*2, smin*2, smax*2]],
                                     len(df_features), axis=0).flatten()
-            sig_rects_y = sig_rects_y + 0.1
 
             fig.add_trace(go.Scatter(x=rects_x, y=sig_rects_y, fill="toself",
                           fillcolor=fillcolor, mode="lines", line=dict(width=0)), row=1, col=1)
 
-            # Highligh parameter
+            # Highligh parameter subplot
             param_rects_y = np.repeat([[0, 1.1, 1.1, 0]], len(df_features), axis=0).flatten()
 
             fig.add_trace(go.Scatter(x=rects_x, y=param_rects_y, fill="toself",
                           fillcolor=fillcolor, mode="lines", line=dict(width=0)), row=idx+2, col=1)
 
+            # Burst parameter
+            fig.add_trace(
+                go.Scatter(
+                    x=times[df_features['sample_' + center_e]], y=df_features[burst_param],
+                    mode='lines+markers', marker=dict(color='black')
+                ),
+                row=idx+2, col=1
+            )
+
             # Axes settings
             ylabel = str(ylabels[idx] + "<br>threshold={thresh}").format(thresh=thresh)
             fig.update_yaxes(title_text=ylabel, range=[0, 1.1], dtick=.2, row=idx+2, col=1)
-            fig.update_yaxes(range=[smin+.1, smax+.1], row=1, col=1)
+            fig.update_yaxes(range=[smin-2*sstd, smax+2*sstd], row=1, col=1)
 
             if idx == len(burst_params)-1:
                 fig.update_xaxes(title_text='Time', showticklabels=True, row=idx+2, col=1)
             else:
                 fig.update_xaxes(showticklabels=False, row=idx+2, col=1)
 
+    # Plot signal and bursts
+    xs_burst = np.array([]), np.array([])
+    xs_sig = np.array([]), np.array([])
+
+    for _, cyc in df_features.iterrows():
+
+        samp_start_burst = int(cyc['sample_last_' + side_e])
+        samp_end_burst = int(cyc['sample_next_' + side_e] + 1)
+
+        times_cyc = times[samp_start_burst:samp_end_burst]
+        sig_cyc = sig[samp_start_burst:samp_end_burst]
+
+        if cyc['is_burst']:
+
+            fig.add_trace(go.Scatter(x=times_cyc, y=sig_cyc, mode='lines',
+                                     line=dict(color='red', width=2), name="Burst"),
+                          row=1, col=1)
+
+            xs_burst = np.append(xs_burst, times_cyc)
+
+        else:
+
+            fig.add_trace(
+                go.Scatter(x=times[samp_start_burst:samp_end_burst],
+                           y=sig[samp_start_burst:samp_end_burst], mode='lines',
+                           line=dict(color='black', width=2), name="Signal"),
+                row=1, col=1
+            )
+
+            xs_sig = np.append(xs_sig, times_cyc)
+
+    # Centers
+    centers = df_features['sample_' + center_e].values
+    fig.add_trace(go.Scatter(x=times[centers], y=sig[centers], mode='markers',
+                             name = str(center_e.capitalize()),
+                             marker=dict(color= 'rgb(191, 0, 191, 1)', size=6)),
+                  row=1, col=1)
+
+    # Sides
+    sides = np.append(df_features['sample_last_' + side_e].values,
+                      df_features['sample_next_' + side_e].values[-1])
+    fig.add_trace(go.Scatter(x=times[sides], y=sig[sides], mode='markers',
+                             name = str(side_e.capitalize()),
+                             marker=dict(color='rgb(0, 191, 191, 1)', size=6)),
+                  row=1, col=1)
+
+    # Update axes and layout
+    if not plot_only_result:
 
         # Add time label to last subplot
         fig.update_xaxes(title_text='Time', showticklabels=True, row=len(burst_params)+2, col=1)
@@ -189,10 +188,50 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
         fig.update_layout(
             autosize=False,
             width=1000,
-            height=1200,
+            height=1000,
             showlegend=False
         )
+
+    else:
+
+        fig.update_layout(
+            autosize=False,
+            width=1000,
+            height=325,
+            showlegend=False,
+            yaxis_title="Voltage<br>(normalized)",
+            xaxis_title="Time",
+        )
+
+    # Callback to relabel bursts/non-bursts
+    center_idxs = df_features['sample_' + center_e].values
+    center_times = times[center_idxs]
+
+    n_cycles = len(df_features)
+    skip = n_kwargs * 4
+
+    fig.data[-2].on_click(_update_burst)
 
     graph = fig.to_html()
 
     return graph
+
+
+def _update_burst(trace, points, selector):
+
+    # Locate corresponding plot
+    if len(points.xs) == 0:
+        return
+
+    plt_idx = np.where(points.xs[0] == center_times)[0][0]
+
+    if fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Signal':
+
+        # Flip color and name
+        fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Burst'
+        fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='red', width=2)
+
+    elif fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Burst':
+
+        fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Signal'
+        fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='black', width=2)
