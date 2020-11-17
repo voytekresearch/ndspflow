@@ -9,7 +9,7 @@ from plotly.subplots import make_subplots
 from bycycle.utils import get_extrema_df
 
 
-def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=True):
+def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=True, use_js=True):
     """Plot a individual bycycle fits.
 
     Parameters
@@ -47,12 +47,14 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
     if 'min_n_cycles' in threshold_kwargs.keys():
         del threshold_kwargs['min_n_cycles']
 
-    n_kwargs = len(threshold_kwargs.keys())
-
     # Create figure and subplots
-    if plot_only_result:
+    if plot_only_result and use_js:
+        fig = go.Figure(make_subplots(rows=1, cols=1))
+    elif plot_only_result and not use_js:
         fig = go.FigureWidget(make_subplots(rows=1, cols=1))
-    else:
+    elif not plot_only_result and use_js:
+        fig = go.Figure(make_subplots(rows=5, cols=1, vertical_spacing=0.01))
+    elif not plot_only_result and not use_js:
         fig = go.FigureWidget(make_subplots(rows=5, cols=1, vertical_spacing=0.01))
 
     if not plot_only_result:
@@ -65,7 +67,8 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
         ylabels = [param.replace("_", " ").capitalize() for param in burst_params]
 
         colors = cycle(['rgba(31, 119, 180, .2)', 'rgba(214, 39, 40, .4)', 'rgba(188, 189, 34, .4)',
-                        'rgba(44, 160, 44, .2)', 'rgba(148, 103, 189, .4)', 'rgba(255, 127, 14, .4)'])
+                        'rgba(44, 160, 44, .2)', 'rgba(148, 103, 189, .4)',
+                        'rgba(255, 127, 14, .4)'])
 
         for idx, burst_param in enumerate(burst_params):
 
@@ -126,9 +129,6 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
                 fig.update_xaxes(showticklabels=False, row=idx+2, col=1)
 
     # Plot signal and bursts
-    xs_burst = np.array([]), np.array([])
-    xs_sig = np.array([]), np.array([])
-
     for _, cyc in df_features.iterrows():
 
         samp_start_burst = int(cyc['sample_last_' + side_e])
@@ -139,28 +139,25 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
 
         if cyc['is_burst']:
 
-            fig.add_trace(go.Scatter(x=times_cyc, y=sig_cyc, mode='lines',
-                                     line=dict(color='red', width=2), name="Burst"),
-                          row=1, col=1)
-
-            xs_burst = np.append(xs_burst, times_cyc)
+            fig.add_trace(
+                go.Scatter(x=times_cyc, y=sig_cyc, mode='lines', name="Burst",
+                           line=dict(color='red', width=2)),
+                row=1, col=1
+            )
 
         else:
 
             fig.add_trace(
-                go.Scatter(x=times[samp_start_burst:samp_end_burst],
-                           y=sig[samp_start_burst:samp_end_burst], mode='lines',
-                           line=dict(color='black', width=2), name="Signal"),
+                go.Scatter(x=times_cyc, y=sig_cyc, mode='lines', name="Signal",
+                           line=dict(color='black', width=2)),
                 row=1, col=1
             )
-
-            xs_sig = np.append(xs_sig, times_cyc)
 
     # Centers
     centers = df_features['sample_' + center_e].values
     fig.add_trace(go.Scatter(x=times[centers], y=sig[centers], mode='markers',
                              name = str(center_e.capitalize()),
-                             marker=dict(color= 'rgb(191, 0, 191, 1)', size=6)),
+                             marker=dict(color='rgb(191, 0, 191)', size=6)),
                   row=1, col=1)
 
     # Sides
@@ -168,7 +165,7 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
                       df_features['sample_next_' + side_e].values[-1])
     fig.add_trace(go.Scatter(x=times[sides], y=sig[sides], mode='markers',
                              name = str(side_e.capitalize()),
-                             marker=dict(color='rgb(0, 191, 191, 1)', size=6)),
+                             marker=dict(color='rgb(0, 191, 191)', size=6)),
                   row=1, col=1)
 
     # Update axes and layout
@@ -203,35 +200,94 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
             xaxis_title="Time",
         )
 
-    # Callback to relabel bursts/non-bursts
-    center_idxs = df_features['sample_' + center_e].values
-    center_times = times[center_idxs]
+    # Relabel bursts/non-bursts and convert to html
+    center_times = times[df_features['sample_' + center_e].values]
 
-    n_cycles = len(df_features)
-    skip = n_kwargs * 4
-
-    fig.data[-2].on_click(_update_burst)
-
-    graph = fig.to_html()
+    graph = relabel_bursts(fig, center_times, len(df_features),
+                           len(threshold_kwargs.keys()), use_js)
 
     return graph
 
 
-def _update_burst(trace, points, selector):
+def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js):
+    """Interactively relabel bursts.
 
-    # Locate corresponding plot
-    if len(points.xs) == 0:
-        return
+    Parameters
+    ----------
+    fig : plotly.graph_objects.FigureWidget
+        The burst plot from :func:`~.plot_bm`.
+    df_features : pandas.DataFrame
+        A dataframe containing shape and burst features for each cycle.
+    times : 1d array
+        The time array that corresponds to the signal used to compute features.
+    n_kwargs : int
+        The number of threshold kwargs that were plotted.
+    use_js : bool
+        Uses javascript to relabel bursts if True. This is recommended when using converting the
+        figure to html. Use false when plotting in a jupyter notebook.
 
-    plt_idx = np.where(points.xs[0] == center_times)[0][0]
+    Returns
+    -------
+    fig : str or plotly.graph_objects.FigureWidget
+        The fooof plot as a string containing html (when use_js=True) or a FigureWidget (when
+        use_js=False).
+    """
 
-    if fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Signal':
+    # The number of subplots to ignore
+    skip = n_kwargs * 4
 
-        # Flip color and name
-        fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Burst'
-        fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='red', width=2)
+    if use_js:
+        # For embedding in html
+        peak_trace_id = len(fig.data) - 2
+        burst_traces = [idx+1 for idx in range(skip, n_cycles+skip)]
 
-    elif fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Burst':
+        js_callback = """
+        var burstPlot = document.getElementById('{{plot_id}}')
+        burstPlot.on('plotly_click', function(data){{
+            curveNumber = data.points[0].curveNumber;
+            burstTraces = {burst_traces};
+            if (curveNumber == {trace_id}) {{
+                targetTrace = burstTraces[data.points[0].pointNumber-1];
+                color = burstPlot.data[targetTrace].line.color;
+            }} else if (burstTraces.includes(curveNumber)) {{
+                targetTrace = curveNumber;
+                color = data.points[0].data.line.color;
+            }} else {{
+                return;
+            }}
+            if (color == 'black') {{
+                color_inv = 'red';
+            }} else {{
+                color_inv = 'black';
+            }}
+           var update = {{'line':{{color: color_inv}}}};
+           Plotly.restyle(burstPlot, update, [targetTrace]);
+        }});
+        """.format(trace_id=peak_trace_id, burst_traces=str(burst_traces))
 
-        fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Signal'
-        fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='black', width=2)
+        graph = fig.to_html(full_html=False, post_script=js_callback)
+
+        return graph
+
+    else:
+        # For use in a notebook
+        def _update_burst(trace, points, selector):
+
+            if len(points.xs) == 0:
+                return
+
+            plt_idx = np.where(points.xs[0] == center_times)[0][0]
+
+            if fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Signal':
+
+                fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Burst'
+                fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='red', width=2)
+
+            elif fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Burst':
+
+                fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Signal'
+                fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='black', width=2)
+
+        fig.data[-2].on_click(_update_burst)
+
+        return fig
