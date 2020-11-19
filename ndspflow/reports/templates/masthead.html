@@ -76,20 +76,34 @@
       }
     });
   }
+  fs = require('fs');
+  fs.readFile('/home/rph/Projects/ndspflow/bycycle_report/bycycle/results.csv', 'utf8', function (err, data) {
+      if (err) {
+          return console.log(err);
+      }
 
-  function getBursts(divID){
-    const plotData = document.getElementById(divID).data;
-    var labels = [];
-    var i;
-    for (i = 0; i < plotData.length; i++){
-      if (plotData[i].name == 'Signal'){
-        labels.push('False');
+      data = data.split('\n');
+      data = data.map(e => e.trim());
+      data = data.map(e => e.split(',').map(e => e.trim()));
+
+      dataFrame = [...data];
+  });
+
+  function updateDataFrame(rowIdx){
+      if (!dataFrame[0].includes('is_burst_update')){
+          dataFrame[0].push('is_burst_update');
+          for (row=1; row < dataFrame[0].length-1; row++){
+              dataFrame[row].push(dataFrame[row][dataFrame[row].length-1]);
+          }
       }
-      else if (plotData[i].name == 'Burst'){
-        labels.push('True')
+
+      if (dataFrame[rowIdx][dataFrame[rowIdx].length-1] == 'False'){
+          dataFrame[rowIdx][dataFrame[rowIdx].length-1] = 'True';
       }
-    }
-    console.log(labels)
+      else if (dataFrame[rowIdx][dataFrame[rowIdx].length-1] == 'True'){
+          dataFrame[rowIdx][dataFrame[rowIdx].length-1] = 'False';
+      }
+      return dataFrame;
   }
 </script>
 

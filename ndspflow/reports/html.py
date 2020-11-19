@@ -102,13 +102,13 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) if n_bms > 1 else None
 
         # Individual signal reports
-        for feature, bc_path in zip(df_features, bc_paths):
+        for bc_path in bc_paths:
 
             # Inject header and bycycle report
             html_report = generate_header("subject", "bycycle", label=bc_path.split('/')[-1],
                                           group_link=group_url)
 
-            html_report = generate_bycycle_report(df_features, fit_kwargs, html_report)
+            html_report = generate_bycycle_report(df_features, fit_kwargs, html_report, bc_path)
 
             # Write the html to a file
             with open(os.path.join(bc_path, 'report.html'), "w+") as html:
@@ -245,7 +245,7 @@ def generate_fooof_report(model, fooof_graphs, html_report):
     return html_report
 
 
-def generate_bycycle_report(df_features, fit_kwargs, html_report):
+def generate_bycycle_report(df_features, fit_kwargs, html_report, bc_path):
     """Include bycycle settings, results, and plots in a HTML string.
 
     Parameters
@@ -256,6 +256,7 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
         All args and kwargs used in :func:`~.fit_bycycle`.
     html_report : str
         A string containing the html bycycle report.
+
 
     Returns
     -------
@@ -277,7 +278,7 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     if len(df_features) == 1:
 
         graph = plot_bm(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'],
-                        plot_only_result=False)
+                        plot_only_result=False, bc_path=bc_path)
 
         html_report = html_report.replace("{% graph %}", graph)
 
@@ -285,7 +286,6 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     #elif type(df_features) is list and len(np.shape(df_features)) == 2:
 
     # Inject settings and results
-
     html_report = html_report.replace("{% model_type %}", 'Bycycle')
     html_report = html_report.replace("{% settings %}", 'ADD SETTINGS STRING HERE')
     html_report = html_report.replace("{% results %}", 'ADD RESULTS STRING HERE')

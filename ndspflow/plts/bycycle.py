@@ -1,4 +1,5 @@
 from itertools import cycle
+import re
 
 import numpy as np
 from scipy.stats import zscore
@@ -9,7 +10,8 @@ from plotly.subplots import make_subplots
 from bycycle.utils import get_extrema_df
 
 
-def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=True, use_js=True):
+def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None,
+            plot_only_result=True, use_js=True, bc_path=None):
     """Plot a individual bycycle fits.
 
     Parameters
@@ -26,6 +28,8 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
         Start and stop times for plot.
     plot_only_result : bool, optional, default: True
         Plot only the signal and bursts, excluding burst parameter plots.
+    bc_path : str
+        The path to where bycycle results.csv is stored.
 
     Returns
     -------
@@ -156,7 +160,7 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
     # Centers
     centers = df_features['sample_' + center_e].values
     fig.add_trace(go.Scatter(x=times[centers], y=sig[centers], mode='markers',
-                             name = str(center_e.capitalize()),
+                             name=str(center_e.capitalize()),
                              marker=dict(color='rgb(191, 0, 191)', size=6)),
                   row=1, col=1)
 
@@ -164,7 +168,7 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
     sides = np.append(df_features['sample_last_' + side_e].values,
                       df_features['sample_next_' + side_e].values[-1])
     fig.add_trace(go.Scatter(x=times[sides], y=sig[sides], mode='markers',
-                             name = str(side_e.capitalize()),
+                             name=str(side_e.capitalize()),
                              marker=dict(color='rgb(0, 191, 191)', size=6)),
                   row=1, col=1)
 
@@ -182,49 +186,47 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
         fig.update_xaxes(matches="x")
 
         # Update layout across all subplots
-        fig.update_layout(
-            autosize=False,
-            width=1000,
-            height=1000,
-            showlegend=False
-        )
+        fig.update_layout(width=1000, height=1000)
 
     else:
 
-        fig.update_layout(
-            autosize=False,
-            width=1000,
-            height=325,
-            showlegend=False,
-            yaxis_title="Voltage<br>(normalized)",
-            xaxis_title="Time",
-        )
+        fig.update_layout(width=1000, height=325, xaxis_title="Time",
+                          yaxis_title="Voltage<br>(normalized)")
+
+    fig.update_layout(autosize=False, showlegend=False, title_text="Burst Detection Plots")
 
     # Relabel bursts/non-bursts and convert to html
     center_times = times[df_features['sample_' + center_e].values]
-
     graph = relabel_bursts(fig, center_times, len(df_features),
-                           len(threshold_kwargs.keys()), use_js)
+                           len(threshold_kwargs.keys()), use_js, bc_path=bc_path)
 
-    return graph
+    # Add recompute burst btn below the plots
+    div_id = re.search("<div id=\".*\" class=\"plotly-graph-div\"", graph)[0]
+    div_id = re.sub("\".*", "", div_id.replace("<div id=\"", ""))
+    btn = "\n\t\t<p><center><button onclick=\"updateDataFrame".format(div_id=div_id)
+    btn = btn + "title=\"update is_burst column\">Update Bursts</button></center></p>"
+
+    return graph + btn
 
 
-def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js):
+def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js, bc_path):
     """Interactively relabel bursts.
 
     Parameters
     ----------
     fig : plotly.graph_objects.FigureWidget
         The burst plot from :func:`~.plot_bm`.
-    df_features : pandas.DataFrame
-        A dataframe containing shape and burst features for each cycle.
-    times : 1d array
-        The time array that corresponds to the signal used to compute features.
+    center_times : 1d array
+        The time array that corresponds to the center extrema of each cycle.
     n_kwargs : int
         The number of threshold kwargs that were plotted.
+    labels : list of str
+        Cycle labels containing 'True' for bursts and 'False' for non-bursts.
     use_js : bool
         Uses javascript to relabel bursts if True. This is recommended when using converting the
         figure to html. Use false when plotting in a jupyter notebook.
+    bc_path : str
+        The path to where bycycle results.csv is stored.
 
     Returns
     -------
@@ -234,34 +236,35 @@ def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js):
     """
 
     # The number of subplots to ignore
-    skip = n_kwargs * 4
+    skip = n_kwargs * 4 - 1
 
     if use_js:
-        # For embedding in html
+        # Update plot colors using js
         peak_trace_id = len(fig.data) - 2
         burst_traces = [idx+1 for idx in range(skip, n_cycles+skip)]
 
         js_callback = """
-        var burstPlot = document.getElementById('{{plot_id}}')
+        var burstPlot = document.getElementById('{{plot_id}}');
         burstPlot.on('plotly_click', function(data){{
-            curveNumber = data.points[0].curveNumber;
-            burstTraces = {burst_traces};
+            var curveNumber = data.points[0].curveNumber;
+            var burstTraces = {burst_traces};
             if (curveNumber == {trace_id}) {{
-                targetTrace = burstTraces[data.points[0].pointNumber-1];
-                color = burstPlot.data[targetTrace].line.color;
+                var targetTrace = burstTraces[data.points[0].pointNumber];
+                var color = burstPlot.data[targetTrace].line.color;
             }} else if (burstTraces.includes(curveNumber)) {{
-                targetTrace = curveNumber;
-                color = data.points[0].data.line.color;
+                var targetTrace = curveNumber;
+                var color = data.points[0].data.line.color;
             }} else {{
                 return;
             }}
             if (color == 'black') {{
-                color_inv = 'red';
+                var color_inv = 'red';
             }} else {{
-                color_inv = 'black';
+                var color_inv = 'black';
             }}
-           var update = {{'line':{{color: color_inv}}}};
-           Plotly.restyle(burstPlot, update, [targetTrace]);
+            var update = {{'line':{{color: color_inv}}}};
+            Plotly.restyle(burstPlot, update, [targetTrace]);
+            var test = targetTrace - burstTraces[0]
         }});
         """.format(trace_id=peak_trace_id, burst_traces=str(burst_traces))
 
