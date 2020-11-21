@@ -76,35 +76,19 @@
       }
     });
   }
-  fs = require('fs');
-  fs.readFile('/home/rph/Projects/ndspflow/bycycle_report/bycycle/results.csv', 'utf8', function (err, data) {
-      if (err) {
-          return console.log(err);
-      }
-
-      data = data.split('\n');
-      data = data.map(e => e.trim());
-      data = data.map(e => e.split(',').map(e => e.trim()));
-
-      dataFrame = [...data];
-  });
-
-  function updateDataFrame(rowIdx){
-      if (!dataFrame[0].includes('is_burst_update')){
-          dataFrame[0].push('is_burst_update');
-          for (row=1; row < dataFrame[0].length-1; row++){
-              dataFrame[row].push(dataFrame[row][dataFrame[row].length-1]);
-          }
-      }
-
-      if (dataFrame[rowIdx][dataFrame[rowIdx].length-1] == 'False'){
-          dataFrame[rowIdx][dataFrame[rowIdx].length-1] = 'True';
-      }
-      else if (dataFrame[rowIdx][dataFrame[rowIdx].length-1] == 'True'){
-          dataFrame[rowIdx][dataFrame[rowIdx].length-1] = 'False';
-      }
-      return dataFrame;
-  }
+  function saveCsv(plotData){{
+    var csvRows = [];
+    for(var i=0, l=plotData.length; i<l; ++i){{
+        csvRows.push(plotData[i].join(','));
+    }}
+    var csvString = csvRows.join("\n");
+    var a         = document.createElement('a');
+    a.href        = 'data:attachment/csv,' + encodeURIComponent(csvString);
+    a.target      = '_blank';
+    a.download    = 'results.csv';
+    document.body.appendChild(a);
+    a.click();
+  }}
 </script>
 
 <style>
@@ -411,4 +395,18 @@
     display: none;
     overflow: hidden;
   }
+  .btn {
+    display: inline-block;
+    margin-bottom: 0.25em;
+    padding: 0.5em 1em;
+    font-family: 'Roboto Condensed', sans-serif;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    border-width: 0;
+    cursor: pointer;
+    min-width:12em;
+    color: #555555;
+    border: 2px solid #555555;
+}
 </style>

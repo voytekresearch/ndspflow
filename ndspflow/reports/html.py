@@ -108,7 +108,7 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
             html_report = generate_header("subject", "bycycle", label=bc_path.split('/')[-1],
                                           group_link=group_url)
 
-            html_report = generate_bycycle_report(df_features, fit_kwargs, html_report, bc_path)
+            html_report = generate_bycycle_report(df_features, fit_kwargs, html_report)
 
             # Write the html to a file
             with open(os.path.join(bc_path, 'report.html'), "w+") as html:
@@ -245,7 +245,7 @@ def generate_fooof_report(model, fooof_graphs, html_report):
     return html_report
 
 
-def generate_bycycle_report(df_features, fit_kwargs, html_report, bc_path):
+def generate_bycycle_report(df_features, fit_kwargs, html_report):
     """Include bycycle settings, results, and plots in a HTML string.
 
     Parameters
@@ -256,7 +256,6 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report, bc_path):
         All args and kwargs used in :func:`~.fit_bycycle`.
     html_report : str
         A string containing the html bycycle report.
-
 
     Returns
     -------
@@ -278,7 +277,7 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report, bc_path):
     if len(df_features) == 1:
 
         graph = plot_bm(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'],
-                        plot_only_result=False, bc_path=bc_path)
+                        plot_only_result=False)
 
         html_report = html_report.replace("{% graph %}", graph)
 

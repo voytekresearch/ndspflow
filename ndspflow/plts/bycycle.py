@@ -11,7 +11,7 @@ from bycycle.utils import get_extrema_df
 
 
 def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None,
-            plot_only_result=True, use_js=True, bc_path=None):
+            plot_only_result=True, use_js=True):
     """Plot a individual bycycle fits.
 
     Parameters
@@ -28,8 +28,6 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None,
         Start and stop times for plot.
     plot_only_result : bool, optional, default: True
         Plot only the signal and bursts, excluding burst parameter plots.
-    bc_path : str
-        The path to where bycycle results.csv is stored.
 
     Returns
     -------
@@ -197,25 +195,30 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None,
 
     # Relabel bursts/non-bursts and convert to html
     center_times = times[df_features['sample_' + center_e].values]
-    graph = relabel_bursts(fig, center_times, len(df_features),
-                           len(threshold_kwargs.keys()), use_js, bc_path=bc_path)
+    columns = df_features.columns.values.tolist()
+    data_list = df_features.values.astype('str').tolist()
+    data_list.insert(0, columns)
+    graph = relabel_bursts(fig, data_list, center_times, len(df_features),
+                           len(threshold_kwargs.keys()), use_js)
 
     # Add recompute burst btn below the plots
     div_id = re.search("<div id=\".*\" class=\"plotly-graph-div\"", graph)[0]
     div_id = re.sub("\".*", "", div_id.replace("<div id=\"", ""))
-    btn = "\n\t\t<p><center><button onclick=\"updateDataFrame".format(div_id=div_id)
+    btn = "\n\t\t<p><center><button onclick=\"saveCsv(plotData)\" class=\"btn\" "
     btn = btn + "title=\"update is_burst column\">Update Bursts</button></center></p>"
 
     return graph + btn
 
 
-def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js, bc_path):
+def relabel_bursts(fig, data_list, center_times, n_cycles, n_kwargs, use_js):
     """Interactively relabel bursts.
 
     Parameters
     ----------
     fig : plotly.graph_objects.FigureWidget
         The burst plot from :func:`~.plot_bm`.
+    data_list : list
+        The features dataframe as a list for easy conversion to a js array.
     center_times : 1d array
         The time array that corresponds to the center extrema of each cycle.
     n_kwargs : int
@@ -225,8 +228,6 @@ def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js, bc_path):
     use_js : bool
         Uses javascript to relabel bursts if True. This is recommended when using converting the
         figure to html. Use false when plotting in a jupyter notebook.
-    bc_path : str
-        The path to where bycycle results.csv is stored.
 
     Returns
     -------
@@ -245,6 +246,7 @@ def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js, bc_path):
 
         js_callback = """
         var burstPlot = document.getElementById('{{plot_id}}');
+        plotData = {plot_data};
         burstPlot.on('plotly_click', function(data){{
             var curveNumber = data.points[0].curveNumber;
             var burstTraces = {burst_traces};
@@ -259,38 +261,18 @@ def relabel_bursts(fig, center_times, n_cycles, n_kwargs, use_js, bc_path):
             }}
             if (color == 'black') {{
                 var color_inv = 'red';
+                var isBurst = 'True';
             }} else {{
                 var color_inv = 'black';
+                var isBurst = 'False';
             }}
             var update = {{'line':{{color: color_inv}}}};
             Plotly.restyle(burstPlot, update, [targetTrace]);
-            var test = targetTrace - burstTraces[0]
+            cyc = targetTrace-burstTraces[0]
+            plotData[cyc+1][plotData[cyc].length-1] = isBurst;
         }});
-        """.format(trace_id=peak_trace_id, burst_traces=str(burst_traces))
+        """.format(trace_id=peak_trace_id, burst_traces=str(burst_traces), plot_data=data_list)
 
         graph = fig.to_html(full_html=False, post_script=js_callback)
 
         return graph
-
-    else:
-        # For use in a notebook
-        def _update_burst(trace, points, selector):
-
-            if len(points.xs) == 0:
-                return
-
-            plt_idx = np.where(points.xs[0] == center_times)[0][0]
-
-            if fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Signal':
-
-                fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Burst'
-                fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='red', width=2)
-
-            elif fig.data[skip:n_cycles+skip][plt_idx]["name"] == 'Burst':
-
-                fig.data[skip:n_cycles+skip][plt_idx]["name"] = 'Signal'
-                fig.data[skip:n_cycles+skip][plt_idx]["line"] = dict(color='black', width=2)
-
-        fig.data[-2].on_click(_update_burst)
-
-        return fig
