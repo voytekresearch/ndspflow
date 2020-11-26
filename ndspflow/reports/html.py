@@ -267,17 +267,33 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     fs = fit_kwargs.pop('fs')
 
     # Create a settings string
-    settings = ["="] * 70
-    for key, value in fit_kwargs.items():
-        settings.append("{key}: {value}".format(key=key, value=value))
-    settings = ["="] * 70
-    settings = "<br />\n".join(settings)
+    thresholds = fit_kwargs.pop('threshold_kwargs')
+
+    fit_params = ['Frequency Range', 'Center Extrema', 'Burst Method']
+    thr_params = ['Amplitude Fraction Threshold', 'Amplitude Consistency Threshold',
+                  'Period Consistency Threshold', 'Monotonicity Threshold',
+                  'Minimum Consecutive Cycles']
+
+    fit_str = ["{key}: {value}".format(key=key.replace("_", " ").title(), value=value)
+               for key, value in zip(fit_params, list(fit_kwargs.values())[:-2])]
+    thr_str = ["{key}: {value}".format(key=key.replace("_", " ").title(), value=value)
+               for key, value in zip(thr_params, thresholds.values())]
+
+    settings = [
+        "=",
+        'BYCYCYLE - SETTINGS',
+        *fit_str,
+        *thr_str,
+        "="
+    ]
+    settings[0] = settings[0] * 70
+    settings[-1] = settings[-1] * 70
+    settings = "<br />\n".join([line.center(70) for line in settings])
 
     # Plot
     if len(df_features) == 1:
 
-        graph = plot_bm(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'],
-                        plot_only_result=False)
+        graph = plot_bm(df_features[0], sig, fs, thresholds, plot_only_result=False)
 
         html_report = html_report.replace("{% graph %}", graph)
 
@@ -286,7 +302,7 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
 
     # Inject settings and results
     html_report = html_report.replace("{% model_type %}", 'Bycycle')
-    html_report = html_report.replace("{% settings %}", 'ADD SETTINGS STRING HERE')
+    html_report = html_report.replace("{% settings %}", settings)
     html_report = html_report.replace("{% results %}", 'ADD RESULTS STRING HERE')
 
     return html_report
