@@ -232,7 +232,6 @@ def relabel_bursts(fig, data_list, center_times, n_cycles, n_kwargs):
     # The number of subplots to ignore
     skip = n_kwargs * 4 - 1
 
-
     # Update plot colors using js
     peak_trace_id = len(fig.data) - 2
     burst_traces = [idx+1 for idx in range(skip, n_cycles+skip)]
