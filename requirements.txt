@@ -1,6 +1,5 @@
 nipype >= 1.5.1
-#git+git://github.com/bycycle-tools/bycycle.git@master#egg=bycycle
-bycycle @ git+https://git@github.com/ryanhammonds/bycycle.git@parallel#egg=bycycle
+bycycle == 1.0.0rc2
 fooof >= 1.0.0
 plotly >= 4.10.0
 ipywidgets >= 7.5.1
