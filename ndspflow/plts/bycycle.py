@@ -1,3 +1,5 @@
+"""FOOOF plotting functions for returning ready-to-embed html."""
+
 from itertools import cycle
 import re
 

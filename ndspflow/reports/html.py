@@ -121,9 +121,9 @@ def generate_header(report_type, dtype, label=None, n_fooofs=None,
 
     Parameters
     ----------
-    report_type : str, {subject, group}
+    report_type : str, {'subject', 'group'}
         Specifices header metadata for 1d arrays versus 2d/3d arrays.
-    dtype : str, {fooof, bycycle}
+    dtype : str, {'fooof', 'bycycle'}
         Specifices header metadata for fooof versus bycycle reports.
     label : list of str, optional, default: None
         Spectrum identifier.
@@ -281,7 +281,7 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
 
     settings = [
         "=",
-        'BYCYCYLE - SETTINGS',
+        'BYCYCLE - SETTINGS',
         *fit_str,
         *thr_str,
         "="
@@ -303,6 +303,6 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     # Inject settings and results
     html_report = html_report.replace("{% model_type %}", 'Bycycle')
     html_report = html_report.replace("{% settings %}", settings)
-    html_report = html_report.replace("{% results %}", 'ADD RESULTS STRING HERE')
+    html_report = html_report.replace("{% results %}", "")
 
     return html_report
