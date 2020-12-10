@@ -102,14 +102,14 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
 
         df_features = compute_features_2d(
             sig, fs, f_range, compute_features_kwargs=compute_kwargs,
-            return_samples=True, axis=axis, n_jobs=n_jobs
+            axis=axis, n_jobs=n_jobs
         )
 
     elif sig.ndim == 3:
 
         df_features = compute_features_3d(
             sig, fs, f_range, compute_features_kwargs=compute_kwargs,
-            return_samples=True, axis=axis, n_jobs=n_jobs
+            axis=axis, n_jobs=n_jobs
         )
 
     else:

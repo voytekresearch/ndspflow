@@ -112,10 +112,6 @@ def flatten_bms(df_features, output_dir):
                                               dim_b=str(bc_idx).zfill(4))
                 bc_paths.append(os.path.join(output_dir, label))
 
-    # Ensure dataframe(s) are in a 1D list
-    df_features =  df_features if isinstance(df_features, list) else list(df_features)
-
-    df_features = [df for dfs in df_features for df in dfs] if len(np.shape(df_features)) == 2 \
-        else df_features
+        df_features = [df for dfs in df_features for df in dfs]
 
     return df_features, bc_paths

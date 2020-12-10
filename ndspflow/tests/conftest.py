@@ -99,7 +99,7 @@ def bycycle_outs(test_data):
     f_range = test_data['f_range']
 
     # Fit
-    threshold_kwargs = dict(amp_fraction_threshold=0, amp_consistency_threshold=.5,
+    threshold_kwargs = dict(amp_fraction_threshold=0.5, amp_consistency_threshold=.5,
                             monotonicity_threshold=0.8, period_consistency_threshold=.5,
                             min_n_cycles=3)
 

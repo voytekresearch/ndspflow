@@ -102,7 +102,7 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) if n_bms > 1 else None
 
         # Individual signal reports
-        for feature, bc_path in zip(df_features, bc_paths):
+        for bc_path in bc_paths:
 
             # Inject header and bycycle report
             html_report = generate_header("subject", "bycycle", label=bc_path.split('/')[-1],
@@ -121,9 +121,9 @@ def generate_header(report_type, dtype, label=None, n_fooofs=None,
 
     Parameters
     ----------
-    report_type : str, {subject, group}
+    report_type : str, {'subject', 'group'}
         Specifices header metadata for 1d arrays versus 2d/3d arrays.
-    dtype : str, {fooof, bycycle}
+    dtype : str, {'fooof', 'bycycle'}
         Specifices header metadata for fooof versus bycycle reports.
     label : list of str, optional, default: None
         Spectrum identifier.
@@ -267,16 +267,33 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     fs = fit_kwargs.pop('fs')
 
     # Create a settings string
-    settings = ["="] * 70
-    for key, value in fit_kwargs.items():
-        settings.append("{key}: {value}".format(key=key, value=value))
-    settings = ["="] * 70
-    settings = "<br />\n".join(settings)
+    thresholds = fit_kwargs.pop('threshold_kwargs')
+
+    fit_params = ['Frequency Range', 'Center Extrema', 'Burst Method']
+    thr_params = ['Amplitude Fraction Threshold', 'Amplitude Consistency Threshold',
+                  'Period Consistency Threshold', 'Monotonicity Threshold',
+                  'Minimum Consecutive Cycles']
+
+    fit_str = ["{key}: {value}".format(key=key.replace("_", " ").title(), value=value)
+               for key, value in zip(fit_params, list(fit_kwargs.values())[:-2])]
+    thr_str = ["{key}: {value}".format(key=key.replace("_", " ").title(), value=value)
+               for key, value in zip(thr_params, thresholds.values())]
+
+    settings = [
+        "=",
+        'BYCYCLE - SETTINGS',
+        *fit_str,
+        *thr_str,
+        "="
+    ]
+    settings[0] = settings[0] * 70
+    settings[-1] = settings[-1] * 70
+    settings = "<br />\n".join([line.center(70) for line in settings])
 
     # Plot
     if len(df_features) == 1:
 
-        graph = plot_bm(df_features[0], sig, fs, fit_kwargs['threshold_kwargs'])
+        graph = plot_bm(df_features[0], sig, fs, thresholds, plot_only_result=False)
 
         html_report = html_report.replace("{% graph %}", graph)
 
@@ -284,9 +301,8 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     #elif type(df_features) is list and len(np.shape(df_features)) == 2:
 
     # Inject settings and results
-
     html_report = html_report.replace("{% model_type %}", 'Bycycle')
-    html_report = html_report.replace("{% settings %}", 'ADD SETTINGS STRING HERE')
-    html_report = html_report.replace("{% results %}", 'ADD RESULTS STRING HERE')
+    html_report = html_report.replace("{% settings %}", settings)
+    html_report = html_report.replace("{% results %}", "")
 
     return html_report

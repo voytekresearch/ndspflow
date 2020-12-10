@@ -15,7 +15,7 @@ def test_plot_bm(bycycle_outs, sim_sig, plot_only_result):
 
     graph = plot_bm(df_features, sig, fs, threshold_kwargs, plot_only_result=plot_only_result)
 
-    html_contains = ['Signal', 'Burst', 'Voltage (normalized)', 'Time']
+    html_contains = ['Signal', 'Burst', 'Voltage<br>(normalized)', 'Time']
 
     for term in html_contains:
         assert term in graph
