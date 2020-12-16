@@ -61,13 +61,15 @@ def flatten_fms(model, output_dir):
     return fms, fm_paths
 
 
-def flatten_bms(df_features, output_dir):
+def flatten_bms(df_features, sigs, output_dir):
     """Flatten various oranizations of bycycle dataframes into a 1d list.
 
     Parameters
     ----------
     df_features : pandas.DataFrame or list of pandas.DataFrame
         Dataframes containing shape and burst features for each cycle.
+    sigs : 1d, 2d, or 3d array
+        Voltage time series.
     output_dir : str
         Path to write bycycle results to.
 
@@ -75,13 +77,15 @@ def flatten_bms(df_features, output_dir):
     -------
     df_features : 1d list of pandas.DataFrame
         Dataframes containing shape and burst features for each cycle.
+    sigs_2d : 2d list
+        A 2d arangement of sigs.
     bc_paths : list of str
         Sub-directories to write bycycle dataframes to.
     """
 
     bc_paths = []
 
-    if type(df_features) is pd.DataFrame:
+    if sigs.ndim == 1:
 
         # For 1d array results
         bc_paths.append(output_dir)
@@ -89,7 +93,9 @@ def flatten_bms(df_features, output_dir):
         # Make dataframe an iterable list
         df_features = [df_features]
 
-    elif type(df_features) is list and isinstance(df_features[0], pd.DataFrame):
+        sigs_2d = np.array([sigs])
+
+    elif sigs.ndim == 2:
 
         # For 2d array results
         label_template = "signal_dim1-{dim_a}"
@@ -98,8 +104,9 @@ def flatten_bms(df_features, output_dir):
             label = label_template.format(dim_a=str(fm_idx).zfill(4))
             bc_paths.append(os.path.join(output_dir, label))
 
+        sigs_2d = sigs.copy()
 
-    elif type(df_features) is list and isinstance(df_features[0][0], pd.DataFrame):
+    elif sigs.ndim == 3:
 
         # For 3d arrays results
         label_template = "signal_dim1-{dim_a}_dim2-{dim_b}"
@@ -114,4 +121,6 @@ def flatten_bms(df_features, output_dir):
 
         df_features = [df for dfs in df_features for df in dfs]
 
-    return df_features, bc_paths
+        sigs_2d = np.reshape(sigs, (np.shape(sigs)[0] * np.shape(sigs)[1], np.shape(sigs[2])))
+
+    return df_features, sigs_2d, bc_paths

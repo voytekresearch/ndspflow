@@ -189,13 +189,12 @@ class BycycleNode(SimpleInterface):
         df_features = fit_bycycle(sig, self.inputs.fs, self.inputs.f_range_bycycle, **fit_kwargs)
 
         # Save dataframes
-        save_bycycle(df_features, self.inputs.output_dir)
+        save_bycycle(df_features, sig, self.inputs.output_dir)
 
         # Save reports
         fit_args = dict(sig=sig, fs=self.inputs.fs, f_range=self.inputs.f_range_bycycle,
                         **fit_kwargs)
 
-        # CREATING BYCYCLE RESULTS STRINGS TO REPORT COULD BE HELPFUL HERE
         generate_report(self.inputs.output_dir, bms=(df_features, fit_args))
 
         self._results["df_features"] = df_features

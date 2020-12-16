@@ -36,7 +36,7 @@ def save_fooof(model, output_dir):
         fm.save('results', file_path=out_path, append=False, save_results=True, save_settings=True)
 
 
-def save_bycycle(df_features, output_dir):
+def save_bycycle(df_features, sig, output_dir):
     """Make output directories and save bycycle dataframes.
 
     Parameters
@@ -51,7 +51,7 @@ def save_bycycle(df_features, output_dir):
     bycycle_dir = os.path.join(output_dir, 'bycycle')
     clean_mkdir(bycycle_dir)
 
-    df_features, bc_paths = flatten_bms(df_features, bycycle_dir)
+    df_features, _, bc_paths = flatten_bms(df_features, sig, bycycle_dir)
 
     # Save outputs
     for df_feature, bc_path in zip(df_features, bc_paths):

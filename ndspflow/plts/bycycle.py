@@ -33,7 +33,7 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
     Returns
     -------
     graph : str
-        The fooof plot as a string containing html.
+        The bycycle plot as a string containing html.
     """
 
     # Normalize signal
@@ -93,44 +93,72 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
 
     fig.update_layout(autosize=False, showlegend=False, title_text="Burst Detection Plots")
 
-    # Relabel bursts/non-bursts and convert to html
+    graph = fig.to_html(include_plotlyjs=False)
+
+    # Get data as a list to pass into js array
     columns = df_features.columns.values.tolist()
-    data_list = df_features.values.astype('str').tolist()
-    data_list.insert(0, columns)
-    graph = relabel_bursts(fig, data_list, len(df_features), len(threshold_kwargs.keys()))
+    plot_data = df_features.values.astype('str').tolist()
+    plot_data.insert(0, columns)
+
+    # Get burst traces
+    trace_id = len(fig.data) - 2
+    burst_traces = [idx for idx in range(0, len(df_features))]
+
+    # Get the div id containg the plot
+    div_id = re.search("<div id=.+?\"", graph)[0]
+    div_id = div_id[9:-1]
+
+    # Create js callback
+    js_callback = ["<script type=\"text/javascript\">\n"]
+    js_callback.append(_relabel_bursts())
+    js_callback.append("""
+    var burstPlot = document.getElementById('{plot_id}');
+    var burstTraces = {burst_traces};
+    var traceId = {trace_id};
+    var plotData = {plot_data};
+    burstPlot.on('plotly_click', function(data){{
+        relabelBursts(data, burstPlot, plotData, burstTraces, traceId)
+    }});
+    """.format(trace_id=trace_id, burst_traces=str(burst_traces),
+                plot_data=str(plot_data), plot_id=div_id)
+    )
+    js_callback.append("</script>\n")
+    js_callback = "".join(js_callback)
+
+    # Flatten lists into single string
+    graph = re.sub("</body>\n</html>", "\n", graph)
 
     # Add recompute burst btn below the plots
-    div_id = re.search("<div id=\".*\" class=\"plotly-graph-div\"", graph)[0]
-    div_id = re.sub("\".*", "", div_id.replace("<div id=\"", ""))
     btn = "\n\t\t<p><center><button onclick=\"saveCsv(plotData)\" class=\"btn\" "
     btn = btn + "title=\"update is_burst column\">Update Bursts</button></center></p>"
 
-    return graph + btn
+    graph = graph + js_callback + btn + "\n</body>\n</html>"
+
+    return graph
 
 
 def plot_bg(dfs_features, sigs, fs, xlim=None):
-    """Plot a 2D group of bycycle features.
+    """Plot 2D bycycle fits.
 
     Parameters
     ----------
     dfs_features : list of pandas.DataFrame
-        A list containg shape and burst features, as dataframes, for signal in a 2D array.
+        Dataframe scontaining shape and burst features for each cycle.
     sigs : 2d array
         Time series.
     fs : float
         Sampling rate, in Hz.
-    xlim : tuple, optional, default: None
-        The lower and upper x-axis bounds to plot.
-
+    xlim : tuple of (float, float), optional, default: None
+        Start and stop times for plot.
 
     Returns
     -------
     graph : str
-        The fooof plot as a string containing html.
+        The bycycle plot as a string containing html.
     """
 
     # Initialize figures in groups of 10
-    #   Plotly doesn't render single figures well for 100+ plots
+    #   Plotly doesn't render single figures well with 100+ plots
     n_figs = int(np.ceil(len(sigs) / 10))
     figs = np.zeros(n_figs).tolist()
 
@@ -165,14 +193,10 @@ def plot_bg(dfs_features, sigs, fs, xlim=None):
         _plot_bursts(df_features, sig, times, center_e, side_e,
                     figs[fig_idx], row=row_idx+1, col=1)
 
-    # Interactively relabel bursts
-    columns = df_features.columns.values.tolist()
-    data_list = df_features.values.astype('str').tolist()
-    data_list.insert(0, columns)
+    graphs = []
+    for idx, fig in enumerate(figs):
 
-    # Update each figure
-    for idx in range(n_figs):
-
+        # Update the figures
         figs[idx].update_layout(
             autosize=False,
             width=1000,
@@ -182,90 +206,122 @@ def plot_bg(dfs_features, sigs, fs, xlim=None):
             title_text=titles[idx]
         )
 
-    # Figure to html
-    graph = []
-    for idx, fig in enumerate(figs):
-
-        columns = df_features.columns.values.tolist()
-        data_list = df_features.values.astype('str').tolist()
-        data_list.insert(0, columns)
-
+        # Convert to html
         if idx == 0:
 
-            graph.append(fig.to_html(include_plotlyjs=True))
+            graphs.append(fig.to_html(include_plotlyjs=True))
 
         else:
 
             div = re.search("<div>.*</div>", fig.to_html(include_plotlyjs=False))[0]
-            graph.append(div + "\n")
+            graphs.append(div + "\n")
 
-    graph[0] = re.sub("</body>\n</html>", "", graph[0])
-    graph.append("\n</body>\n</html>")
+    # Custom js callback
+    js_callback = ["<script type=\"text/javascript\">\n"]
+    js_callback.append(_relabel_bursts())
 
-    return graph
+    peaks = np.zeros((n_figs, 10)).tolist()
+    start_traces = np.zeros((n_figs, 10)).tolist()
+    for idx, fig in enumerate(figs):
+
+        peaks[idx] = [tidx for tidx, trace in enumerate(fig.data)
+                      if trace.name == 'Peak']
+
+        start_traces[idx] = np.insert(np.array(peaks[idx])[:-1] + 2, 0, 0)
+
+    for idx, df_feature in enumerate(dfs_features):
+
+        # Get the div id containg the plot
+        graph_idx = int(np.ceil((idx+1)/10)) - 1
+        graph = graphs[graph_idx]
+        div_id = re.search("<div id=.+?\"", graph)[0]
+        div_id = div_id[9:-1]
+
+        # Get the peak trace index
+        trace_idx = int(idx - 10 * (np.ceil((idx+1) / 10) - 1))
+        trace_id = peaks[graph_idx][trace_idx]
+
+        # Get signal/burst trace indices
+        burst_traces = np.array([idx for idx in range(0, len(df_features))])
+        burst_traces = burst_traces + start_traces[graph_idx][trace_idx]
+        burst_traces = burst_traces.tolist()
+
+        # Get data as a list to pass into js array
+        columns = df_features.columns.values.tolist()
+        plot_data = df_features.values.astype('str').tolist()
+        plot_data.insert(0, columns)
+
+        # Callback for every plot
+        js_callback.append("""
+        var burstPlot{idx} = document.getElementById('{plot_id}');
+        var burstTraces{idx} = {burst_traces};
+        var traceId{idx} = {trace_id};
+        var plotData{idx} = {plot_data};
+        burstPlot{idx}.on('plotly_click', function(data){{
+            relabelBursts(data, burstPlot{idx}, plotData{idx}, burstTraces{idx}, traceId{idx})
+        }});
+        try{{
+            allData.push(plotData{idx})
+        }} catch(e){{
+            allData = plotData{idx}
+        }}
+        """.format(trace_id=trace_id, burst_traces=str(burst_traces),
+                   plot_data=str(plot_data), plot_id=div_id, idx=str(idx))
+        )
+
+    js_callback.append("</script>\n")
+
+    # Flatten lists into single string
+    graphs.append("".join(js_callback))
+
+    btn = "\n\t\t<p><center><button onclick=\"saveCsv(allData)\" class=\"btn\" "
+    btn = btn + "title=\"update is_burst column\">Update Bursts</button></center></p>"
+    graphs.append(btn)
+
+    graphs[0] = re.sub("</body>\n</html>", "", graphs[0])
+    graphs.append("\n</body>\n</html>")
+    graphs = "".join(graphs)
+
+    return graphs
 
 
-def relabel_bursts(fig, data_list, n_cycles, n_kwargs):
-    """Interactively relabel bursts.
-
-    Parameters
-    ----------
-    fig : plotly.graph_objects.FigureWidget
-        The burst plot from :func:`~.plot_bm`.
-    data_list : list
-        The features dataframe as a list for easy conversion to a js array.
-    n_cycles : int
-        The number of cycles or rows in ``df_features``.
-    n_kwargs : int
-        The number of threshold kwargs that were plotted.
-
-    Returns
-    -------
-    fig : str or plotly.graph_objects.FigureWidget
-        The fooof plot as a string containing html/js.
-    js_callback :
-    """
-
-    # The number of subplots to ignore
-    skip = n_kwargs * 4 - 1
-
-    # Update plot colors using js
-    peak_trace_id = len(fig.data) - 2
-    burst_traces = [idx+1 for idx in range(skip, n_cycles+skip)]
+def _relabel_bursts():
+    """Generate javascript that is used to relabel bursts."""
 
     js_callback = """
-    var burstPlot = document.getElementById('{{plot_id}}');
-    plotData = {plot_data};
-    burstPlot.on('plotly_click', function(data){{
+    function relabelBursts(data, burstPlot, plotData, burstTraces, traceId) {
         var curveNumber = data.points[0].curveNumber;
-        var burstTraces = {burst_traces};
-        if (curveNumber == {trace_id}) {{
+        if (curveNumber == traceId) {
             var targetTrace = burstTraces[data.points[0].pointNumber];
             var color = burstPlot.data[targetTrace].line.color;
-        }} else if (burstTraces.includes(curveNumber)) {{
+        } else if (burstTraces.includes(curveNumber)) {
             var targetTrace = curveNumber;
             var color = data.points[0].data.line.color;
-        }} else {{
+        } else {
             return;
-        }}
-        if (color == 'black') {{
+        }
+        if (color == 'black') {
             var color_inv = 'red';
             var isBurst = 'True';
-        }} else {{
+        } else {
             var color_inv = 'black';
             var isBurst = 'False';
-        }}
-        var update = {{'line':{{color: color_inv}}}};
+        }
+        var update = {'line':{color: color_inv}};
         Plotly.restyle(burstPlot, update, [targetTrace]);
-        cyc = targetTrace-burstTraces[0]
+        cyc = targetTrace-burstTraces[0];
+        if ( ! plotData[0].includes('is_burst_new')){
+            plotData[0][plotData[0].length-1] = 'is_burst_orig';
+            plotData[0].push('is_burst_new');
+            for (i=1; i<plotData.length; i++){
+                plotData[i][plotData[0].length-1] = plotData[i][plotData[0].length-2]
+            }
+        }
         plotData[cyc+1][plotData[cyc].length-1] = isBurst;
-    }});
-    """.format(trace_id=peak_trace_id, burst_traces=str(burst_traces), plot_data=data_list)
+    }
+    """
 
-    graph = fig.to_html(full_html=False, include_plotlyjs=False, post_script=js_callback)
-
-    return graph
-
+    return js_callback
 
 def _plot_bursts(df_features, sig, times, center_e, side_e, fig, row=1, col=1):
     """Plot where a signal is bursting"""
