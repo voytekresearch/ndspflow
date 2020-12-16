@@ -195,7 +195,6 @@ class BycycleNode(SimpleInterface):
         fit_args = dict(sig=sig, fs=self.inputs.fs, f_range=self.inputs.f_range_bycycle,
                         **fit_kwargs)
 
-        # CREATING BYCYCLE RESULTS STRINGS TO REPORT COULD BE HELPFUL HERE
         generate_report(self.inputs.output_dir, bms=(df_features, fit_args))
 
         self._results["df_features"] = df_features

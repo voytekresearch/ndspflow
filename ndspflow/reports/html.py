@@ -12,7 +12,7 @@ from fooof.core.strings import gen_settings_str as gen_settings_fm_str
 
 from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
-from ndspflow.plts.bycycle import plot_bm
+from ndspflow.plts.bycycle import plot_bm, plot_bg
 
 
 def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
@@ -92,26 +92,48 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
     if bms is not None:
 
         # Unpack tuple
-        (df_features, fit_kwargs) = bms
+        (dfs_features, fit_kwargs) = bms
+
+        sigs = fit_kwargs.pop('sig')
+        fs = fit_kwargs.pop('fs')
+        thresholds = fit_kwargs['threshold_kwargs']
 
         # Generate bycycle reports
         bycycle_dir = os.path.join(output_dir, "bycycle")
 
-        df_features, bc_paths = flatten_bms(df_features, bycycle_dir)
+        dfs_features_2d, bc_paths, sigs_2d = flatten_bms(dfs_features, bycycle_dir, sigs=sigs)
 
         group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) if n_bms > 1 else None
 
         # Individual signal reports
-        for bc_path in bc_paths:
+        for df_features, sig, bc_path in zip(dfs_features_2d, sigs_2d, bc_paths):
 
             # Inject header and bycycle report
             html_report = generate_header("subject", "bycycle", label=bc_path.split('/')[-1],
                                           group_link=group_url)
 
-            html_report = generate_bycycle_report(df_features, fit_kwargs, html_report)
+            graph = plot_bm(df_features, sig, fs, thresholds, plot_only_result=False)
+
+            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
             # Write the html to a file
             with open(os.path.join(bc_path, 'report.html'), "w+") as html:
+                html.write(html_report)
+
+        # 2D reports
+        if sigs.ndim == 2:
+
+            html_report = generate_header("group", "bycycle", n_fooofs=n_fms,
+                                          n_bycycles=n_bms, group_link=group_url)
+
+            graph = plot_bg(dfs_features, sigs, fs)
+
+            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
+
+        if sigs.ndim == 2 or sigs.ndim == 3:
+
+            # Write the html to a file
+            with open(os.path.join(bycycle_dir, group_fname), "w+") as html:
                 html.write(html_report)
 
 
@@ -245,15 +267,15 @@ def generate_fooof_report(model, fooof_graphs, html_report):
     return html_report
 
 
-def generate_bycycle_report(df_features, fit_kwargs, html_report):
+def generate_bycycle_report(fit_kwargs, graph, html_report):
     """Include bycycle settings, results, and plots in a HTML string.
 
     Parameters
     ----------
-    df_features : pandas.DataFrame
-        A dataframe containing shape and burst features for each cycle.
     fit_kwargs : dict
         All args and kwargs used in :func:`~.fit_bycycle`.
+    graph : str
+        Contains plotly html and javascript.
     html_report : str
         A string containing the html bycycle report.
 
@@ -263,12 +285,7 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
         A string containing the html bycycle report.
     """
 
-    sig = fit_kwargs.pop('sig')
-    fs = fit_kwargs.pop('fs')
-
     # Create a settings string
-    thresholds = fit_kwargs.pop('threshold_kwargs')
-
     fit_params = ['Frequency Range', 'Center Extrema', 'Burst Method']
     thr_params = ['Amplitude Fraction Threshold', 'Amplitude Consistency Threshold',
                   'Period Consistency Threshold', 'Monotonicity Threshold',
@@ -277,7 +294,7 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     fit_str = ["{key}: {value}".format(key=key.replace("_", " ").title(), value=value)
                for key, value in zip(fit_params, list(fit_kwargs.values())[:-2])]
     thr_str = ["{key}: {value}".format(key=key.replace("_", " ").title(), value=value)
-               for key, value in zip(thr_params, thresholds.values())]
+               for key, value in zip(thr_params, fit_kwargs['threshold_kwargs'].values())]
 
     settings = [
         "=",
@@ -290,19 +307,10 @@ def generate_bycycle_report(df_features, fit_kwargs, html_report):
     settings[-1] = settings[-1] * 70
     settings = "<br />\n".join([line.center(70) for line in settings])
 
-    # Plot
-    if len(df_features) == 1:
-
-        graph = plot_bm(df_features[0], sig, fs, thresholds, plot_only_result=False)
-
-        html_report = html_report.replace("{% graph %}", graph)
-
-    #elif type(df_features) is list and len(np.shape(df_features)) == 1:
-    #elif type(df_features) is list and len(np.shape(df_features)) == 2:
-
-    # Inject settings and results
+    # Inject settings and graph strings into template
     html_report = html_report.replace("{% model_type %}", 'Bycycle')
     html_report = html_report.replace("{% settings %}", settings)
+    html_report = html_report.replace("{% graph %}", graph)
     html_report = html_report.replace("{% results %}", "")
 
     return html_report

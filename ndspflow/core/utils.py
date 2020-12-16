@@ -61,7 +61,7 @@ def flatten_fms(model, output_dir):
     return fms, fm_paths
 
 
-def flatten_bms(df_features, output_dir):
+def flatten_bms(df_features, output_dir, sigs=None):
     """Flatten various oranizations of bycycle dataframes into a 1d list.
 
     Parameters
@@ -70,6 +70,8 @@ def flatten_bms(df_features, output_dir):
         Dataframes containing shape and burst features for each cycle.
     output_dir : str
         Path to write bycycle results to.
+    sigs : 1d, 2d, or 3d array, optional, default: None
+        Voltage time series.
 
     Returns
     -------
@@ -77,11 +79,13 @@ def flatten_bms(df_features, output_dir):
         Dataframes containing shape and burst features for each cycle.
     bc_paths : list of str
         Sub-directories to write bycycle dataframes to.
+    sigs_2d : 2d list
+        A 2d arangement of sigs. None if sigs is None.
     """
 
     bc_paths = []
 
-    if type(df_features) is pd.DataFrame:
+    if isinstance(df_features, pd.DataFrame):
 
         # For 1d array results
         bc_paths.append(output_dir)
@@ -89,7 +93,9 @@ def flatten_bms(df_features, output_dir):
         # Make dataframe an iterable list
         df_features = [df_features]
 
-    elif type(df_features) is list and isinstance(df_features[0], pd.DataFrame):
+        sigs_2d = np.array([sigs]) if isinstance(sigs, np.ndarray) else None
+
+    elif isinstance(df_features, list) and isinstance(df_features[0], pd.DataFrame):
 
         # For 2d array results
         label_template = "signal_dim1-{dim_a}"
@@ -98,8 +104,9 @@ def flatten_bms(df_features, output_dir):
             label = label_template.format(dim_a=str(fm_idx).zfill(4))
             bc_paths.append(os.path.join(output_dir, label))
 
+        sigs_2d = sigs.copy() if isinstance(sigs, np.ndarray) else None
 
-    elif type(df_features) is list and isinstance(df_features[0][0], pd.DataFrame):
+    elif isinstance(df_features, list) and isinstance(df_features[0][0], pd.DataFrame):
 
         # For 3d arrays results
         label_template = "signal_dim1-{dim_a}_dim2-{dim_b}"
@@ -114,4 +121,7 @@ def flatten_bms(df_features, output_dir):
 
         df_features = [df for dfs in df_features for df in dfs]
 
-    return df_features, bc_paths
+        sigs_2d = np.reshape(sigs, (np.shape(sigs)[0] * np.shape(sigs)[1], np.shape(sigs)[2])) if \
+            isinstance(sigs, np.ndarray) else None
+
+    return df_features, bc_paths, sigs_2d
