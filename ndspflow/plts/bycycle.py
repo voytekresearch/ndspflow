@@ -209,7 +209,7 @@ def plot_bg(dfs_features, sigs, fs, xlim=None):
         # Convert to html
         if idx == 0:
 
-            graphs.append(fig.to_html(include_plotlyjs=True))
+            graphs.append(fig.to_html(include_plotlyjs=False))
 
         else:
 

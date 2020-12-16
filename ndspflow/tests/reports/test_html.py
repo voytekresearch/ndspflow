@@ -11,12 +11,12 @@ from ndspflow.io.save import save_fooof, save_bycycle
 from ndspflow.tests.settings import TEST_DATA_PATH
 
 
-def test_generate_report(fooof_outs, bycycle_outs, sim_sig):
+def test_generate_report(fooof_outs, bycycle_outs, test_data):
 
     # Prepare bycycle args
-    bm = bycycle_outs['bm']
-    sig = sim_sig['sig']
-    fs = sim_sig['fs']
+    bm = bycycle_outs['bg']
+    sig = test_data['sig_2d']
+    fs = test_data['fs']
     threshold_kwargs = bycycle_outs['threshold_kwargs']
     fit_kwargs = dict(sig=sig, fs=fs, threshold_kwargs=threshold_kwargs)
 
@@ -77,12 +77,12 @@ def test_generate_bycycle_report(bycycle_outs, sim_sig):
     sig = sim_sig['sig']
     fs = sim_sig['fs']
     threshold_kwargs = bycycle_outs['threshold_kwargs']
+    graph = bycycle_outs['bm_graph']
 
     fit_kwargs = dict(sig=sig, fs=fs, threshold_kwargs=threshold_kwargs)
 
     html_report = generate_header('subject', "bycycle", n_fooofs=0, n_bycycles=1)
-
-    html_report = generate_bycycle_report([bm], fit_kwargs, html_report)
+    html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
     # Assert html template replacement was successful
     assert "{% settings %}" not in html_report

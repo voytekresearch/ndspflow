@@ -86,6 +86,7 @@ def plot_fg(fg, urls):
 
     # PE params
     peak_idx = fg.get_params('peak_params', 'CF')[:, 1].astype(int)
+
     urls_peaks = [urls[idx] for idx in peak_idx]
 
     graphs.append('<br><br><center><h1>Peak Parameters</h1></center>')

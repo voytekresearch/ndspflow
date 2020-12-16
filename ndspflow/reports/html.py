@@ -101,7 +101,7 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         # Generate bycycle reports
         bycycle_dir = os.path.join(output_dir, "bycycle")
 
-        dfs_features_2d, sigs_2d, bc_paths = flatten_bms(dfs_features, sigs, bycycle_dir)
+        dfs_features_2d, bc_paths, sigs_2d = flatten_bms(dfs_features, bycycle_dir, sigs=sigs)
 
         group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) if n_bms > 1 else None
 
@@ -114,8 +114,7 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
 
             graph = plot_bm(df_features, sig, fs, thresholds, plot_only_result=False)
 
-            html_report = generate_bycycle_report(fit_kwargs, graph, html_report,
-                                                  report_type="subject")
+            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
             # Write the html to a file
             with open(os.path.join(bc_path, 'report.html'), "w+") as html:
@@ -129,8 +128,7 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
 
             graph = plot_bg(dfs_features, sigs, fs)
 
-            html_report = generate_bycycle_report(fit_kwargs, graph,
-                                                  html_report, report_type="group")
+            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
         if sigs.ndim == 2 or sigs.ndim == 3:
 
@@ -269,7 +267,7 @@ def generate_fooof_report(model, fooof_graphs, html_report):
     return html_report
 
 
-def generate_bycycle_report(fit_kwargs, graph, html_report, report_type="subject"):
+def generate_bycycle_report(fit_kwargs, graph, html_report):
     """Include bycycle settings, results, and plots in a HTML string.
 
     Parameters
@@ -280,8 +278,6 @@ def generate_bycycle_report(fit_kwargs, graph, html_report, report_type="subject
         Contains plotly html and javascript.
     html_report : str
         A string containing the html bycycle report.
-    report_type : {single, group}
-        Wheather the report is a single or group report.
 
     Returns
     -------

@@ -38,19 +38,22 @@ def test_flatten_fms(ndim, fooof_outs):
 
 
 @pytest.mark.parametrize("ndim", [1, 2, 3])
-def test_flatten_bms(ndim, bycycle_outs):
+def test_flatten_bms(ndim, test_data, bycycle_outs):
 
     # Load data from fixture
     if ndim == 1:
         model = bycycle_outs['bm']
+        sigs = test_data['sig_1d']
     elif ndim == 2:
         model = bycycle_outs['bg']
+        sigs = test_data['sig_2d']
     elif ndim == 3:
         model = bycycle_outs['bgs']
+        sigs = test_data['sig_3d']
 
     output_dir = '/path/to/output'
 
-    bms, bm_paths = flatten_bms(model, output_dir)
+    bms, bm_paths, sigs_2d = flatten_bms(model, output_dir, sigs=sigs)
 
     assert len(bms) == len(bm_paths)
 
@@ -63,5 +66,7 @@ def test_flatten_bms(ndim, bycycle_outs):
             assert output_dir + '/signal' in bm_path
         else:
             assert output_dir in bm_path
+
+    assert sigs_2d.ndim == 2
 
 
