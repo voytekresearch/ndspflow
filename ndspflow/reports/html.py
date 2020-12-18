@@ -198,9 +198,11 @@ def generate_header(report_type, dtype, label=None, n_fooofs=None,
         """.format(n_fooofs=n_fooofs, n_bycycles=n_bycycles)
 
     group_link = "" if group_link is None else group_link
+    root_path = os.path.join(cwd, "templates")
     html_report = html_report.replace("{% GROUP %}", group_link)
     html_report = html_report.replace("{% BODY %}", body_template)
     html_report = html_report.replace("{% META_TEMPLATE %}", meta_template)
+    html_report = html_report.replace("{% ROOT %}", root_path)
 
     return html_report
 

@@ -29,7 +29,7 @@ def test_plot_bg(bycycle_outs, test_data):
 
     graph = plot_bg(bg, sigs, fs)
 
-    html_contains = ['plotly-graph-div', 'relabelBursts']
+    html_contains = ['plotly-graph-div', 'recolorBursts', 'rewriteBursts']
 
     for term in html_contains:
         assert term in graph
