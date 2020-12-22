@@ -5,6 +5,7 @@ import re
 
 import numpy as np
 from scipy.stats import zscore
+from scipy.signal import resample
 import pandas as pd
 
 import plotly.graph_objects as go
@@ -94,7 +95,13 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
         fig.update_layout(width=1000, height=325, xaxis_title="Time",
                           yaxis_title="Voltage<br>(normalized)")
 
-    fig.update_layout(autosize=False, showlegend=False, title_text="Burst Detection Plots")
+    fig.update_layout(
+        autosize=True,
+        showlegend=False,
+        title_text="Burst Detection Plots",
+    )
+
+    fig.update_xaxes(rangeslider= {'visible':True}, row=5, col=1)
 
     graph = fig.to_html(include_plotlyjs=False, full_html=False)
 
@@ -165,7 +172,8 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
 
     # Initialize figures in groups of 10
     #   Plotly doesn't render single figures well with 100+ plots
-    n_figs = int(np.ceil(len(sigs) / 10))
+    n_per_fig = 10
+    n_figs = int(np.ceil(len(sigs) / n_per_fig))
     figs = np.zeros(n_figs).tolist()
 
     titles = [] if titles is None else titles
@@ -173,15 +181,15 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
     for idx in range(n_figs):
 
         # Subplot titles
-        start = idx * 10
-        end = start + len(sigs[start:start+10])
+        start = idx * n_per_fig
+        end = start + len(sigs[start:start+n_per_fig])
 
         if len(titles) == idx:
             titles.append("Indices: {start}-{end}".format(start=start, end=end))
 
         # Create subplots
         n_rows.append(end - start)
-        fig = make_subplots(rows=n_rows[idx], cols=1, vertical_spacing=0, shared_xaxes=True)
+        fig = make_subplots(rows=n_rows[idx], cols=1, vertical_spacing=0.005, shared_xaxes=True)
         figs[idx] = fig
 
     for idx, df_features in enumerate(dfs_features):
@@ -197,8 +205,8 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
         center_e, side_e = get_extrema_df(df_features)
 
         # Plot bursts
-        fig_idx = int(np.ceil((idx+1)/10)) - 1
-        row_idx = int(idx - (10*fig_idx))
+        fig_idx = int(np.ceil((idx+1) / n_per_fig)) - 1
+        row_idx = int(idx - (n_per_fig * fig_idx))
 
         _plot_bursts(df_features, sig, times, center_e, side_e,
                      figs[fig_idx], plot_cps=False, row=row_idx+1, col=1)
@@ -207,7 +215,7 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
     for idx, fig in enumerate(figs):
 
         # The size of plotly subplots don't scale properly, this is a workaround
-        height = (80 * n_rows[idx]) + ((10 - n_rows[idx]) * 18)
+        height = (60 * n_rows[idx]) + ((n_per_fig - n_rows[idx]) * 18)
 
         # Update the figures
         figs[idx].update_layout(
@@ -218,6 +226,9 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
             margin_autoexpand=False,
             title_text=titles[idx]
         )
+        figs[idx].update_yaxes(showticklabels=False, showgrid=False)
+        figs[idx].update_xaxes(showgrid=False)
+        figs[idx].update_xaxes(rangeslider= {'visible':True}, row=n_rows[idx], col=1)
 
         # Convert to html
         if idx == 0:
@@ -271,23 +282,89 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
     return graphs
 
 
-def _plot_bursts(df_features, sig, times, center_e, side_e, fig, plot_cps=True, row=1, col=1):
+def plot_bgs(dfs_features, sigs, fs, xlim=None):
+    """Plot 3D bycycle results.
+
+    Parameters
+    ----------
+    dfs_features : list of pandas.DataFrame
+        Dataframes containing shape and burst features for each cycle.
+    sigs : 2d array
+        Time series.
+    fs : float
+        Sampling rate, in Hz.
+    xlim : tuple of (float, float), optional, default: None
+        Start and stop times for plot.
+
+    Returns
+    -------
+    graph : str
+        The bycycle plot as a string containing html.
+    """
+
+    # Number of plots per figure
+    n_per_fig = 10
+    dfs_features_2d, _, sigs_2d = flatten_bms(dfs_features, '', sigs)
+
+    # Create subplot titles
+    dim0 = np.shape(sigs)[0]
+    dim1 = np.shape(sigs)[1]
+
+    starts = [(i, j) for i in range(dim0) for j in range(dim1)][::n_per_fig]
+    ends = starts[1:]
+    ends.append((dim0-1, dim1-1))
+
+    titles = []
+    for start, end in zip(starts, ends):
+
+        titles.append("Indices: [{s0}][{s1}] - [{e0}][{e1}]".format(s0=start[0], s1=start[1],
+                                                                    e0=end[0], e1=end[1]))
+
+    graphs = plot_bg(dfs_features_2d, sigs_2d, fs, titles=titles, xlim=None)
+
+    return graphs
+
+
+def _plot_bursts(df_features, sig, times, center_e, side_e, fig,
+                 plot_cps=True, row=1, col=1, dtype="float", ds_factor='adaptive'):
     """Plot where a signal is bursting"""
 
-    # Plot signal and bursts
-    for _, cyc in df_features.iterrows():
+    # Downsample signal
+    if ds_factor == 'adaptive':
+        ds_factor = 1 if len(sig) < 1000 else 750 / len(sig)
 
-        samp_start_burst = int(cyc['sample_last_' + side_e])
-        samp_end_burst = int(cyc['sample_next_' + side_e] + 1)
+    n_samples = round(len(sig) * ds_factor)
+    sig_ds, times_ds = resample(sig, n_samples, t=times)
 
-        times_cyc = times[samp_start_burst:samp_end_burst]
-        sig_cyc = sig[samp_start_burst:samp_end_burst]
+    sig_ds = sig
+    times_ds = times
 
+    # Plot cycle-by-cycle
+    last_idx = None
+    for idx, cyc in df_features.iterrows():
+
+        samp_end = int(cyc['sample_next_' + side_e])
+        samp_start = int(cyc['sample_last_' + side_e])
+
+        if ds_factor != 1:
+
+            samp_start = np.argmin(np.abs(times_ds-times[samp_start]))
+            samp_end = np.argmin(np.abs(times_ds-times[samp_end]))
+
+
+        times_cyc = times_ds[samp_start:samp_end]
+        sig_cyc = sig_ds[samp_start:samp_end]
+
+        # Plotting is slightly faster with an int array
+        if dtype == "int":
+            sig_cyc = sig_cyc * 100
+            sig_cyc = sig_cyc.astype(int)
+
+        # Plot cycle
         if cyc['is_burst']:
-
             fig.add_trace(
                 go.Scattergl(x=times_cyc, y=sig_cyc, mode='lines', name="Burst",
-                           line=dict(color='red', width=2)),
+                             line=dict(color='red', width=2)),
                 row=row, col=col
             )
 
@@ -295,7 +372,7 @@ def _plot_bursts(df_features, sig, times, center_e, side_e, fig, plot_cps=True, 
 
             fig.add_trace(
                 go.Scattergl(x=times_cyc, y=sig_cyc, mode='lines', name="Signal",
-                           line=dict(color='black', width=2)),
+                             line=dict(color='black', width=2)),
                 row=row, col=col
             )
 
@@ -303,17 +380,17 @@ def _plot_bursts(df_features, sig, times, center_e, side_e, fig, plot_cps=True, 
         # Centers
         centers = df_features['sample_' + center_e].values
         fig.add_trace(go.Scattergl(x=times[centers], y=sig[centers], mode='markers',
-                                name=str(center_e.capitalize()),
-                                marker=dict(color='rgb(191, 0, 191)', size=6)),
-                    row=row, col=col)
+                                   name=str(center_e.capitalize()),
+                                   marker=dict(color='rgb(191, 0, 191)', size=6)),
+                      row=row, col=col)
 
         # Sides
         sides = np.append(df_features['sample_last_' + side_e].values,
                         df_features['sample_next_' + side_e].values[-1])
         fig.add_trace(go.Scattergl(x=times[sides], y=sig[sides], mode='markers',
-                                name=str(side_e.capitalize()),
-                                marker=dict(color='rgb(0, 191, 191)', size=6)),
-                    row=row, col=col)
+                                   name=str(side_e.capitalize()),
+                                   marker=dict(color='rgb(0, 191, 191)', size=6)),
+                      row=row, col=col)
 
     return fig
 

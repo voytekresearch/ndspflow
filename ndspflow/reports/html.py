@@ -12,7 +12,7 @@ from fooof.core.strings import gen_settings_str as gen_settings_fm_str
 
 from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
-from ndspflow.plts.bycycle import plot_bm, plot_bg
+from ndspflow.plts.bycycle import plot_bm, plot_bg, plot_bgs
 
 
 def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
@@ -120,17 +120,21 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
             with open(os.path.join(bc_path, 'report.html'), "w+") as html:
                 html.write(html_report)
 
-        # 2D reports
+        # Mutlidim reports
         if sigs.ndim == 2:
-
-            html_report = generate_header("group", "bycycle", n_fooofs=n_fms,
-                                          n_bycycles=n_bms, group_link=group_url)
 
             graph = plot_bg(dfs_features, sigs, fs)
 
-            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
+        elif sigs.ndim == 3:
+
+            graph = plot_bgs(dfs_features, sigs, fs)
 
         if sigs.ndim == 2 or sigs.ndim == 3:
+
+            html_report = generate_header("group", "bycycle", n_fooofs=n_fms,
+                                        n_bycycles=n_bms, group_link=group_url)
+
+            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
             # Write the html to a file
             with open(os.path.join(bycycle_dir, group_fname), "w+") as html:

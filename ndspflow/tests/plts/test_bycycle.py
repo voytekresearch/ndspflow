@@ -2,7 +2,7 @@
 
 from pytest import mark, param
 
-from ndspflow.plts.bycycle import plot_bm, plot_bg
+from ndspflow.plts.bycycle import plot_bm, plot_bg, plot_bgs
 
 
 @mark.parametrize('plot_only_result', [True, False])
@@ -33,3 +33,19 @@ def test_plot_bg(bycycle_outs, test_data):
 
     for term in html_contains:
         assert term in graph
+
+
+def test_plot_bgs(bycycle_outs, test_data):
+
+    sigs = test_data['sig_3d']
+    fs = test_data['fs']
+    bgs = bycycle_outs['bgs']
+
+    graphs = plot_bgs(bgs, sigs, fs)
+
+    html_contains = ['plotly-graph-div', 'recolorBursts', 'rewriteBursts']
+
+    for term in html_contains:
+        assert term in graphs
+
+
