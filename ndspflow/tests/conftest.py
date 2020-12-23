@@ -108,6 +108,6 @@ def bycycle_outs(test_data):
     bgs = fit_bycycle(sig_3d, fs, f_range, threshold_kwargs=threshold_kwargs)
 
     # Plot
-    bm_graph = plot_bm(bm, sig_1d, fs, threshold_kwargs)
+    bm_graph = plot_bm(bm, sig_1d, fs, threshold_kwargs, 0)
 
     yield dict(bm=bm, bm_graph=bm_graph, bg=bg, bgs=bgs, threshold_kwargs=threshold_kwargs)

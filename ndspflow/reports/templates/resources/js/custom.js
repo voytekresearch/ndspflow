@@ -1,5 +1,4 @@
 // 1D Plotting
-
 function relabel1DBursts(data, burstPlot, dfIdx, burstTraces, traceId) {
   dfData = fetchData(dfIdx);
   var curveNumber = data.points[0].curveNumber;
@@ -26,7 +25,6 @@ function relabel1DBursts(data, burstPlot, dfIdx, burstTraces, traceId) {
 }
 
 // 2D and 3D Plotting
-
 function recolorBursts(plotID){
   // Change colors of signal/burst
   var graph = document.getElementById(plotID);
@@ -42,7 +40,6 @@ function recolorBursts(plotID){
 
 function rewriteBursts(divIds){
   // Determine the is_burst column of the current plot(s)
-
   var isBurst = [];
   var isBurstIdx = 0;
   for (idx=0; idx < divIds.length; idx++) {

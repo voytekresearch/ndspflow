@@ -13,7 +13,7 @@ def test_plot_bm(bycycle_outs, test_data, plot_only_result):
     fs = test_data['fs']
     threshold_kwargs = bycycle_outs['threshold_kwargs']
 
-    graph = plot_bm(df_features, sig, fs, threshold_kwargs, plot_only_result=plot_only_result)
+    graph = plot_bm(df_features, sig, fs, threshold_kwargs, 0, plot_only_result=plot_only_result)
 
     html_contains = ['Signal', 'Burst', 'Voltage<br>(normalized)', 'Time']
 

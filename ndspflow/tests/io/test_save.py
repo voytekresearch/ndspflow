@@ -57,6 +57,6 @@ def test_save_bycycle(ndim, test_data):
     save_bycycle(model, output_dir)
 
     for f in [os.path.join(dp, f) for dp, dn, fn in os.walk(output_dir) for f in fn]:
-        assert 'report.html' in f or 'results.csv' in f
+        assert f.split('/')[-1] in ['report.html', 'results.csv', '.data.js']
 
     test_dir.cleanup()
