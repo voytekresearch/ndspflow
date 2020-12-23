@@ -1,6 +1,7 @@
 // 1D Plotting
 
-function relabel1DBursts(data, burstPlot, plotData, burstTraces, traceId) {
+function relabel1DBursts(data, burstPlot, dfIdx, burstTraces, traceId) {
+  dfData = fetchData(dfIdx);
   var curveNumber = data.points[0].curveNumber;
   if (curveNumber == traceId) {
       var targetTrace = burstTraces[data.points[0].pointNumber];
@@ -14,21 +15,14 @@ function relabel1DBursts(data, burstPlot, plotData, burstTraces, traceId) {
   if (color == 'black') {
       var color_inv = 'red';
       var isBurst = 'True';
+      var name = 'Burst';
   } else {
       var color_inv = 'black';
       var isBurst = 'False';
+      var name = 'Signal';
   }
-  var update = {'line':{color: color_inv}};
+  var update = {'name': name, 'line':{color: color_inv}};
   Plotly.restyle(burstPlot, update, [targetTrace]);
-  cyc = targetTrace-burstTraces[0];
-  if ( ! plotData[0].includes('is_burst_new')){
-      plotData[0][plotData[0].length-1] = 'is_burst_orig';
-      plotData[0].push('is_burst_new');
-      for (i=1; i<plotData.length; i++){
-          plotData[i][plotData[0].length-1] = plotData[i][plotData[0].length-2]
-      }
-  }
-  plotData[cyc+1][plotData[cyc].length-1] = isBurst;
 }
 
 // 2D and 3D Plotting
@@ -46,8 +40,9 @@ function recolorBursts(plotID){
   });
 }
 
-function rewriteBursts(dfData, divIds){
+function rewriteBursts(divIds){
   // Determine the is_burst column of the current plot(s)
+
   var isBurst = [];
   var isBurstIdx = 0;
   for (idx=0; idx < divIds.length; idx++) {
@@ -63,21 +58,30 @@ function rewriteBursts(dfData, divIds){
     }
   }
   // Append columns and save out csv
-  if ( ! dfData.includes('is_burst_new')) {
-    dfData[0][dfData[0].length-1] = 'is_burst_orig';
-    dfData[0].push('is_burst_new');
+  dfData = fetchData("None");
+  dfNew = [];
+  header = dfData[0][0]
+  dfNew.push(header)
+  for (i=0; i < dfData.length; i++){
+    for (j=1; j < dfData[i].length; j++){
+      dfNew.push(dfData[i][j])
+    }
+  };
+  if ( ! dfNew.includes('is_burst_new')) {
+    dfNew[0][dfNew[0].length-1] = 'is_burst_orig';
+    dfNew[0].push('is_burst_new');
   }
   for (i=0; i < isBurst.length; i++) {
-    dfData[i+1][dfData[i+1].length] = isBurst[i];
+    dfNew[i+1][dfNew[i+1].length] = isBurst[i];
   }
-  saveCsv(dfData);
+  saveCsv(dfNew);
 }
 
-function saveCsv(plotData){
+function saveCsv(dfData){
   // Save out csv file
   var csvRows = [];
-  for(var i=0, l=plotData.length; i<l; ++i){
-      csvRows.push(plotData[i].join(','));
+  for(var i=0, l=dfData.length; i<l; ++i){
+      csvRows.push(dfData[i].join(','));
   }
   var csvString = csvRows.join("\n");
   var a         = document.createElement('a');

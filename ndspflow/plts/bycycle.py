@@ -2,6 +2,7 @@
 
 from itertools import cycle
 import re
+from os import path
 
 import numpy as np
 from scipy.stats import zscore
@@ -16,7 +17,7 @@ from bycycle.utils import get_extrema_df
 from ndspflow.core.utils import flatten_bms
 
 
-def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=True):
+def plot_bm(df_features, sig, fs, threshold_kwargs, df_idx, xlim=None, plot_only_result=True):
     """Plot a individual bycycle fits.
 
     Parameters
@@ -29,10 +30,19 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
         Sampling rate, in Hz.
     threshold_kwargs : dict, optional, default: None
         Feature thresholds for cycles to be considered bursts.
+    df_idx : int
+        The index of the dataframe in the javascript array. This is only used for fetching data
+        for the relabel js callback.
     xlim : tuple of (float, float), optional, default: None
         Start and stop times for plot.
     plot_only_result : bool, optional, default: True
         Plot only the signal and bursts, excluding burst parameter plots.
+
+    Notes
+    -----
+    The output_dir and df_idx arguments are used to fetch a javascript array containing the
+    dataframe results during the js relabel callback. This is done since javascript can't access
+    the local filesystem to load csv files.
 
     Returns
     -------
@@ -105,11 +115,6 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
 
     graph = fig.to_html(include_plotlyjs=False, full_html=False)
 
-    # Get data as a list to pass into js array
-    columns = df_features.columns.values.tolist()
-    plot_data = df_features.values.astype('str').tolist()
-    plot_data.insert(0, columns)
-
     # Get burst traces
     trace_id = len(fig.data) - 2
     burst_traces = [idx for idx in range(0, len(df_features))]
@@ -124,12 +129,10 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
     var burstPlot = document.getElementById('{plot_id}');
     var burstTraces = {burst_traces};
     var traceId = {trace_id};
-    var plotData = {plot_data};
     burstPlot.on('plotly_click', function(data){{
-        relabel1DBursts(data, burstPlot, plotData, burstTraces, traceId);
+        relabel1DBursts(data, burstPlot, {idx}, burstTraces, traceId);
     }});
-    """.format(trace_id=trace_id, burst_traces=str(burst_traces),
-               plot_data=str(plot_data), plot_id=div_id)
+    """.format(trace_id=trace_id, burst_traces=str(burst_traces), plot_id=div_id, idx=df_idx)
     )
     js_callback.append("</script>\n")
     js_callback = "".join(js_callback)
@@ -138,7 +141,8 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, xlim=None, plot_only_result=
     graph = re.sub("</body>\n</html>", "\n", graph)
 
     # Add recompute burst btn below the plots
-    btn = "\n\t\t<p><center><button onclick=\"saveCsv(plotData)\" class=\"btn\" "
+    rewrite_call = "rewriteBursts({div_id})".format(div_id=str([div_id]))
+    btn = "\n\t\t<p><center><button onclick=\"" + rewrite_call + "\" class=\"btn\" "
     btn = btn + "title=\"update is_burst column\">Update Bursts</button></center></p>"
 
     graph = graph + js_callback + btn + "\n</body>\n</html>"
@@ -247,12 +251,6 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
     # Get plot div ids
     div_ids = [re.search("<div id=.+?\"", graph)[0][9:-1] for graph in graphs]
 
-    # For converting to js array
-    df_js = pd.concat([df_features for df_features in dfs_features], axis=0)
-    df_js = df_js.astype("str")
-    df_js = df_js.to_numpy().tolist()
-    df_js.insert(0, dfs_features[0].columns.tolist())
-
     # Recolor (non)bursts on click
     for div_id in div_ids:
 
@@ -269,7 +267,7 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
 
     if btn:
 
-        rewrite_call = "rewriteBursts({dfData}, {divIds})".format(dfData=df_js, divIds=div_ids)
+        rewrite_call = "rewriteBursts({div_ids})".format(div_ids=div_ids)
 
         # Add a button
         btn = "\n\t\t<p><center><button onclick=\"" + rewrite_call + "\" class=\"btn\" "
@@ -340,8 +338,7 @@ def _plot_bursts(df_features, sig, times, center_e, side_e, fig,
     times_ds = times
 
     # Plot cycle-by-cycle
-    last_idx = None
-    for idx, cyc in df_features.iterrows():
+    for _, cyc in df_features.iterrows():
 
         samp_end = int(cyc['sample_next_' + side_e])
         samp_start = int(cyc['sample_last_' + side_e])
