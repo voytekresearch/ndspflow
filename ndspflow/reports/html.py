@@ -12,7 +12,7 @@ from fooof.core.strings import gen_settings_str as gen_settings_fm_str
 
 from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
-from ndspflow.plts.bycycle import plot_bm, plot_bg
+from ndspflow.plts.bycycle import plot_bm, plot_bg, plot_bgs
 
 
 def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
@@ -106,13 +106,13 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
         group_url = str('file://' + os.path.join(bycycle_dir, group_fname)) if n_bms > 1 else None
 
         # Individual signal reports
-        for df_features, sig, bc_path in zip(dfs_features_2d, sigs_2d, bc_paths):
+        for idx, (df_features, sig, bc_path) in enumerate(zip(dfs_features_2d, sigs_2d, bc_paths)):
 
             # Inject header and bycycle report
-            html_report = generate_header("subject", "bycycle", label=bc_path.split('/')[-1],
-                                          group_link=group_url)
+            html_report = generate_header("subject", "bycycle", output_dir,
+                                          label=bc_path.split('/')[-1], group_link=group_url)
 
-            graph = plot_bm(df_features, sig, fs, thresholds, plot_only_result=False)
+            graph = plot_bm(df_features, sig, fs, thresholds, idx, plot_only_result=False)
 
             html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
@@ -120,25 +120,29 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
             with open(os.path.join(bc_path, 'report.html'), "w+") as html:
                 html.write(html_report)
 
-        # 2D reports
+        # Mutlidim reports
         if sigs.ndim == 2:
-
-            html_report = generate_header("group", "bycycle", n_fooofs=n_fms,
-                                          n_bycycles=n_bms, group_link=group_url)
 
             graph = plot_bg(dfs_features, sigs, fs)
 
-            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
+        elif sigs.ndim == 3:
+
+            graph = plot_bgs(dfs_features, sigs, fs)
 
         if sigs.ndim == 2 or sigs.ndim == 3:
+
+            html_report = generate_header("group", "bycycle", output_dir, n_fooofs=n_fms,
+                                          n_bycycles=n_bms, group_link=group_url)
+
+            html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
             # Write the html to a file
             with open(os.path.join(bycycle_dir, group_fname), "w+") as html:
                 html.write(html_report)
 
 
-def generate_header(report_type, dtype, label=None, n_fooofs=None,
-                    n_bycycles=None, group_link=None):
+def generate_header(report_type, dtype, output_dir=None, label=None,
+                    n_fooofs=None, n_bycycles=None, group_link=None):
     """Include masthead and subject info in a HTML string.
 
     Parameters
@@ -147,6 +151,8 @@ def generate_header(report_type, dtype, label=None, n_fooofs=None,
         Specifices header metadata for 1d arrays versus 2d/3d arrays.
     dtype : str, {'fooof', 'bycycle'}
         Specifices header metadata for fooof versus bycycle reports.
+    output_dir : str, optional, default: None
+        The path to write the reports to.
     label : list of str, optional, default: None
         Spectrum identifier.
     n_fooofs : int, optional, default: None
@@ -198,9 +204,16 @@ def generate_header(report_type, dtype, label=None, n_fooofs=None,
         """.format(n_fooofs=n_fooofs, n_bycycles=n_bycycles)
 
     group_link = "" if group_link is None else group_link
+    root_path = os.path.join(cwd, "templates")
     html_report = html_report.replace("{% GROUP %}", group_link)
     html_report = html_report.replace("{% BODY %}", body_template)
     html_report = html_report.replace("{% META_TEMPLATE %}", meta_template)
+    html_report = html_report.replace("{% ROOT %}", root_path)
+
+    if output_dir:
+        html_report = html_report.replace("{% OUT %}", output_dir)
+    else:
+        html_report = html_report.replace("{% OUT %}", "")
 
     return html_report
 

@@ -1,8 +1,9 @@
 <html>
-<body>
 <head>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="{% ROOT %}/resources/js/plotly-latest.min.js"></script>
+  <script src="{% OUT %}/bycycle/.data.js" ></script>
 </head>
+<body>
 <div class="masthead">
   <div class="masthead__inner-wrap">
     <div class="masthead__menu">
@@ -76,19 +77,6 @@
       }
     });
   }
-  function saveCsv(plotData){{
-    var csvRows = [];
-    for(var i=0, l=plotData.length; i<l; ++i){{
-        csvRows.push(plotData[i].join(','));
-    }}
-    var csvString = csvRows.join("\n");
-    var a         = document.createElement('a');
-    a.href        = 'data:attachment/csv,' + encodeURIComponent(csvString);
-    a.target      = '_blank';
-    a.download    = 'results.csv';
-    document.body.appendChild(a);
-    a.click();
-  }}
 </script>
 
 <style>
