@@ -1,0 +1,15 @@
+
+# Requirements for building the docsite.
+#   Note: nbsphinx requires pandoc:
+#
+#     - sudo apt install pandoc
+#     - sudo yum install pandoc
+#     - sudo brew install pandoc
+#
+
+sphinx
+sphinx_gallery
+sphinx_bootstrap_theme
+sphinx_copybutton
+numpydoc
+nbsphinx
