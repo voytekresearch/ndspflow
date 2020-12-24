@@ -18,7 +18,7 @@ from ndspflow.core.utils import flatten_bms
 
 
 def plot_bm(df_features, sig, fs, threshold_kwargs, df_idx, xlim=None, plot_only_result=True):
-    """Plot a individual bycycle fits.
+    """Plot a single bycycle fit using plotly.
 
     Parameters
     ----------

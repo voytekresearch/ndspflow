@@ -53,7 +53,7 @@ def fit_fooof(freqs, powers, freq_range, init_kwargs, n_jobs):
 
 def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
                 threshold_kwargs=None, find_extrema_kwargs=None, axis=0,  n_jobs=1):
-    """A generalized bycycle compute_features function to handle 1d, 2d, or 3d arrays.
+    """A generalized Bycycle compute_features function to handle 1d, 2d, or 3d arrays.
 
     Parameters
     ----------

@@ -12,7 +12,7 @@ from ndspflow.core.interfaces import FOOOFNode, BycycleNode
 
 def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
                     fooof_params=None, bycycle_params=None, n_jobs=1):
-    """Connects nodes into an overall nipype workflow.
+    """Connects nodes into a nipype workflow.
 
     Parameters
     ----------

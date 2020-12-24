@@ -23,7 +23,7 @@ def check_dirs(input_dir, output_dir):
 
 
 def clean_mkdir(dir_path):
-    """Cleanly make new directories by deleting pre-existing.
+    """Make new directories and deleting pre-existing.
 
     Parameters
     ----------
