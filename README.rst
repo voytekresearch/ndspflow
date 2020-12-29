@@ -41,88 +41,98 @@ Installation
     $ cd ndspflow
     $ pip install .
 
-Usage
------
+Quickstart
+----------
+
+The input data should be organized in the working directory and the directory and file names must
+match the command-line call.
 
 .. code-block::
 
-    $ ndspflow -h
-        usage: ndspflow [-h] [-power_spectrum powers.npy] [-freqs freqs.npy] [-f_range_fooof lower_freq upper_freq] [-sig signal.npy] [-fs int]
-                        [-f_range_bycycle lower_freq upper_freq] [-peak_width_limits lower_limit upper_limit] [-max_n_peaks int]
-                        [-min_peak_height float] [-peak_threshold float] [-aperiodic_mode {fixed,knee}] [-center_extrema {peak,trough}]
-                        [-burst_method {cycles,amp}] [-amp_fraction_threshold float] [-amp_consistency_threshold float]
-                        [-period_consistency_threshold float] [-monotonicity_threshold float] [-min_n_cycles int] [-burst_fraction_threshold float]
-                        [-axis {0, 1, 0, 1, None}] [-n_jobs int] [-run_nodes {fooof,bycycle}]
-                        /path/to/input /path/to/output
+    data
+    ├── freqs.npy
+    ├── powers.npy
+    └── sigs.npy
 
-        A Nipype workflow for FOOOOF and Bycycle.
+The command-line call below runs both fooof and bycycle.
 
-        positional arguments:
-        /path/to/input        Input directory containing timeseries and/or spectra .npy files to read (default: None).
-        /path/to/output       Output directory to write results and BIDS derivatives to write (default: None).
+.. code-block::
 
-        optional arguments:
-        -power_spectrum powers.npy
-                                Filename of power values, located inside of 'input_dir'
-                                Required if 'fooof' in 'run_nodes argument' (default: None).
-        -freqs freqs.npy      Filename of frequency values for the power spectrum(a), located inside of 'input_dir'.
-                                Required if 'fooof' in 'run_nodes argument' (default: None).
-        -f_range_fooof lower_freq upper_freq
-                                Frequency range of the power spectrum, as: lower_freq, upper_freq.
-                                Recommended if 'fooof' in 'run_nodes argument' (default: (-inf, inf)).
-        -sig signal.npy       Filename of neural signal or timeseries, located inside of 'input_dir'.
-                                Required if 'bycycle' in 'run_nodes argument' (default: None).
-        -fs int               Sampling rate, in Hz.
-                                Required if 'bycycle' in 'run_nodes argument'.
-        -f_range_bycycle lower_freq upper_freq
-                                Frequency range for narrowband signal of interest (Hz).
-                                Required if 'bycycle' in 'run_nodes argument'.
+    $ ndspflow \
+      -freqs freqs.npy \
+      -power_spectrum powers.npy \
+      -sig sigs.npy \
+      -fs 500 \
+      -f_range_fooof 1 50 \
+      -f_range_bycycle 15 25 \
+      -max_n_peaks 1 \
+      -min_peak_height .3 \
+      -peak_threshold 2 \
+      -peak_width_limits 1 5 \
+      -aperiodic_mode fixed \
+      -center_extrema peak \
+      -burst_method cycles \
+      -amp_fraction_threshold 0 \
+      -amp_consistency_threshold .5 \
+      -period_consistency_threshold .5 \
+      -monotonicity_threshold .8 \
+      -min_n_cycles 3 \
+      -axis 0 \
+      -n_jobs -1 \
+      -run_nodes both \
+      $PWD/data $PWD/results
 
-        -peak_width_limits lower_limit upper_limit
-                                Limits on possible peak width, in Hz, as: lower_limit upper_limit.
-                                Recommended if 'fooof' in 'run_nodes argument' (default: (0.5, 12.0)).
-        -max_n_peaks int      Maximum number of peaks to fit.
-                                Recommended if 'fooof' in 'run_nodes argument' (default: 100).
-        -min_peak_height float
-                                Absolute threshold for detecting peaks, in units of the input data.
-                                Recommended if 'fooof' in 'run_nodes argument' (default: 0.0).
-        -peak_threshold float
-                                Relative threshold for detecting peaks, in units of standard deviation of the input data.
-                                Recommended if 'fooof' in 'run_nodes argument' (default: 2.0).
-        -aperiodic_mode {fixed,knee}
-                                Which approach to take for fitting the aperiodic component.
-                                Recommended if 'fooof' in 'run_nodes argument' (default: fixed).
+Results
+-------
 
-        -center_extrema {peak,trough}
-                                Determines if cycles or peak or trough centered.
-                                Recommended if 'bycycle' in 'run_nodes argument' (default: peak).
-        -burst_method {cycles,amp}
-                                Method for burst detection.
-                                Recommended if 'bycycle' in 'run_nodes argument' (default: cycles).
-        -amp_fraction_threshold float
-                                Amplitude fraction threshold for detecting bursts.
-                                Recommended if 'burst_method' is 'cycles' (default: 0).
-        -amp_consistency_threshold float
-                                Amplitude consistency threshold for detecting bursts.
-                                Recommended if 'burst_method' is 'cycles' (default: 0.5).
-        -period_consistency_threshold float
-                                Period consistency threshold for detecting bursts.
-                                Recommended if 'burst_method' is 'cycles' (default: 0.5).
-        -monotonicity_threshold float
-                                Monotonicicity threshold for detecting bursts.
-                                Recommended if 'burst_method' is 'cycles' (default: 0.8).
-        -min_n_cycles int     Minium number of cycles for detecting bursts
-                                Recommended for either 'burst_method' (default: 3).
-        -burst_fraction_threshold float
-                                Minimum fraction of a cycle identified as a burst.
-                                Recommended if 'burst_method' is 'amp' (default: 1).
-        -axis {0, 1, (0, 1), None}
-                                The axis to compute features across for 2D and 3D signal arrays.
-                                Ignored if signal is 1D. 1 and (0, 1) only availble for 3D signals
-                                (default: 0).
+The above command will save results as:
 
-        -n_jobs int           The maximum number of jobs to run in parallel at one time.
-                                Only utilized for 2d and 3d arrays (default: 1).
-        -run_nodes {fooof,bycycle}
-                                List of nodes to run: fooof and/or bycyle (default: fooof bycycle).
+.. code-block::
 
+    results
+    ├── bycycle
+    │   ├── report_group.html
+    │   ├── signal_dim1-0000
+    │   │   ├── report.html
+    │   │   └── results.csv
+    │   ├── signal_dim1-0001
+    │   │   ├── report.html
+    │   │   └── results.csv
+    │   ├── signal_dim1-0002
+    │   │   ├── report.html
+    │   │   └── results.csv
+    │   ├── signal_dim1-0003
+    │   │   ├── report.html
+    │   │   └── results.csv
+    │   └── signal_dim1-0004
+    │       ├── report.html
+    │       └── results.csv
+    └── fooof
+        ├── report_group.html
+        ├── spectrum_dim1-0000
+        │   ├── report.html
+        │   └── results.json
+        ├── spectrum_dim1-0001
+        │   ├── report.html
+        │   └── results.json
+        ├── spectrum_dim1-0002
+        │   ├── report.html
+        │   └── results.json
+        ├── spectrum_dim1-0003
+        │   ├── report.html
+        │   └── results.json
+        └── spectrum_dim1-0004
+            ├── report.html
+            └── results.json
+
+Example html reports:
+
+- FOOOF
+
+  - `Individual <https://ndspflow-tools.github.io/ndspflow/results/fooof/spectrum_dim1-0000/report.html>`_
+  - `Group <https://ndspflow-tools.github.io/ndspflow/results/fooof/report_group.html>`_
+
+- bycycle
+
+  - `Individual <https://ndspflow-tools.github.io/ndspflow/results/bycycle/signal_dim1-0000/report.html>`_
+  - `Group <https://ndspflow-tools.github.io/ndspflow/results/bycycle/report_group.html>`_

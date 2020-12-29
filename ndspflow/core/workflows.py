@@ -20,7 +20,7 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
         Path to input directory.
     output_dir : str
         Path to write results to.
-    run_nodes : list, optional, default: ['fooof', 'bycycle']
+    run_nodes : list, optional, default: ['fooof', 'bycycle', 'both']
         Defines which nodes to run. Must contain fooof and/or bycycle.
     fooof_params : dict, optional, default: None
         Sets the inputs to the FOOOFNode.
@@ -48,13 +48,13 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
     io_node.inputs.n_jobs = n_jobs
 
     # FOOOF node
-    if 'fooof' in run_nodes:
+    if 'fooof' in run_nodes or 'both' in run_nodes:
         fooof_node = wf_fooof(fooof_params)
         wf.connect([(io_node, fooof_node, [('input_dir', 'input_dir'),
                                            ('output_dir', 'output_dir'),
                                            ('n_jobs', 'n_jobs')])])
 
-    if 'bycycle' in run_nodes:
+    if 'bycycle' in run_nodes or 'both' in run_nodes:
         bycycle_node = wf_bycycle(bycycle_params)
         wf.connect([(io_node, bycycle_node, [('input_dir', 'input_dir'),
                                              ('output_dir', 'output_dir'),

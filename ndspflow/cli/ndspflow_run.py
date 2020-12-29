@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Commmand-line interface for ndspflow."""
 
+import os
 import argparse
 from argparse import RawTextHelpFormatter
+
 import numpy as np
 from ndspflow.core.workflows import create_workflow
 
@@ -15,7 +17,7 @@ def get_parser():
 
     import argparse, textwrap
 
-    desc = 'A Nipype workflow for FOOOOF and Bycycle.'
+    desc = 'A Nipype workflow for FOOOF and Bycycle.'
     parser = argparse.ArgumentParser(description=desc,
                                      formatter_class=argparse.RawTextHelpFormatter)
     # I/O
@@ -96,7 +98,7 @@ def get_parser():
         nargs=2,
         default=(0.5, 12.0),
         metavar=("lower_limit", "upper_limit"),
-        help="Limits on possible peak width, in Hz, as: lower_limit upper_limit.\n"
+        help="Limits on peak widths, in Hz, as: lower_limit upper_limit.\n"
              "Recommended if 'fooof' in 'run_nodes argument' (default: %(default)s)."
     )
     parser.add_argument(
@@ -139,7 +141,7 @@ def get_parser():
         type=str,
         default='peak',
         choices=['peak', 'trough'],
-        help="Determines if cycles or peak or trough centered.\n"
+        help="Determines if cycles are peak or trough centered.\n"
              "Recommended if 'bycycle' in 'run_nodes argument' (default: %(default)s)."
     )
 
@@ -223,8 +225,8 @@ def get_parser():
     # Workflow selector
     parser.add_argument(
         '-run_nodes',
-        default=['fooof', 'bycycle'],
-        choices=['fooof', 'bycycle'],
+        default=['fooof', 'bycycle', 'both'],
+        choices=['fooof', 'bycycle', 'both'],
         required=False,
         help="List of nodes to run: fooof and/or bycyle (default: fooof bycycle)."
     )
@@ -241,13 +243,20 @@ def main():
     input_dir = args['input_dir']
     output_dir = args['output_dir']
 
+    # Infer relative paths
+    if not input_dir.startswith('/'):
+        input_dir = os.path.join(os.getcwd(), input_dir)
+    if not output_dir.startswith('/'):
+        output_dir = os.path.join(os.getcwd(), output_dir)
+
     run_nodes = args['run_nodes']
 
-    if 'fooof' in run_nodes:
+    if 'fooof' in run_nodes or 'both' in run_nodes:
 
         fooof_params = dict(
             freqs=args['freqs'], power_spectrum=args['power_spectrum'],
-            f_range_fooof=args['f_range_fooof'], peak_width_limits=args['peak_width_limits'],
+            f_range_fooof=tuple(args['f_range_fooof']),
+            peak_width_limits=tuple(args['peak_width_limits']),
             max_n_peaks=args['max_n_peaks'], min_peak_height=args['min_peak_height'],
             peak_threshold=args['peak_threshold'], aperiodic_mode=args['aperiodic_mode']
         )
@@ -255,10 +264,10 @@ def main():
     else:
         fooof_params = None
 
-    if 'bycycle' in run_nodes:
+    if 'bycycle' in run_nodes or 'both' in run_nodes:
 
         bycycle_params = dict(
-            sig=args['sig'], fs=args['fs'], f_range_bycycle=args['f_range_bycycle'],
+            sig=args['sig'], fs=args['fs'], f_range_bycycle=tuple(args['f_range_bycycle']),
             center_extrema=args['center_extrema'], burst_method=args['burst_method'],
             amp_fraction_threshold=args['amp_fraction_threshold'],
             amp_consistency_threshold=args['amp_consistency_threshold'],
