@@ -129,10 +129,10 @@ Example html reports:
 
 - FOOOF
 
-  - `Individual <https://ndspflow-tools.github.io/ndspflow/results/fooof/spectrum_dim1-0000/report.html>`_
-  - `Group <https://ndspflow-tools.github.io/ndspflow/results/fooof/report_group.html>`_
+  - `Individual <https://voytekresearch.github.io/ndspflow/results/fooof/spectrum_dim1-0000/report.html>`_
+  - `Group <https://voytekresearch.github.io/ndspflow/results/fooof/report_group.html>`_
 
-- bycycle
+- Bycycle
 
-  - `Individual <https://ndspflow-tools.github.io/ndspflow/results/bycycle/signal_dim1-0000/report.html>`_
-  - `Group <https://ndspflow-tools.github.io/ndspflow/results/bycycle/report_group.html>`_
+  - `Individual <https://voytekresearch.github.io/ndspflow/results/bycycle/signal_dim1-0000/report.html>`_
+  - `Group <https://voytekresearch.github.io/ndspflow/results/bycycle/report_group.html>`_
