@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ndspflow.core.interfaces &#8212; ndspflow 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-rendered-html.css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          ndspflow</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../../api.html">API</a></li>
+                <li><a href="../../../tutorials/index.html">Tutorials</a></li>
+                <li><a href="https://github.com/voytekresearch/ndspflow">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <h1>Source code for ndspflow.core.interfaces</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; Interface definitions.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">nipype.interfaces.base</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BaseInterface</span><span class="p">,</span>
+    <span class="n">BaseInterfaceInputSpec</span><span class="p">,</span>
+    <span class="n">SimpleInterface</span><span class="p">,</span>
+    <span class="n">TraitedSpec</span><span class="p">,</span>
+    <span class="n">traits</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">fooof</span> <span class="kn">import</span> <span class="n">FOOOF</span><span class="p">,</span> <span class="n">FOOOFGroup</span>
+<span class="kn">from</span> <span class="nn">ndspflow.core.fit</span> <span class="kn">import</span> <span class="n">fit_fooof</span><span class="p">,</span> <span class="n">fit_bycycle</span>
+<span class="kn">from</span> <span class="nn">ndspflow.io.save</span> <span class="kn">import</span> <span class="n">save_fooof</span><span class="p">,</span> <span class="n">save_bycycle</span>
+<span class="kn">from</span> <span class="nn">ndspflow.reports.html</span> <span class="kn">import</span> <span class="n">generate_report</span>
+
+
+<div class="viewcode-block" id="FOOOFNodeInputSpec"><a class="viewcode-back" href="../../../generated/ndspflow.core.interfaces.FOOOFNodeInputSpec.html#ndspflow.core.interfaces.FOOOFNodeInputSpec">[docs]</a><span class="k">class</span> <span class="nc">FOOOFNodeInputSpec</span><span class="p">(</span><span class="n">BaseInterfaceInputSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Input interface for FOOOF.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Input/Output</span>
+    <span class="n">input_dir</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Directory</span><span class="p">(</span>
+        <span class="n">argstr</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Input directory containing timeseries and/or spectra .npy files to read.&#39;</span><span class="p">,</span>
+        <span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Directory</span><span class="p">(</span>
+        <span class="n">argstr</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="n">exists</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Output directory to write results and BIDS derivatives to write.&#39;</span><span class="p">,</span>
+        <span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Init params</span>
+    <span class="n">peak_width_limits</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Tuple</span><span class="p">((</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">),</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">max_n_peaks</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">min_peak_height</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">peak_threshold</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">aperiodic_mode</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Str</span><span class="p">(</span><span class="s1">&#39;fixed&#39;</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Fit params</span>
+    <span class="n">freqs</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">power_spectrum</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">f_range_fooof</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Tuple</span><span class="p">((</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FOOOFNodeOutputSpec"><a class="viewcode-back" href="../../../generated/ndspflow.core.interfaces.FOOOFNodeOutputSpec.html#ndspflow.core.interfaces.FOOOFNodeOutputSpec">[docs]</a><span class="k">class</span> <span class="nc">FOOOFNodeOutputSpec</span><span class="p">(</span><span class="n">TraitedSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Output interface for FOOOF.&quot;&quot;&quot;</span>
+
+    <span class="n">fm</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Any</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">fm_results</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Directory</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FOOOFNode"><a class="viewcode-back" href="../../../generated/ndspflow.core.interfaces.FOOOFNode.html#ndspflow.core.interfaces.FOOOFNode">[docs]</a><span class="k">class</span> <span class="nc">FOOOFNode</span><span class="p">(</span><span class="n">SimpleInterface</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface wrapper for FOOOF.&quot;&quot;&quot;</span>
+
+    <span class="n">input_spec</span> <span class="o">=</span> <span class="n">FOOOFNodeInputSpec</span>
+    <span class="n">output_spec</span> <span class="o">=</span> <span class="n">FOOOFNodeOutputSpec</span>
+
+    <span class="k">def</span> <span class="nf">_run_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">runtime</span><span class="p">):</span>
+
+        <span class="n">freqs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">input_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">freqs</span><span class="p">))</span>
+        <span class="n">powers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">input_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">power_spectrum</span><span class="p">))</span>
+
+        <span class="n">init_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;peak_width_limits&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">peak_width_limits</span><span class="p">,</span>
+                       <span class="s1">&#39;max_n_peaks&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">max_n_peaks</span><span class="p">,</span>
+                       <span class="s1">&#39;min_peak_height&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">min_peak_height</span><span class="p">,</span>
+                       <span class="s1">&#39;peak_threshold&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">peak_threshold</span><span class="p">,</span>
+                       <span class="s1">&#39;aperiodic_mode&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">aperiodic_mode</span><span class="p">,</span>
+                       <span class="s1">&#39;verbose&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="c1"># Fit</span>
+        <span class="n">fms</span> <span class="o">=</span> <span class="n">fit_fooof</span><span class="p">(</span><span class="n">freqs</span><span class="p">,</span> <span class="n">powers</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">f_range_fooof</span><span class="p">,</span> <span class="n">init_kwargs</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)</span>
+
+        <span class="c1"># Save model</span>
+        <span class="n">save_fooof</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span>
+
+        <span class="c1"># Save reports</span>
+        <span class="n">generate_report</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">fms</span><span class="o">=</span><span class="n">fms</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">[</span><span class="s2">&quot;fm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">[</span><span class="s2">&quot;fm_results&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s1">&#39;fooof&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">runtime</span></div>
+
+
+<div class="viewcode-block" id="BycycleNodeInputSpec"><a class="viewcode-back" href="../../../generated/ndspflow.core.interfaces.BycycleNodeInputSpec.html#ndspflow.core.interfaces.BycycleNodeInputSpec">[docs]</a><span class="k">class</span> <span class="nc">BycycleNodeInputSpec</span><span class="p">(</span><span class="n">BaseInterfaceInputSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Input interface for bycycle.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Input/Output</span>
+    <span class="n">input_dir</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Directory</span><span class="p">(</span>
+        <span class="n">argstr</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Input directory containing timeseries and/or spectra .npy files to read.&#39;</span><span class="p">,</span>
+        <span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="mi">0</span>
+    <span class="p">)</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Directory</span><span class="p">(</span>
+        <span class="n">argstr</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">%s</span><span class="s1">&#39;</span><span class="p">,</span>
+        <span class="n">exists</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">resolve</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Output directory to write results and BIDS derivatives to write.&#39;</span><span class="p">,</span>
+        <span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Required arguments</span>
+    <span class="n">sig</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">fs</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">f_range_bycycle</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Tuple</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Optional arguments</span>
+    <span class="n">center_extrema</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Str</span><span class="p">(</span><span class="s1">&#39;peak&#39;</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">burst_method</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Str</span><span class="p">(</span><span class="s1">&#39;cycles&#39;</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">amp_fraction_threshold</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">amp_consistency_threshold</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">period_consistency_threshold</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">monotonicity_threshold</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">min_n_cycles</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">burst_fraction_threshold</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Float</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Str</span><span class="p">(</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Int</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">mandatory</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">usedefault</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BycycleNodeOutputSpec"><a class="viewcode-back" href="../../../generated/ndspflow.core.interfaces.BycycleNodeOutputSpec.html#ndspflow.core.interfaces.BycycleNodeOutputSpec">[docs]</a><span class="k">class</span> <span class="nc">BycycleNodeOutputSpec</span><span class="p">(</span><span class="n">TraitedSpec</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Output interface for bycycle.&quot;&quot;&quot;</span>
+
+    <span class="n">df_features</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Any</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">bm_results</span> <span class="o">=</span> <span class="n">traits</span><span class="o">.</span><span class="n">Directory</span><span class="p">(</span><span class="n">mandatory</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BycycleNode"><a class="viewcode-back" href="../../../generated/ndspflow.core.interfaces.BycycleNode.html#ndspflow.core.interfaces.BycycleNode">[docs]</a><span class="k">class</span> <span class="nc">BycycleNode</span><span class="p">(</span><span class="n">SimpleInterface</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Interface wrapper for bycycle.&quot;&quot;&quot;</span>
+
+    <span class="n">input_spec</span> <span class="o">=</span> <span class="n">BycycleNodeInputSpec</span>
+    <span class="n">output_spec</span> <span class="o">=</span> <span class="n">BycycleNodeOutputSpec</span>
+
+    <span class="k">def</span> <span class="nf">_run_interface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">runtime</span><span class="p">):</span>
+
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">input_dir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">sig</span><span class="p">))</span>
+
+        <span class="c1"># Infer axis type from string (traits doesn&#39;t support multi-type)</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="kc">None</span>  <span class="k">if</span> <span class="s1">&#39;None&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;(0,1)&#39;</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">axis</span>
+
+        <span class="n">axis_error</span> <span class="o">=</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Axis must be 0, 1, (0, 1), or None.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">axis</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">axis_error</span>
+
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="kc">None</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">axis_error</span>
+
+        <span class="c1"># Get thresholds</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">burst_method</span> <span class="o">==</span> <span class="s1">&#39;cycles&#39;</span><span class="p">:</span>
+
+            <span class="n">threshold_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">amp_fraction_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">amp_fraction_threshold</span><span class="p">,</span>
+                <span class="n">amp_consistency_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">amp_consistency_threshold</span><span class="p">,</span>
+                <span class="n">period_consistency_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">period_consistency_threshold</span><span class="p">,</span>
+                <span class="n">monotonicity_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">monotonicity_threshold</span><span class="p">,</span>
+                <span class="n">min_n_cycles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">min_n_cycles</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="n">threshold_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">burst_fraction_threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">burst_fraction_threshold</span><span class="p">,</span>
+                <span class="n">min_n_cycles</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">min_n_cycles</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Organize all kwargs</span>
+        <span class="n">fit_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">center_extrema</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">center_extrema</span><span class="p">,</span> <span class="n">burst_method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">burst_method</span><span class="p">,</span>
+            <span class="n">threshold_kwargs</span><span class="o">=</span><span class="n">threshold_kwargs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">n_jobs</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Fit</span>
+        <span class="n">df_features</span> <span class="o">=</span> <span class="n">fit_bycycle</span><span class="p">(</span><span class="n">sig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">fs</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">f_range_bycycle</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Save dataframes</span>
+        <span class="n">save_bycycle</span><span class="p">(</span><span class="n">df_features</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span><span class="p">)</span>
+
+        <span class="c1"># Save reports</span>
+        <span class="n">fit_args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">sig</span><span class="o">=</span><span class="n">sig</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">fs</span><span class="p">,</span> <span class="n">f_range</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">f_range_bycycle</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">)</span>
+
+        <span class="n">generate_report</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">bms</span><span class="o">=</span><span class="p">(</span><span class="n">df_features</span><span class="p">,</span> <span class="n">fit_args</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">[</span><span class="s2">&quot;df_features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_results</span><span class="p">[</span><span class="s2">&quot;bm_results&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="s1">&#39;bycycle&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">runtime</span></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2020-2020, VoytekLab.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.4.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

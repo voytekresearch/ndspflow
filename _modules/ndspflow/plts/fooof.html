@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ndspflow.plts.fooof &#8212; ndspflow 0.0.1 documentation</title>
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-rendered-html.css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../../../_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="../../../_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="../../../_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="../../../_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../../../index.html">
+          ndspflow</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../../../api.html">API</a></li>
+                <li><a href="../../../tutorials/index.html">Tutorials</a></li>
+                <li><a href="https://github.com/voytekresearch/ndspflow">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../../../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../../../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <h1>Source code for ndspflow.plts.fooof</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;FOOOF plotting functions for returning ready-to-embed html.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
+
+<span class="kn">from</span> <span class="nn">ndspflow.plts.utils</span> <span class="kn">import</span> <span class="n">plot_scatter</span><span class="p">,</span> <span class="n">two_column_layout</span>
+
+
+<div class="viewcode-block" id="plot_fm"><a class="viewcode-back" href="../../../generated/ndspflow.plts.fooof.plot_fm.html#ndspflow.plts.fooof.plot_fm">[docs]</a><span class="k">def</span> <span class="nf">plot_fm</span><span class="p">(</span><span class="n">fm</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot a single FOOOF fits using plotly.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fm : fooof FOOOF</span>
+<span class="sd">        A fooof model that has been</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graph : str</span>
+<span class="sd">        The fooof plot as a string containing html.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Create figure</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">()</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;responsive&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+
+    <span class="c1"># Original</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">fm</span><span class="o">.</span><span class="n">freqs</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">fm</span><span class="o">.</span><span class="n">power_spectrum</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;lines&#39;</span><span class="p">,</span>
+                                <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Original Spectrum&#39;</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
+
+    <span class="c1"># Model</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">fm</span><span class="o">.</span><span class="n">freqs</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">fm</span><span class="o">.</span><span class="n">fooofed_spectrum_</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;lines&#39;</span><span class="p">,</span>
+                                <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Full Model Fit&#39;</span><span class="p">,</span> <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;rgba(214, 39, 40, .7)&#39;</span><span class="p">,</span>
+                                                                <span class="n">width</span><span class="o">=</span><span class="mi">3</span><span class="p">)))</span>
+
+    <span class="c1"># Aperiodic</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">add_trace</span><span class="p">(</span><span class="n">go</span><span class="o">.</span><span class="n">Scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">fm</span><span class="o">.</span><span class="n">freqs</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">fm</span><span class="o">.</span><span class="n">_ap_fit</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;lines&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Aperiodic Fit&#39;</span><span class="p">,</span>
+                            <span class="n">line</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;rgba(31, 119, 180, .7)&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">dash</span><span class="o">=</span><span class="s1">&#39;dash&#39;</span><span class="p">)))</span>
+
+    <span class="c1"># Plot settings</span>
+    <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Spectrum Fit&quot;</span><span class="p">,</span>
+        <span class="n">xaxis_title</span><span class="o">=</span><span class="s2">&quot;Frequency&quot;</span><span class="p">,</span>
+        <span class="n">yaxis_title</span><span class="o">=</span><span class="s2">&quot;Power&quot;</span><span class="p">,</span>
+        <span class="n">font</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">family</span><span class="o">=</span><span class="s2">&quot;sans-serif&quot;</span><span class="p">,</span>
+            <span class="n">size</span><span class="o">=</span><span class="mi">18</span><span class="p">,</span>
+            <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span>
+        <span class="p">),</span>
+        <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">l</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">r</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">full_html</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_height</span><span class="o">=</span><span class="s1">&#39;475&#39;</span><span class="p">,</span> <span class="n">default_width</span><span class="o">=</span><span class="s1">&#39;700&#39;</span><span class="p">,</span>
+                        <span class="n">include_plotlyjs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">graph</span></div>
+
+
+<div class="viewcode-block" id="plot_fg"><a class="viewcode-back" href="../../../generated/ndspflow.plts.fooof.plot_fg.html#ndspflow.plts.fooof.plot_fg">[docs]</a><span class="k">def</span> <span class="nf">plot_fg</span><span class="p">(</span><span class="n">fg</span><span class="p">,</span> <span class="n">urls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot FOOOFGroup parameters distributions using plotly.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fg : fooof FOOOFGroup</span>
+<span class="sd">        FOOOFGroup object that have been fit using :func:`ndspflow.core.fit.fit_fooof`.</span>
+<span class="sd">    urls : list of str</span>
+<span class="sd">        Local html paths to link points to their individual reports.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graphs : str</span>
+<span class="sd">        Multiple FOOOFGroup plots as a string containing html.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">graphs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Fit</span>
+    <span class="n">graphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&lt;br&gt;&lt;br&gt;&lt;center&gt;&lt;h1&gt;Goodness of Fit&lt;/h1&gt;&lt;/center&gt;&#39;</span><span class="p">)</span>
+
+    <span class="n">fig_error</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">),</span> <span class="s1">&#39;Error&#39;</span><span class="p">,</span> <span class="n">urls</span><span class="p">)</span>
+    <span class="n">fig_rsq</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;r_squared&#39;</span><span class="p">),</span> <span class="s1">&#39;R-Squared&#39;</span><span class="p">,</span> <span class="n">urls</span><span class="p">)</span>
+
+    <span class="n">graphs</span> <span class="o">=</span> <span class="n">two_column_layout</span><span class="p">(</span><span class="n">fig_error</span><span class="p">,</span> <span class="n">fig_rsq</span><span class="p">,</span> <span class="n">graphs</span><span class="p">)</span>
+
+    <span class="c1"># PE params</span>
+    <span class="n">peak_idx</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;peak_params&#39;</span><span class="p">,</span> <span class="s1">&#39;CF&#39;</span><span class="p">)[:,</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">urls_peaks</span> <span class="o">=</span> <span class="p">[</span><span class="n">urls</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">peak_idx</span><span class="p">]</span>
+
+    <span class="n">graphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&lt;br&gt;&lt;br&gt;&lt;center&gt;&lt;h1&gt;Peak Parameters&lt;/h1&gt;&lt;/center&gt;&#39;</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">n_peaks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">peak_idx</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">cfs</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;peak_params&#39;</span><span class="p">,</span> <span class="s1">&#39;CF&#39;</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">fig_npeaks</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">n_peaks</span><span class="p">,</span> <span class="s1">&#39;Number of Peaks&#39;</span><span class="p">,</span> <span class="n">urls</span><span class="p">)</span>
+    <span class="n">fig_cf</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">cfs</span><span class="p">,</span> <span class="s1">&#39;Center Frequency&#39;</span><span class="p">,</span> <span class="n">urls_peaks</span><span class="p">)</span>
+
+    <span class="n">graphs</span> <span class="o">=</span> <span class="n">two_column_layout</span><span class="p">(</span><span class="n">fig_npeaks</span><span class="p">,</span> <span class="n">fig_cf</span><span class="p">,</span> <span class="n">graphs</span><span class="p">)</span>
+
+    <span class="n">bws</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;peak_params&#39;</span><span class="p">,</span> <span class="s1">&#39;BW&#39;</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">pws</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;peak_params&#39;</span><span class="p">,</span> <span class="s1">&#39;PW&#39;</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">fig_bws</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">bws</span><span class="p">,</span> <span class="s1">&#39;Band Width&#39;</span><span class="p">,</span> <span class="n">urls_peaks</span><span class="p">)</span>
+    <span class="n">fig_pws</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">pws</span><span class="p">,</span> <span class="s1">&#39;Peak Width&#39;</span><span class="p">,</span> <span class="n">urls_peaks</span><span class="p">)</span>
+
+    <span class="n">graphs</span> <span class="o">=</span> <span class="n">two_column_layout</span><span class="p">(</span><span class="n">fig_bws</span><span class="p">,</span> <span class="n">fig_pws</span><span class="p">,</span> <span class="n">graphs</span><span class="p">)</span>
+
+    <span class="c1"># AP params</span>
+    <span class="n">graphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;&lt;br&gt;&lt;br&gt;&lt;center&gt;&lt;h1&gt;Aperiodic Parameters&lt;/h1&gt;&lt;/center&gt;&#39;</span><span class="p">)</span>
+
+    <span class="n">fig_exp</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;aperiodic&#39;</span><span class="p">,</span> <span class="s1">&#39;exponent&#39;</span><span class="p">),</span> <span class="s1">&#39;Exponent&#39;</span><span class="p">,</span> <span class="n">urls</span><span class="p">)</span>
+    <span class="n">fig_off</span> <span class="o">=</span> <span class="n">plot_scatter</span><span class="p">(</span><span class="n">fg</span><span class="o">.</span><span class="n">get_params</span><span class="p">(</span><span class="s1">&#39;aperiodic&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">),</span> <span class="s1">&#39;Offset&#39;</span><span class="p">,</span> <span class="n">urls</span><span class="p">,</span> <span class="n">yfmt</span><span class="o">=</span><span class="s2">&quot;.2f&quot;</span><span class="p">)</span>
+
+    <span class="n">graphs</span> <span class="o">=</span> <span class="n">two_column_layout</span><span class="p">(</span><span class="n">fig_exp</span><span class="p">,</span> <span class="n">fig_off</span><span class="p">,</span> <span class="n">graphs</span><span class="p">)</span>
+
+    <span class="c1"># Place each item in the list on a newline</span>
+    <span class="n">graphs</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">graphs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">graphs</span></div>
+
+
+<div class="viewcode-block" id="plot_fgs"><a class="viewcode-back" href="../../../generated/ndspflow.plts.fooof.plot_fgs.html#ndspflow.plts.fooof.plot_fgs">[docs]</a><span class="k">def</span> <span class="nf">plot_fgs</span><span class="p">(</span><span class="n">fgs</span><span class="p">,</span> <span class="n">urls</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plot a list of FOOOFGroup parameters distributions using plotly.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fgs : list of fooof FOOOFGroup</span>
+<span class="sd">        FOOOFGroup objects that have been fit using :func:`ndspflow.core.fit.fit_fooof`.</span>
+<span class="sd">    urls : list of str</span>
+<span class="sd">        Local html paths to link points to their individual reports.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graphs : list of str</span>
+<span class="sd">        Multiple FOOOFGroup plots as a string containing html.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">graphs</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">urls_reshape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">urls</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fgs</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">urls</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">fgs</span><span class="p">))))</span>
+
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">fg</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">fgs</span><span class="p">,</span> <span class="n">urls_reshape</span><span class="p">)):</span>
+
+        <span class="n">graphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">&quot;&lt;br&gt;&lt;br&gt;&lt;button type=</span><span class="se">\&quot;</span><span class="s2">button</span><span class="se">\&quot;</span><span class="s2"> class=</span><span class="se">\&quot;</span><span class="s2">collapsible</span><span class="se">\&quot;</span><span class="s2">&gt;&quot;</span>\
+            <span class="s2">&quot;&lt;h1 style=</span><span class="se">\&quot;</span><span class="s2">text-align:left</span><span class="se">\&quot;</span><span class="s2">&gt;▼ Group Index: </span><span class="si">{idx}</span><span class="s2">&lt;/h1&gt;&lt;/button&gt;&quot;</span>\
+            <span class="s2">&quot;&lt;div class=</span><span class="se">\&quot;</span><span class="s2">content</span><span class="se">\&quot;</span><span class="s2">&gt;&quot;</span>\
+            <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="n">graphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">plot_fg</span><span class="p">(</span><span class="n">fg</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;&lt;/div&gt;&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">graphs</span></div>
+</pre></div>
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2020-2020, VoytekLab.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.4.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ndspflow &#8212; ndspflow 0.0.1 documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/bootstrap-sphinx.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="_static/gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/gallery-rendered-html.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="_static/js/jquery-1.11.0.min.js "></script>
+<script type="text/javascript" src="_static/js/jquery-fix.js "></script>
+<script type="text/javascript" src="_static/bootstrap-3.3.7/js/bootstrap.min.js "></script>
+<script type="text/javascript" src="_static/bootstrap-sphinx.js "></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="#">
+          ndspflow</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="api.html">API</a></li>
+                <li><a href="tutorials/index.html">Tutorials</a></li>
+                <li><a href="https://github.com/voytekresearch/ndspflow">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="#">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <div class="section" id="ndspflow">
+<h1>ndspflow<a class="headerlink" href="#ndspflow" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference external" href="https://circleci.com/gh/voytekresearch/ndspflow"><img alt="CircleCI" src="https://circleci.com/gh/voytekresearch/ndspflow.svg?style=svg&amp;circle-token=b26555544cf83f79a4aa45f6f4b98423e2ee06d0" /></a> <a class="reference external" href="https://codecov.io/gh/voytekresearch/ndspflow"><img alt="Codecov" src="https://codecov.io/gh/voytekresearch/ndspflow/branch/master/graph/badge.svg?token=I9Z7OPIZ7J" /></a></p>
+<p>A <a class="reference external" href="https://github.com/nipy/nipype">nipype</a> powered workflow for running a pre-processed neural timeseries
+through either <a class="reference external" href="https://github.com/fooof-tools/fooof">FOOOF</a> and/or <a class="reference external" href="https://github.com/bycycle-tools/bycycle">bycycle</a>.</p>
+<div class="section" id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>nipype &gt;= 1.5.1</p></li>
+<li><p>fooof &gt;= 1.0.0</p></li>
+<li><p>bycycle &gt;= 1.0.0rc2</p></li>
+<li><p>plotly &gt;= 4.10.0</p></li>
+<li><p>pytest &gt;= 6.0.2</p></li>
+</ul>
+</div>
+<div class="section" id="motivations">
+<h2>Motivations<a class="headerlink" href="#motivations" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p>A cloud-deployable BIDS application (i.e. the cli to facilitate HPC job submission).</p></li>
+<li><p>Interactive visualization reports (i.e. html pages to help assess group and individial fits).</p></li>
+<li><p>Containerization of workflows (i.e. docker and singularity for reproducibility).</p></li>
+<li><p>Facilitate cross bycycle/fooof workflows (i.e. using fooof for burst detection in bycycle).</p></li>
+</ul>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ git clone git@github.com:voytekresearch/ndspflow.git
+$ <span class="nb">cd</span> ndspflow
+$ pip install .
+</pre></div>
+</div>
+</div>
+<div class="section" id="quickstart">
+<h2>Quickstart<a class="headerlink" href="#quickstart" title="Permalink to this headline">¶</a></h2>
+<p>The input data should be organized in the working directory and the directory and file names must
+match the command-line call.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>data
+├── freqs.npy
+├── powers.npy
+└── sigs.npy
+</pre></div>
+</div>
+<p>The command-line call below runs both fooof and bycycle.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ndspflow \
+  -freqs freqs.npy \
+  -power_spectrum powers.npy \
+  -sig sigs.npy \
+  -fs 500 \
+  -f_range_fooof 1 50 \
+  -f_range_bycycle 15 25 \
+  -max_n_peaks 1 \
+  -min_peak_height .3 \
+  -peak_threshold 2 \
+  -peak_width_limits 1 5 \
+  -aperiodic_mode fixed \
+  -center_extrema peak \
+  -burst_method cycles \
+  -amp_fraction_threshold 0 \
+  -amp_consistency_threshold .5 \
+  -period_consistency_threshold .5 \
+  -monotonicity_threshold .8 \
+  -min_n_cycles 3 \
+  -axis 0 \
+  -n_jobs -1 \
+  -run_nodes both \
+  $PWD/data $PWD/results
+</pre></div>
+</div>
+</div>
+<div class="section" id="results">
+<h2>Results<a class="headerlink" href="#results" title="Permalink to this headline">¶</a></h2>
+<p>The above command will save results as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>results
+├── bycycle
+│   ├── report_group.html
+│   ├── signal_dim1-0000
+│   │   ├── report.html
+│   │   └── results.csv
+│   ├── signal_dim1-0001
+│   │   ├── report.html
+│   │   └── results.csv
+│   ├── signal_dim1-0002
+│   │   ├── report.html
+│   │   └── results.csv
+│   ├── signal_dim1-0003
+│   │   ├── report.html
+│   │   └── results.csv
+│   └── signal_dim1-0004
+│       ├── report.html
+│       └── results.csv
+└── fooof
+    ├── report_group.html
+    ├── spectrum_dim1-0000
+    │   ├── report.html
+    │   └── results.json
+    ├── spectrum_dim1-0001
+    │   ├── report.html
+    │   └── results.json
+    ├── spectrum_dim1-0002
+    │   ├── report.html
+    │   └── results.json
+    ├── spectrum_dim1-0003
+    │   ├── report.html
+    │   └── results.json
+    └── spectrum_dim1-0004
+        ├── report.html
+        └── results.json
+</pre></div>
+</div>
+<p>Example html reports:</p>
+<ul class="simple">
+<li><p>FOOOF</p>
+<ul>
+<li><p><a class="reference external" href="https://voytekresearch.github.io/ndspflow/results/fooof/spectrum_dim1-0000/report.html">Individual</a></p></li>
+<li><p><a class="reference external" href="https://voytekresearch.github.io/ndspflow/results/fooof/report_group.html">Group</a></p></li>
+</ul>
+</li>
+<li><p>bycycle</p>
+<ul>
+<li><p><a class="reference external" href="https://voytekresearch.github.io/ndspflow/results/bycycle/signal_dim1-0000/report.html">Individual</a></p></li>
+<li><p><a class="reference external" href="https://voytekresearch.github.io/ndspflow/results/bycycle/report_group.html">Group</a></p></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2020-2020, VoytekLab.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.4.0.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
