@@ -69,7 +69,6 @@ def plot_scatter(param, label, urls, yfmt=".3f"):
             var point = data.points[0];
             var event = data || window.event;
             if (point) {{
-                console.log(point.customdata);
                 if (event.ctrlKey || event.metaKey) {{
                     window.open(point.customdata,"_self");
                 }} else {{

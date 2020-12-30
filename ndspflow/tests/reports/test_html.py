@@ -43,14 +43,14 @@ def test_generate_header():
     n_fooofs = 1
     n_bycycles = 0
 
-    html_header = generate_header('subject', "fooof", n_fooofs=n_fooofs, n_bycycles=n_bycycles)
+    html_header = generate_header('group', '/tmp', 'fooof', n_fooofs=n_fooofs,
+                                  n_bycycles=n_bycycles)
 
     # Assert masthead template was used
     assert "masthead" in html_header
 
     # Assert subject template replacement was successful
     assert "{% SUBJECT_TEMPLATE %}" not in html_header
-
     assert str(n_fooofs) in html_header
     assert str(n_bycycles) in html_header
 
@@ -60,7 +60,7 @@ def test_generate_fooof_report(fooof_outs):
     # Load data from fixture
     fm, fooof_graph = fooof_outs['fm'], fooof_outs['fm_graph']
 
-    html_report = generate_header('subject', dtype="fooof", n_fooofs=1, n_bycycles=0)
+    html_report = generate_header('subject', '/tmp', 'fooof', n_fooofs=1, n_bycycles=0)
     html_report = generate_fooof_report(fm, fooof_graph, html_report)
 
     # Assert html template replacement was successful
@@ -81,7 +81,7 @@ def test_generate_bycycle_report(bycycle_outs, sim_sig):
 
     fit_kwargs = dict(sig=sig, fs=fs, threshold_kwargs=threshold_kwargs)
 
-    html_report = generate_header('subject', "bycycle", n_fooofs=0, n_bycycles=1)
+    html_report = generate_header('subject', '/tmp', 'bycycle', n_fooofs=0, n_bycycles=1)
     html_report = generate_bycycle_report(fit_kwargs, graph, html_report)
 
     # Assert html template replacement was successful

@@ -8,7 +8,7 @@ from ndspflow.plts.utils import plot_scatter, two_column_layout
 
 
 def plot_fm(fm):
-    """Plot a individual FOOOF fits using plotly.
+    """Plot a single FOOOF fits using plotly.
 
     Parameters
     ----------

@@ -7,12 +7,12 @@ import nipype.pipeline.engine as pe
 from nipype.interfaces import utility as niu
 
 from ndspflow.io.paths import check_dirs
-from ndspflow.core.interfaces import FOOOFNode, BycycleNode
+from ndspflow.core.interfaces import FOOOFNode, BycycleNode, ReportNode
 
 
 def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
                     fooof_params=None, bycycle_params=None, n_jobs=1):
-    """Connects nodes into an overall nipype workflow.
+    """Connects nodes into a nipype workflow.
 
     Parameters
     ----------
@@ -20,7 +20,7 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
         Path to input directory.
     output_dir : str
         Path to write results to.
-    run_nodes : list, optional, default: ['fooof', 'bycycle']
+    run_nodes : list, optional, default: ['fooof', 'bycycle', 'both']
         Defines which nodes to run. Must contain fooof and/or bycycle.
     fooof_params : dict, optional, default: None
         Sets the inputs to the FOOOFNode.
@@ -47,18 +47,30 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
     io_node.inputs.output_dir = output_dir
     io_node.inputs.n_jobs = n_jobs
 
-    # FOOOF node
-    if 'fooof' in run_nodes:
+    # Report node
+    report_node = wf_report()
+    wf.connect([(io_node, report_node, [('output_dir', 'output_dir')])])
+
+    if 'fooof' in run_nodes or 'both' in run_nodes:
+        # FOOOF node
         fooof_node = wf_fooof(fooof_params)
+
         wf.connect([(io_node, fooof_node, [('input_dir', 'input_dir'),
                                            ('output_dir', 'output_dir'),
                                            ('n_jobs', 'n_jobs')])])
 
-    if 'bycycle' in run_nodes:
+        wf.connect([(fooof_node, report_node, [('fms', 'fms')])])
+
+    if 'bycycle' in run_nodes or 'both' in run_nodes:
+        # Bycycle node
         bycycle_node = wf_bycycle(bycycle_params)
+
         wf.connect([(io_node, bycycle_node, [('input_dir', 'input_dir'),
                                              ('output_dir', 'output_dir'),
                                              ('n_jobs', 'n_jobs')])])
+
+        wf.connect([(bycycle_node, report_node, [('df_features', 'df_features'),
+                                                 ('_fit_args', '_fit_args')])])
 
     return wf
 
@@ -148,3 +160,20 @@ def wf_bycycle(bycycle_params):
     bycycle_node.inputs.axis = bycycle_params.pop("axis", '0')
 
     return bycycle_node
+
+
+def wf_report():
+    """Create the report workflow.
+
+    Returns
+    -------
+    report_node : nipype.pipeline.engine.nodes.Node
+        A nipype node for running bycycle.
+    """
+
+    report_node = pe.Node(ReportNode(), name='report_node')
+    report_node.inputs.fms = None
+    report_node.inputs.df_features = None
+    report_node.inputs._fit_args = None
+
+    return report_node
