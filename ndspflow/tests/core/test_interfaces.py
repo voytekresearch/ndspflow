@@ -9,7 +9,7 @@ import numpy as np
 import nipype.pipeline.engine as pe
 
 from ndspflow.tests.settings import TEST_DATA_PATH
-from ndspflow.core.interfaces import FOOOFNode, BycycleNode
+from ndspflow.core.interfaces import FOOOFNode, BycycleNode, ReportNode
 
 
 def test_FOOOF():
@@ -48,7 +48,6 @@ def test_FOOOF():
     fooof_node.run()
     f_out = os.listdir(os.path.join(test_dir.name, 'fooof'))
     assert 'results.json' in f_out
-    assert 'report.html' in f_out
     test_dir.cleanup()
 
 
@@ -99,7 +98,16 @@ def test_Bycycle(axis, burst_method):
     bycycle_node.run()
     f_out = os.listdir(os.path.join(test_dir.name, 'bycycle'))
     assert 'results.csv' in f_out
-    assert 'report.html' in f_out
     test_dir.cleanup()
 
 
+def test_Report():
+
+    report_node = ReportNode()
+
+    report_node.inputs.output_dir = '/tmp'
+    report_node.inputs.fms = None
+    report_node.inputs.df_features = None
+    report_node.inputs._fit_args = None
+
+    report_node.run()

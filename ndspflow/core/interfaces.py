@@ -54,7 +54,7 @@ class FOOOFNodeInputSpec(BaseInterfaceInputSpec):
 class FOOOFNodeOutputSpec(TraitedSpec):
     """Output interface for FOOOF."""
 
-    fm = traits.Any(mandatory=True)
+    fms = traits.Any(mandatory=True)
     fm_results = traits.Directory(mandatory=True)
 
 
@@ -82,10 +82,7 @@ class FOOOFNode(SimpleInterface):
         # Save model
         save_fooof(fms, self.inputs.output_dir)
 
-        # Save reports
-        generate_report(self.inputs.output_dir, fms=fms)
-
-        self._results["fm"] = fms
+        self._results["fms"] = fms
         self._results["fm_results"] = os.path.join(self.inputs.output_dir, 'fooof')
 
         return runtime
@@ -135,6 +132,7 @@ class BycycleNodeOutputSpec(TraitedSpec):
 
     df_features = traits.Any(mandatory=True)
     bm_results = traits.Directory(mandatory=True)
+    _fit_args = traits.Any(mandatory=True)
 
 
 class BycycleNode(SimpleInterface):
@@ -191,13 +189,52 @@ class BycycleNode(SimpleInterface):
         # Save dataframes
         save_bycycle(df_features, self.inputs.output_dir)
 
-        # Save reports
         fit_args = dict(sig=sig, fs=self.inputs.fs, f_range=self.inputs.f_range_bycycle,
                         **fit_kwargs)
 
-        generate_report(self.inputs.output_dir, bms=(df_features, fit_args))
-
         self._results["df_features"] = df_features
         self._results["bm_results"] = os.path.join(self.inputs.output_dir, 'bycycle')
+        self._results["_fit_args"] = fit_args
 
         return runtime
+
+
+class ReportNodeInputSpec(BaseInterfaceInputSpec):
+    """Input interface for reporting."""
+
+    output_dir = traits.Directory(
+        argstr='%s',
+        exists=False,
+        resolve=True,
+        desc='Output directory to write results and BIDS derivatives to write.',
+        mandatory=True,
+        position=1
+    )
+
+    fms = traits.Any()
+    df_features = traits.Any()
+    _fit_args = traits.Any()
+
+
+class ReportNodeOutputSpec(BaseInterfaceInputSpec):
+    """Output interface for reporting."""
+
+    pass
+
+
+class ReportNode(SimpleInterface):
+    """Interface wrapper for reporting."""
+
+    input_spec = ReportNodeInputSpec
+    output_spec = ReportNodeOutputSpec
+
+    def _run_interface(self, runtime):
+
+        fms = None if self.inputs.fms is None else self.inputs.fms
+        bms = None if self.inputs.df_features is None else \
+            (self.inputs.df_features, self.inputs._fit_args)
+
+        generate_report(self.inputs.output_dir, fms=fms, bms=bms)
+
+        return runtime
+
