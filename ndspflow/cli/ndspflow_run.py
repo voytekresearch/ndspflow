@@ -112,7 +112,7 @@ def get_parser():
     parser.add_argument(
         '-min_peak_height',
         type=float,
-        default=0.,\
+        default=0.,
         metavar="float",
         help="Absolute threshold for detecting peaks, in units of the input data.\n"
              "Recommended if 'fooof' in 'run_nodes argument' (default: %(default)s)."
@@ -225,7 +225,7 @@ def get_parser():
     # Workflow selector
     parser.add_argument(
         '-run_nodes',
-        default=['fooof', 'bycycle', 'both'],
+        default=None,
         choices=['fooof', 'bycycle', 'both'],
         required=False,
         help="List of nodes to run: fooof and/or bycyle (default: fooof bycycle)."
@@ -249,9 +249,22 @@ def main():
     if not output_dir.startswith('/'):
         output_dir = os.path.join(os.getcwd(), output_dir)
 
+    # Required argument checks
     run_nodes = args['run_nodes']
 
+    if run_nodes is None:
+        raise ValueError("Undefined required \"run_nodes\" argument.")
+
+    req_args_fooof = dict(freqs=args['freqs'], power_spectrum=args['power_spectrum'],
+                          f_range_fooof=args['f_range_fooof'])
+
+    req_args_bycycle = dict(sig=args['sig'], fs=args['fs'], f_range_bycycle=args['f_range_bycycle'])
+
     if 'fooof' in run_nodes or 'both' in run_nodes:
+
+        for arg, val in req_args_fooof.items():
+            if val is None:
+                raise ValueError("Undefined required \"{arg}\" argument.".format(arg=arg))
 
         fooof_params = dict(
             freqs=args['freqs'], power_spectrum=args['power_spectrum'],
@@ -265,6 +278,11 @@ def main():
         fooof_params = None
 
     if 'bycycle' in run_nodes or 'both' in run_nodes:
+
+        for arg, val in req_args_bycycle.items():
+
+            if val is None:
+                raise ValueError("Undefined required \"{arg}\" argument.".format(arg=arg))
 
         bycycle_params = dict(
             sig=args['sig'], fs=args['fs'], f_range_bycycle=tuple(args['f_range_bycycle']),
