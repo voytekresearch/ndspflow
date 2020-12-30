@@ -63,13 +63,14 @@ install:
 	# Ensure js is available and convert local paths
 	mkdir -p $(PWD)/_build/html/resources/js $(PWD)/_build/html/resources/css
 	cp $(PWD)/../ndspflow/reports/templates/resources/js/* $(PWD)/_build/html/resources/js/
-	cp $(PWD)/../ndspflow/reports/templates/resources/css/* $(PWD)/_build/html/resources/jcss/
+	cp $(PWD)/../ndspflow/reports/templates/resources/css/* $(PWD)/_build/html/resources/css/
 	cp $(PWD)/_build/html/results/bycycle/.data.js $(PWD)/_build/html/resources/js/
 	for f in $$(find _build/html/results -name "*.html"); do \
-		sed -i -e "s/src=.*bycycle\//src=\"\/ndspflow\/resources\/js\//" $$f; \
-		sed -i -e "s/src=.*js\//src=\"\/ndspflow\/resources\/js\//" $$f; \
-		sed -i -e "s/href=.*css\//src=\"\/ndspflow\/resources\/css\//" $$f; \
-		sed -i -e "s#file:///[^_]*##g" -e "s#_build/html#/ndspflow#g"  $$f; \
+	    sed -i -e "s#src=.*bycycle/#src=\"\ndspflow/resources/js/#" $$f; \
+	    sed -i -e "s#src=.*js/#src=\"/ndspflow/resources/js/#" $$f; \
+	    sed -i -e "s#href=.*css/#href=\"/ndspflow/resources/css/#" $$f; \
+ 	    sed -i -e "s#href=.*/_build/html#href=\"/ndspflow#g" $$f; \
+	    sed -i -e "s#file:///[^_]*##g" -e "s#_build/html#/ndspflow#g"  $$f; \
 	done
 	# Copy site into the gh-pages branch folder, then push to Github to deploy
 	cd _build/ && \
