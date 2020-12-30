@@ -1,4 +1,5 @@
-const navbar = document.getElementById("navbar");
+function makeNavbar(){
+  const navbar = document.getElementById("navbar");
   const navbarToggle = navbar.querySelector(".navbar-toggle");
 
   function openMobileNavbar() {
@@ -41,3 +42,5 @@ const navbar = document.getElementById("navbar");
       }
     });
   }
+}
+
