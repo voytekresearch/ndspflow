@@ -103,7 +103,7 @@
 <span class="kn">from</span> <span class="nn">nipype.interfaces</span> <span class="kn">import</span> <span class="n">utility</span> <span class="k">as</span> <span class="n">niu</span>
 
 <span class="kn">from</span> <span class="nn">ndspflow.io.paths</span> <span class="kn">import</span> <span class="n">check_dirs</span>
-<span class="kn">from</span> <span class="nn">ndspflow.core.interfaces</span> <span class="kn">import</span> <span class="n">FOOOFNode</span><span class="p">,</span> <span class="n">BycycleNode</span>
+<span class="kn">from</span> <span class="nn">ndspflow.core.interfaces</span> <span class="kn">import</span> <span class="n">FOOOFNode</span><span class="p">,</span> <span class="n">BycycleNode</span><span class="p">,</span> <span class="n">ReportNode</span>
 
 
 <div class="viewcode-block" id="create_workflow"><a class="viewcode-back" href="../../../generated/ndspflow.core.workflows.create_workflow.html#ndspflow.core.workflows.create_workflow">[docs]</a><span class="k">def</span> <span class="nf">create_workflow</span><span class="p">(</span><span class="n">input_dir</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">run_nodes</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;fooof&#39;</span><span class="p">,</span> <span class="s1">&#39;bycycle&#39;</span><span class="p">],</span>
@@ -143,18 +143,30 @@
     <span class="n">io_node</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span> <span class="o">=</span> <span class="n">output_dir</span>
     <span class="n">io_node</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
 
-    <span class="c1"># FOOOF node</span>
+    <span class="c1"># Report node</span>
+    <span class="n">report_node</span> <span class="o">=</span> <span class="n">wf_report</span><span class="p">()</span>
+    <span class="n">wf</span><span class="o">.</span><span class="n">connect</span><span class="p">([(</span><span class="n">io_node</span><span class="p">,</span> <span class="n">report_node</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;output_dir&#39;</span><span class="p">,</span> <span class="s1">&#39;output_dir&#39;</span><span class="p">)])])</span>
+
     <span class="k">if</span> <span class="s1">&#39;fooof&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span> <span class="ow">or</span> <span class="s1">&#39;both&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span><span class="p">:</span>
+        <span class="c1"># FOOOF node</span>
         <span class="n">fooof_node</span> <span class="o">=</span> <span class="n">wf_fooof</span><span class="p">(</span><span class="n">fooof_params</span><span class="p">)</span>
+
         <span class="n">wf</span><span class="o">.</span><span class="n">connect</span><span class="p">([(</span><span class="n">io_node</span><span class="p">,</span> <span class="n">fooof_node</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;input_dir&#39;</span><span class="p">,</span> <span class="s1">&#39;input_dir&#39;</span><span class="p">),</span>
                                            <span class="p">(</span><span class="s1">&#39;output_dir&#39;</span><span class="p">,</span> <span class="s1">&#39;output_dir&#39;</span><span class="p">),</span>
                                            <span class="p">(</span><span class="s1">&#39;n_jobs&#39;</span><span class="p">,</span> <span class="s1">&#39;n_jobs&#39;</span><span class="p">)])])</span>
 
+        <span class="n">wf</span><span class="o">.</span><span class="n">connect</span><span class="p">([(</span><span class="n">fooof_node</span><span class="p">,</span> <span class="n">report_node</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;fms&#39;</span><span class="p">,</span> <span class="s1">&#39;fms&#39;</span><span class="p">)])])</span>
+
     <span class="k">if</span> <span class="s1">&#39;bycycle&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span> <span class="ow">or</span> <span class="s1">&#39;both&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span><span class="p">:</span>
+        <span class="c1"># Bycycle node</span>
         <span class="n">bycycle_node</span> <span class="o">=</span> <span class="n">wf_bycycle</span><span class="p">(</span><span class="n">bycycle_params</span><span class="p">)</span>
+
         <span class="n">wf</span><span class="o">.</span><span class="n">connect</span><span class="p">([(</span><span class="n">io_node</span><span class="p">,</span> <span class="n">bycycle_node</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;input_dir&#39;</span><span class="p">,</span> <span class="s1">&#39;input_dir&#39;</span><span class="p">),</span>
                                              <span class="p">(</span><span class="s1">&#39;output_dir&#39;</span><span class="p">,</span> <span class="s1">&#39;output_dir&#39;</span><span class="p">),</span>
                                              <span class="p">(</span><span class="s1">&#39;n_jobs&#39;</span><span class="p">,</span> <span class="s1">&#39;n_jobs&#39;</span><span class="p">)])])</span>
+
+        <span class="n">wf</span><span class="o">.</span><span class="n">connect</span><span class="p">([(</span><span class="n">bycycle_node</span><span class="p">,</span> <span class="n">report_node</span><span class="p">,</span> <span class="p">[(</span><span class="s1">&#39;df_features&#39;</span><span class="p">,</span> <span class="s1">&#39;df_features&#39;</span><span class="p">),</span>
+                                                 <span class="p">(</span><span class="s1">&#39;_fit_args&#39;</span><span class="p">,</span> <span class="s1">&#39;_fit_args&#39;</span><span class="p">)])])</span>
 
     <span class="k">return</span> <span class="n">wf</span></div>
 
@@ -244,6 +256,23 @@
     <span class="n">bycycle_node</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span> <span class="o">=</span> <span class="n">bycycle_params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;axis&quot;</span><span class="p">,</span> <span class="s1">&#39;0&#39;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">bycycle_node</span></div>
+
+
+<span class="k">def</span> <span class="nf">wf_report</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Create the report workflow.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    report_node : nipype.pipeline.engine.nodes.Node</span>
+<span class="sd">        A nipype node for running bycycle.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">report_node</span> <span class="o">=</span> <span class="n">pe</span><span class="o">.</span><span class="n">Node</span><span class="p">(</span><span class="n">ReportNode</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;report_node&#39;</span><span class="p">)</span>
+    <span class="n">report_node</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">fms</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">report_node</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">df_features</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">report_node</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">_fit_args</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="n">report_node</span>
 </pre></div>
 
     </div>

@@ -130,7 +130,7 @@
     <span class="c1"># Infer number of bycycle models</span>
     <span class="n">n_bms</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">bms</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="n">n_bms</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">n_bms</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="k">else</span> <span class="n">n_bms</span>
-    <span class="n">n_bms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bms</span><span class="p">)</span> <span class="k">if</span> <span class="n">n_bms</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="k">else</span> <span class="n">n_bms</span>
+    <span class="n">n_bms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">n_bms</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="k">else</span> <span class="n">n_bms</span>
     <span class="n">n_bms</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">bms</span><span class="p">)[:</span><span class="mi">2</span><span class="p">]))</span> <span class="k">if</span> <span class="n">n_bms</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> \
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="k">else</span> <span class="n">n_bms</span>
 
@@ -140,8 +140,12 @@
     <span class="n">n_fms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fms</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="n">FOOOFGroup</span><span class="p">)</span> <span class="k">else</span> <span class="n">n_fms</span>
     <span class="n">n_fms</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">fms</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">fms</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="n">n_fms</span>
 
-    <span class="c1"># Generate fooof reports</span>
+    <span class="c1"># Navigation page</span>
+    <span class="n">nav_page</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">fms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="c1"># Generate fooof reports</span>
+        <span class="n">nav_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;h1&gt;FOOOF Reports&lt;/h1&gt;&quot;&quot;&quot;</span><span class="p">)</span>
 
         <span class="n">fooof_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">)</span>
         <span class="n">fm_list</span><span class="p">,</span> <span class="n">fm_paths</span> <span class="o">=</span> <span class="n">flatten_fms</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="n">fooof_dir</span><span class="p">)</span>
@@ -151,22 +155,28 @@
         <span class="n">urls</span> <span class="o">=</span>  <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="s1">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fm_path</span><span class="p">,</span> <span class="s2">&quot;report.html&quot;</span><span class="p">))</span> <span class="k">for</span> <span class="n">fm_path</span> <span class="ow">in</span> <span class="n">fm_paths</span><span class="p">]</span>
 
         <span class="c1"># Individual spectrum reports</span>
+        <span class="n">nav_links</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">fm</span><span class="p">,</span> <span class="n">fm_path</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fm_list</span><span class="p">,</span> <span class="n">fm_paths</span><span class="p">):</span>
 
             <span class="c1"># Inject header and fooof report</span>
-            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">fm_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
-                                          <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">fm_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
+                                          <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
             <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_fooof_report</span><span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">plot_fm</span><span class="p">(</span><span class="n">fm</span><span class="p">),</span> <span class="n">html_report</span><span class="p">)</span>
 
             <span class="c1"># Write the html to a file</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fm_path</span><span class="p">,</span> <span class="s1">&#39;report.html&#39;</span><span class="p">),</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fm_path</span><span class="p">,</span> <span class="s1">&#39;report.html&#39;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
                 <span class="n">html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_report</span><span class="p">)</span>
+
+            <span class="c1"># For the navigation page</span>
+            <span class="n">nav_links</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;h3&gt;&lt;a href=</span><span class="se">\&quot;</span><span class="si">{url}</span><span class="se">\&quot;</span><span class="s2">&gt;</span><span class="si">{label}</span><span class="s2">&lt;/a&gt;&lt;/h3&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">))</span>
 
         <span class="c1"># Group spectra reports</span>
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">fms</span><span class="p">)</span> <span class="ow">is</span> <span class="n">FOOOFGroup</span><span class="p">:</span>
 
             <span class="c1"># Inject header and fooof report</span>
-            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
+            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
                                           <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
 
             <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_fooof_report</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="n">plot_fg</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="n">urls</span><span class="p">),</span> <span class="n">html_report</span><span class="p">)</span>
@@ -174,7 +184,7 @@
         <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">fms</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
 
             <span class="c1"># Inject header</span>
-            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
+            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
                                           <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
 
             <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_fooof_report</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="n">plot_fgs</span><span class="p">(</span><span class="n">fms</span><span class="p">,</span> <span class="n">urls</span><span class="p">),</span> <span class="n">html_report</span><span class="p">)</span>
@@ -182,9 +192,25 @@
         <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">fms</span><span class="p">)</span> <span class="ow">is</span> <span class="n">FOOOFGroup</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">fms</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
 
             <span class="c1"># Write the html to a file</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fooof_dir</span><span class="p">,</span> <span class="n">group_fname</span><span class="p">),</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
+            <span class="n">group_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fooof_dir</span><span class="p">,</span> <span class="n">group_fname</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">group_url</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
                 <span class="n">html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_report</span><span class="p">)</span>
 
+            <span class="n">group_link</span> <span class="o">=</span> <span class="s2">&quot;&lt;h3&gt;&lt;a href=</span><span class="se">\&quot;</span><span class="si">{url}</span><span class="se">\&quot;</span><span class="s2">&gt;Group&lt;/a&gt;&lt;/h3&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
+            <span class="n">nav_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group_link</span><span class="p">)</span>
+
+        <span class="n">nav_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nav_links</span><span class="p">))</span>
+
+        <span class="c1"># Create a fooof navigation page</span>
+        <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;nav&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
+                                       <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
+
+        <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% NAV %}&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nav_page</span><span class="p">))</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fooof_dir</span><span class="p">,</span> <span class="s2">&quot;nav.html&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
+            <span class="n">html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_report</span><span class="p">)</span>
+
+    <span class="n">nav_page</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">if</span> <span class="n">bms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 
         <span class="c1"># Unpack tuple</span>
@@ -195,6 +221,8 @@
         <span class="n">thresholds</span> <span class="o">=</span> <span class="n">fit_kwargs</span><span class="p">[</span><span class="s1">&#39;threshold_kwargs&#39;</span><span class="p">]</span>
 
         <span class="c1"># Generate bycycle reports</span>
+        <span class="n">nav_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;h1&gt;Bycycle Reports&lt;/h1&gt;&quot;</span><span class="p">)</span>
+
         <span class="n">bycycle_dir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;bycycle&quot;</span><span class="p">)</span>
 
         <span class="n">dfs_features_2d</span><span class="p">,</span> <span class="n">bc_paths</span><span class="p">,</span> <span class="n">sigs_2d</span> <span class="o">=</span> <span class="n">flatten_bms</span><span class="p">(</span><span class="n">dfs_features</span><span class="p">,</span> <span class="n">bycycle_dir</span><span class="p">,</span> <span class="n">sigs</span><span class="o">=</span><span class="n">sigs</span><span class="p">)</span>
@@ -202,19 +230,25 @@
         <span class="n">group_url</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="s1">&#39;file://&#39;</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bycycle_dir</span><span class="p">,</span> <span class="n">group_fname</span><span class="p">))</span> <span class="k">if</span> <span class="n">n_bms</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">None</span>
 
         <span class="c1"># Individual signal reports</span>
+        <span class="n">nav_links</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">df_features</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">bc_path</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">dfs_features_2d</span><span class="p">,</span> <span class="n">sigs_2d</span><span class="p">,</span> <span class="n">bc_paths</span><span class="p">)):</span>
 
             <span class="c1"># Inject header and bycycle report</span>
-            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="s2">&quot;bycycle&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span>
-                                          <span class="n">label</span><span class="o">=</span><span class="n">bc_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="n">bc_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;bycycle&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
+                                          <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
 
             <span class="n">graph</span> <span class="o">=</span> <span class="n">plot_bm</span><span class="p">(</span><span class="n">df_features</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">fs</span><span class="p">,</span> <span class="n">thresholds</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">plot_only_result</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
             <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_bycycle_report</span><span class="p">(</span><span class="n">fit_kwargs</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">html_report</span><span class="p">)</span>
 
             <span class="c1"># Write the html to a file</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bc_path</span><span class="p">,</span> <span class="s1">&#39;report.html&#39;</span><span class="p">),</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bc_path</span><span class="p">,</span> <span class="s1">&#39;report.html&#39;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
                 <span class="n">html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_report</span><span class="p">)</span>
+
+            <span class="c1"># For the navigation page</span>
+            <span class="n">nav_links</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;&lt;h3&gt;&lt;a href=</span><span class="se">\&quot;</span><span class="si">{url}</span><span class="se">\&quot;</span><span class="s2">&gt;</span><span class="si">{label}</span><span class="s2">&lt;/a&gt;&lt;/h3&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">))</span>
 
         <span class="c1"># Mutlidim reports</span>
         <span class="k">if</span> <span class="n">sigs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -227,18 +261,33 @@
 
         <span class="k">if</span> <span class="n">sigs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">sigs</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
 
-            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;bycycle&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
+            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;bycycle&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
                                           <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
 
             <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_bycycle_report</span><span class="p">(</span><span class="n">fit_kwargs</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">html_report</span><span class="p">)</span>
 
             <span class="c1"># Write the html to a file</span>
-            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bycycle_dir</span><span class="p">,</span> <span class="n">group_fname</span><span class="p">),</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
-                <span class="n">html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_report</span><span class="p">)</span></div>
+            <span class="n">group_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bycycle_dir</span><span class="p">,</span> <span class="n">group_fname</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">group_url</span><span class="p">,</span> <span class="s2">&quot;w+&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
+                <span class="n">html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_report</span><span class="p">)</span>
+
+            <span class="n">group_link</span> <span class="o">=</span> <span class="s2">&quot;&lt;h3&gt;&lt;a href=</span><span class="se">\&quot;</span><span class="si">{url}</span><span class="se">\&quot;</span><span class="s2">&gt;Group&lt;/a&gt;&lt;/h3&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
+            <span class="n">nav_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">group_link</span><span class="p">)</span>
+
+        <span class="n">nav_page</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nav_links</span><span class="p">))</span>
+
+        <span class="c1"># Create a bycycle navigation page</span>
+        <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;nav&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;bycycle&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
+                                      <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
+
+        <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% NAV %}&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">nav_page</span><span class="p">))</span>
+
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bycycle_dir</span><span class="p">,</span> <span class="s2">&quot;nav.html&quot;</span><span class="p">),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">html</span><span class="p">:</span>
+            <span class="n">html</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">html_report</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="generate_header"><a class="viewcode-back" href="../../../generated/ndspflow.reports.html.generate_header.html#ndspflow.reports.html.generate_header">[docs]</a><span class="k">def</span> <span class="nf">generate_header</span><span class="p">(</span><span class="n">report_type</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                    <span class="n">n_fooofs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_bycycles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="generate_header"><a class="viewcode-back" href="../../../generated/ndspflow.reports.html.generate_header.html#ndspflow.reports.html.generate_header">[docs]</a><span class="k">def</span> <span class="nf">generate_header</span><span class="p">(</span><span class="n">report_type</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">n_fooofs</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_bycycles</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Include masthead and subject info in a HTML string.</span>
 
 <span class="sd">    Parameters</span>
@@ -251,9 +300,9 @@
 <span class="sd">        The path to write the reports to.</span>
 <span class="sd">    label : list of str, optional, default: None</span>
 <span class="sd">        Spectrum identifier.</span>
-<span class="sd">    n_fooofs : int, optional, default: None</span>
+<span class="sd">    n_fooofs : int, optional, default: 0</span>
 <span class="sd">        The number of fooof fits.</span>
-<span class="sd">    n_bycycles : int, optional, default: None</span>
+<span class="sd">    n_bycycles : int, optional, default: 0</span>
 <span class="sd">        The number of bycycle fits.</span>
 
 <span class="sd">    Returns</span>
@@ -284,14 +333,21 @@
 <span class="s2">        </span><span class="se">\t</span><span class="s2">&lt;/ul&gt;</span>
 <span class="s2">        &quot;&quot;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">report_type</span> <span class="o">==</span> <span class="s2">&quot;group&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">report_type</span> <span class="o">==</span> <span class="s2">&quot;group&quot;</span><span class="p">:</span>
         <span class="c1"># Read in body</span>
         <span class="n">body</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cwd</span><span class="p">,</span> <span class="s2">&quot;templates/group.html&quot;</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
         <span class="n">body_template</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
         <span class="n">body</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
+    <span class="k">elif</span> <span class="n">report_type</span> <span class="o">==</span> <span class="s2">&quot;nav&quot;</span><span class="p">:</span>
+        <span class="c1"># Read in body</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cwd</span><span class="p">,</span> <span class="s2">&quot;templates/nav.html&quot;</span><span class="p">),</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">body_template</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">body</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">report_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;group&quot;</span><span class="p">,</span> <span class="s2">&quot;nav&quot;</span><span class="p">]:</span>
         <span class="c1"># Set meta string</span>
-        <span class="n">meta_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span><span class="se">\</span>
+        <span class="n">meta_template</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">        </span><span class="se">\t</span><span class="s2">&lt;ul class=&quot;elem-desc&quot;&gt;</span>
 <span class="s2">        </span><span class="se">\t\t</span><span class="s2">&lt;li&gt;Group Report&lt;/li&gt;</span>
 <span class="s2">        </span><span class="se">\t\t</span><span class="s2">&lt;li&gt;FOOOF Fits: </span><span class="si">{n_fooofs}</span><span class="s2">&lt;/li&gt;</span>
@@ -306,7 +362,17 @@
     <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% META_TEMPLATE %}&quot;</span><span class="p">,</span> <span class="n">meta_template</span><span class="p">)</span>
     <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% ROOT %}&quot;</span><span class="p">,</span> <span class="n">root_path</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">output_dir</span><span class="p">:</span>
+    <span class="n">fooof_nav</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="s1">&#39;fooof&#39;</span><span class="p">,</span> <span class="s2">&quot;nav.html&quot;</span><span class="p">)</span>
+    <span class="n">bycycle_nav</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="s1">&#39;bycycle&#39;</span><span class="p">,</span> <span class="s2">&quot;nav.html&quot;</span><span class="p">)</span>
+    <span class="n">fooof_str</span> <span class="o">=</span> <span class="s2">&quot;FOOOF&quot;</span> <span class="k">if</span> <span class="n">n_fooofs</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">bycycle_str</span> <span class="o">=</span> <span class="s2">&quot;Bycycle&quot;</span> <span class="k">if</span> <span class="n">n_bycycles</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% NAV_FOOOF %}&quot;</span><span class="p">,</span> <span class="n">fooof_nav</span><span class="p">)</span>
+    <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% NAV_BYCYCLE %}&quot;</span><span class="p">,</span> <span class="n">bycycle_nav</span><span class="p">)</span>
+    <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{</span><span class="si">% F</span><span class="s2">OOOF %}&quot;</span><span class="p">,</span> <span class="n">fooof_str</span><span class="p">)</span>
+    <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% Bycycle %}&quot;</span><span class="p">,</span> <span class="n">bycycle_str</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="s2">&quot;bycycle&quot;</span><span class="p">:</span>
         <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% OUT %}&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">html_report</span> <span class="o">=</span> <span class="n">html_report</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;{% OUT %}&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
