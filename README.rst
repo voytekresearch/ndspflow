@@ -136,3 +136,16 @@ Example html reports:
 
   - `Individual <https://voytekresearch.github.io/ndspflow/results/bycycle/signal_dim1-0000/report.html>`_
   - `Group <https://voytekresearch.github.io/ndspflow/results/bycycle/report_group.html>`_
+
+
+Funding
+-------
+
+Supported by NIH award R01 GM134363
+
+`NIGMS <https://www.nigms.nih.gov/>`_
+
+.. image:: https://www.nih.gov/sites/all/themes/nih/images/nih-logo-color.png
+  :width: 400
+
+|
