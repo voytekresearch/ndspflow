@@ -66,7 +66,7 @@ install:
 	cp $(PWD)/../ndspflow/reports/templates/resources/css/* $(PWD)/_build/html/resources/css/
 	cp $(PWD)/_build/html/results/bycycle/.data.js $(PWD)/_build/html/resources/js/
 	for f in $$(find _build/html/results -name "*.html"); do \
-	    sed -i -e "s#src=.*bycycle/#src=\"\ndspflow/resources/js/#" $$f; \
+	    sed -i -e "s#src=.*bycycle/#src=\"/ndspflow/resources/js/#" $$f; \
 	    sed -i -e "s#src=.*js/#src=\"/ndspflow/resources/js/#" $$f; \
 	    sed -i -e "s#href=.*css/#href=\"/ndspflow/resources/css/#" $$f; \
  	    sed -i -e "s#href=.*/_build/html#href=\"/ndspflow#g" $$f; \
