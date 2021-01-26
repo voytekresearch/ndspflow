@@ -13,7 +13,7 @@ def plot_fm(fm):
     Parameters
     ----------
     fm : fooof FOOOF
-        A fooof model that has been
+        A fooof model that has been fit.
 
     Returns
     -------
