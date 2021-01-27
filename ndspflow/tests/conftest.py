@@ -81,7 +81,7 @@ def fooof_outs(test_data):
     fgs = fit_fooof(freqs, powers_3d, f_range, {'verbose': False}, 1)
 
     # Plot
-    fm_graph = plot_fm(fm)
+    fm_graph = plot_fm(fm).to_html(full_html=False, include_plotlyjs=False)
     fg_graph = plot_fg(fg, ['' for i in range(len(fg))])
     fgs_graph = plot_fgs(fgs, ['' for i in range(int(len(fgs)*len(fgs[0])))])
 

@@ -66,7 +66,11 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
             label = fm_path.split('/')[-1]
             html_report = generate_header("subject", output_dir, "fooof", n_fooofs=n_fms,
                                           n_bycycles=n_bms, label=label, group_link=group_url)
-            html_report = generate_fooof_report(fm, plot_fm(fm), html_report)
+
+            graph = plot_fm(fm).to_html(full_html=False, default_height='475',
+                                        default_width='700', include_plotlyjs=False)
+
+            html_report = generate_fooof_report(fm, graph, html_report)
 
             # Write the html to a file
             url = os.path.join(fm_path, 'report.html')

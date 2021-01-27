@@ -1,16 +1,20 @@
-from itertools import cycle
+
+"""Motif plotting functions."""
+
 
 import numpy as np
 
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from fooof.plts.fm import gen_periodic
+from neurodsp.utils.data import normalize_sig
 
+from ndspflow.plts.fooof import plot_fm
 from ndspflow.core.motif import extract_motifs
 
 
-def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', extract_motifs_kwargs=None):
+def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak',
+                normalize=True, extract_motifs_kwargs=None, plot_fm_kwargs=None):
     """Plot cycle motifs using fooof fits and bycycle cycles.
 
     Parameters
@@ -26,16 +30,23 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', extract_mot
     n_bursts : int, optional, default: 5
         The number of example bursts to plot per peak.
     center : {'peak', 'trough'}, optional
+        Defines centers of bycycle cycles.
+    normalize : book, optiona, default: True
+        Signal is mean centered with variance of one if True.
     extract_motifs_kwargs : dict, optional, default: None
         Keyword arguments for the :func:`~.extract_motifs` function.
+    plot_fm_kwargs : dict, optional, default: None
+        Keyword arguments for the :func:`~.plot_fm` function.
 
     Returns
     -------
-    graph : str
-        The motif plot as a string containing html.
+    fig : plotly.graph_objs.Figure
+        A plotly figure of the spectrum, motif(s), and signal.
     """
 
     # Extract motifs
+    sig = normalize_sig(sig, mean=0, variance=1) if normalize else sig
+    extract_motifs_kwargs = {} if extract_motifs_kwargs is None else extract_motifs_kwargs
     motifs, dfs_osc = extract_motifs(fm, df_features, sig, fs, **extract_motifs_kwargs)
     motif_exists = [True if ~np.isnan(motif).all() else False for motif in motifs]
 
@@ -43,60 +54,60 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', extract_mot
     ncols = len(motifs)
     nrows = 2 + len(np.nonzero(motif_exists)[0])
 
+    specs = [
+        [{'colspan': ncols, 'b': .4/nrows}, *[None] * (ncols-1)],
+        [{'b': .1/nrows} for _ in range(ncols)],
+        *[[{'colspan': ncols, 'b': .1/nrows}, *[None] * (ncols-1)]] * (nrows-2)
+    ]
+
+    row_heights = [2, 1, *[1] * (nrows-2)]
+
     titles = fm.get_params('gaussian_params')[:, 0].round(1).astype(str)
     titles = [osc + ' hz Motif' for osc in titles]
 
-    stretch_cols = [{'colspan': ncols}, *[None for _ in range(ncols-1)]]
-
     fig = make_subplots(
-        rows=nrows, cols=ncols, row_heights=[2, 1, *[1]*(nrows-2)],
-        specs=[stretch_cols, [{}] * ncols, *[stretch_cols] * int(nrows-2)],
-        subplot_titles=['Spectrum & Fit', *titles, *[''] * int(nrows-2)],
-        vertical_spacing=.35 / nrows
+        rows=nrows, cols=ncols, row_heights=row_heights, specs=specs,
+        subplot_titles=['Spectrum Fit', *titles, *[''] * int(nrows-2)],
+        vertical_spacing=.03 / nrows
     )
 
     # Plot fooof
-    yvals = [fm.power_spectrum, fm.fooofed_spectrum_, fm._ap_fit]
-    styles = [{'color': 'black'}, {'color': '#d62728'}, {'dash': 'dash', 'color': '#1f77b4'}]
-    names = ['Original', 'Full Fit', 'AP Fit']
+    plot_fm_kwargs = {} if plot_fm_kwargs is None else plot_fm_kwargs
 
-    for yval, ls, name in zip(yvals, styles, names):
+    default_fills = ['rgba(44,160,44,.5)', 'rgba(255,127,14,.5)',
+                     'rgba(148,103,189,.5)', 'rgba(23,190,207,.5)', 'rgba(227,119,194,.5)']
 
-        fig.add_trace(go.Scatter(x=fm.freqs, y=yval, line=ls, name=name), row=1, col=1)
+    fill_gaussians = plot_fm_kwargs.pop('fill_gaussians', default_fills)
+    log_freqs = plot_fm_kwargs.pop('log_freqs', False)
 
-    fig.update_xaxes(title="Frequencies (hz)", row=1, col=1)
-    fig.update_yaxes(title="log(Powers)", row=1, col=1)
+    fooof_fig = plot_fm(fm, fill_gaussians=fill_gaussians, log_freqs=log_freqs, **plot_fm_kwargs)
 
-    # Fill gaussians
-    fill_colors = cycle(['rgba(44,160,44,.5)', 'rgba(255,127,14,.5)',
-                         'rgba(148,103,189,.5)', 'rgba(23,190,207,.5)', 'rgba(227,119,194,.5)'])
+    for trace in fooof_fig.select_traces():
+        fig.add_trace(trace, row=1, col=1)
 
-    pe_params = fm.get_params('gaussian_params')
+    # Label axes
+    xaxis_title = 'log(Frequencies)' if log_freqs else 'Frequencies'
+    xaxis_title = plot_fm_kwargs.pop('xaxis_title', 'Frequencies')
+    yaxis_title = plot_fm_kwargs.pop('yaxis_title', 'log(Power)')
 
-    colors = []
-    for idx, param in enumerate(pe_params):
-
-        fill = next(fill_colors)
-
-        peak = fm._ap_fit + gen_periodic(fm.freqs, param)
-
-        fig.add_trace(go.Scatter(x=np.concatenate([fm.freqs, fm.freqs[::-1]]),
-                                 y=np.concatenate([peak, fm._ap_fit[::-1]]),
-                                 fill='toself', fillcolor=fill, hoverinfo='none',
-                                 mode='none', showlegend=False),
-                      row=1, col=1)
-
-        colors.append(fill)
+    fig.update_xaxes(title_text=xaxis_title, row=1, col=1)
+    fig.update_yaxes(title_text=yaxis_title, row=1, col=1)
 
     # Plot motifs and example bursting segments
     times = np.arange(0, len(sig)/fs, 1/fs)
+
+    motif_idxs = [idx for idx, motif in enumerate(motifs) if isinstance(motif, (np.ndarray, list))]
+    last_motif_idx = motif_idxs[-1] if len(motif_idxs) > 0 else None
+
     sig_idx = 1
     for idx, (motif, df_osc) in enumerate(zip(motifs, dfs_osc)):
 
-        if not np.isnan(motif).any():
+        color = default_fills[idx % len(default_fills)]
+
+        if idx in motif_idxs:
 
             # Plot motifs
-            fig.add_trace(go.Scatter(x=times, y=motif, line={'color': colors[idx]},
+            fig.add_trace(go.Scatter(x=times, y=motif, line={'color': color}, mode='lines',
                                      showlegend=False, hoverinfo='none'),
                           row=2, col=idx+1)
 
@@ -104,16 +115,18 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', extract_mot
             (start, end) = _find_short_burst(df_osc, sig, n_bursts, center)
 
             fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
-                                     line={'color': colors[idx]}, showlegend=False),
+                                     line={'color': color}, showlegend=False),
                           row=2+sig_idx, col=1, )
 
-            fig.update_xaxes(title_text='Time (s)', row=2+sig_idx, col=1)
+            if idx == last_motif_idx:
+                fig.update_xaxes(title_text='Time (s)', row=2+sig_idx, col=1)
+
             fig.update_yaxes(title_text='Normalized Voltage', row=2+sig_idx, col=1)
             sig_idx += 1
 
         else:
 
-            # Plot text for no detected oscillations
+            # Plot text for peaks with no detected oscillations
             fig.add_trace(
                 go.Scatter(x=[0], y=[0],
                     mode="text",
@@ -121,7 +134,7 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', extract_mot
                     textposition="middle center",
                     textfont=dict(
                         size=24,
-                        color=colors[idx].replace('.5', '.75')
+                        color=color.replace('.5', '.75')
                     ),
                     showlegend=False,
                     hoverinfo='none'
@@ -140,9 +153,7 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', extract_mot
         showlegend=True
     )
 
-    graph = fig.to_html(full_html=False, include_plotlyjs=False)
-
-    return graph
+    return fig
 
 
 def _find_short_burst(df_features, sig, n_bursts=5, center='peak'):

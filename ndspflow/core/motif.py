@@ -8,6 +8,7 @@ from scipy.signal import resample
 from neurodsp.utils.norm import normalize_sig
 from ndspflow.core.utils import limit_df
 
+
 def extract_motifs(fm, df_features, sig, fs, scaling=1, normalize=True,
                    weights=None, only_bursts=True, center='peak'):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
