@@ -1,13 +1,12 @@
 
 """Motif plotting functions."""
 
-
 import numpy as np
 
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from neurodsp.utils.data import normalize_sig
+from neurodsp.utils.norm import normalize_sig
 
 from ndspflow.plts.fooof import plot_fm
 from ndspflow.core.motif import extract_motifs

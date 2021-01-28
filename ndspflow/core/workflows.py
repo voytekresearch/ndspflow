@@ -51,7 +51,7 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
     report_node = wf_report()
     wf.connect([(io_node, report_node, [('output_dir', 'output_dir')])])
 
-    if 'fooof' in run_nodes or 'both' in run_nodes:
+    if 'fooof' in run_nodes:
         # FOOOF node
         fooof_node = wf_fooof(fooof_params)
 
@@ -61,7 +61,7 @@ def create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
 
         wf.connect([(fooof_node, report_node, [('fms', 'fms')])])
 
-    if 'bycycle' in run_nodes or 'both' in run_nodes:
+    if 'bycycle' in run_nodes:
         # Bycycle node
         bycycle_node = wf_bycycle(bycycle_params)
 

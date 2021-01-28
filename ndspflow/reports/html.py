@@ -13,6 +13,7 @@ from fooof.core.strings import gen_settings_str as gen_settings_fm_str
 from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 from ndspflow.plts.bycycle import plot_bm, plot_bg, plot_bgs
+from ndspflow.plts.motif import plot_motifs
 
 
 def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.html'):
@@ -60,15 +61,27 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
 
         # Individual spectrum reports
         nav_links = []
-        for fm, fm_path in zip(fm_list, fm_paths):
+        for idx, (fm, fm_path) in enumerate(zip(fm_list, fm_paths)):
 
             # Inject header and fooof report
             label = fm_path.split('/')[-1]
             html_report = generate_header("subject", output_dir, "fooof", n_fooofs=n_fms,
                                           n_bycycles=n_bms, label=label, group_link=group_url)
 
-            graph = plot_fm(fm).to_html(full_html=False, default_height='475',
-                                        default_width='700', include_plotlyjs=False)
+            if bms is None or (len(bms[0]) != len(fm_list)):
+
+                graph = plot_fm(fm).to_html(full_html=False, default_height='475',
+                                            default_width='700', include_plotlyjs=False)
+
+            if bms is not None and (len(bms[0]) == len(fm_list)):
+
+                # Plot motifs in addition to fits if bycycle was ran
+                df_features = bms[0][idx]
+                sig = bms[1]['sig'][idx]
+                fs = bms[1]['fs']
+
+                graph = plot_motifs(fm, df_features, sig, fs).to_html(full_html=False,
+                                                                      include_plotlyjs=False)
 
             html_report = generate_fooof_report(fm, graph, html_report)
 

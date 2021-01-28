@@ -44,6 +44,10 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, normalize=True,
     # Extract center freqs and bandwidths from fooof fit
     cfs = fm.get_params('peak_params', 'CF')
     bws = fm.get_params('peak_params', 'BW')
+
+    cfs = cfs if isinstance(cfs, (list, np.ndarray)) else [cfs]
+    bws = bws if isinstance(bws, (list, np.ndarray)) else [bws]
+
     f_ranges = [(cf-(scaling * bws[idx]), cf+(scaling * bws[idx])) for idx, cf in enumerate(cfs)]
 
     # Get cycles within freq ranges
