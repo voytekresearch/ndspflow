@@ -3,6 +3,10 @@
 import os
 from setuptools import setup, find_packages
 
+# Get the current version number from inside the module
+with open(os.path.join('ndspflow', 'version.py')) as version_file:
+    exec(version_file.read())
+
 # Load the long description from the README
 with open('README.rst') as readme_file:
     long_description = readme_file.read()
@@ -41,7 +45,9 @@ setup(
     ],
     platforms = 'any',
     project_urls = {
-        'Source' : 'https://github.com/voytekresearch/ndspflow'
+        'Documentation' : 'https://neurodsp-tools.github.io/',
+        'Source' : 'https://github.com/voytekresearch/ndspflow',
+        'Bug Reports' : 'https://github.com/voytekresearch/ndspflow/issues',
     },
     download_url = 'https://github.com/voytekresearch/ndspflow/releases',
     keywords = ['neuroscience', 'neural oscillations', 'power spectra', '1/f', 'electrophysiology'],
