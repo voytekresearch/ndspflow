@@ -3,12 +3,10 @@
 import os
 from tempfile import TemporaryDirectory
 from copy import deepcopy
-import pytest
-import numpy as np
 
-from ndspflow.reports.html import *
+from ndspflow.reports.html import (generate_report, generate_header,
+                                   generate_fooof_report, generate_bycycle_report)
 from ndspflow.io.save import save_fooof, save_bycycle
-from ndspflow.tests.settings import TEST_DATA_PATH
 
 
 def test_generate_report(fooof_outs, bycycle_outs, test_data):
@@ -73,7 +71,6 @@ def test_generate_fooof_report(fooof_outs):
 def test_generate_bycycle_report(bycycle_outs, sim_sig):
 
     # Load data from fixture
-    bm = bycycle_outs['bm']
     sig = sim_sig['sig']
     fs = sim_sig['fs']
     threshold_kwargs = bycycle_outs['threshold_kwargs']

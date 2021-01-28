@@ -1,6 +1,6 @@
 """Test bycycle plotting functions."""
 
-from pytest import mark, param
+from pytest import mark
 
 from ndspflow.plts.bycycle import plot_bm, plot_bg, plot_bgs
 
@@ -47,5 +47,3 @@ def test_plot_bgs(bycycle_outs, test_data):
 
     for term in html_contains:
         assert term in graphs
-
-

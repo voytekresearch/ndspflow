@@ -2,15 +2,9 @@
 
 import os
 import numpy as np
-from nipype.interfaces.base import (
-    BaseInterface,
-    BaseInterfaceInputSpec,
-    SimpleInterface,
-    TraitedSpec,
-    traits
-)
 
-from fooof import FOOOF, FOOOFGroup
+from nipype.interfaces.base import BaseInterfaceInputSpec, SimpleInterface, TraitedSpec, traits
+
 from ndspflow.core.fit import fit_fooof, fit_bycycle
 from ndspflow.io.save import save_fooof, save_bycycle
 from ndspflow.reports.html import generate_report
@@ -147,17 +141,17 @@ class BycycleNode(SimpleInterface):
 
         # Infer axis type from string (traits doesn't support multi-type)
         axis = None  if 'None' in self.inputs.axis else self.inputs.axis
-        axis = (0, 1) if '(0,1)' == self.inputs.axis.replace(' ', '') else axis
+        axis = (0, 1) if self.inputs.axis.replace(' ', '') == '(0,1)' else axis
 
         axis_error = ValueError("Axis must be 0, 1, (0, 1), or None.")
         if axis is not None and axis != (0, 1):
             try:
                 axis = int(self.inputs.axis)
             except:
-                raise axis_error
+                raise ValueError from axis_error
 
         if axis not in [0, 1, (0, 1), None]:
-            raise axis_error
+            raise ValueError from axis_error
 
         # Get thresholds
         if self.inputs.burst_method == 'cycles':
@@ -219,8 +213,6 @@ class ReportNodeInputSpec(BaseInterfaceInputSpec):
 class ReportNodeOutputSpec(BaseInterfaceInputSpec):
     """Output interface for reporting."""
 
-    pass
-
 
 class ReportNode(SimpleInterface):
     """Interface wrapper for reporting."""
@@ -237,4 +229,3 @@ class ReportNode(SimpleInterface):
         generate_report(self.inputs.output_dir, fms=fms, bms=bms)
 
         return runtime
-

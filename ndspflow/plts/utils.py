@@ -5,7 +5,7 @@ from scipy.stats import truncnorm
 import plotly.graph_objects as go
 
 
-def plot_scatter(param, label, urls, yfmt=".3f"):
+def plot_scatter(param, label, urls):
     """Plot an interactive scatterplot for a fit parameter.
 
     Parameters
@@ -17,9 +17,6 @@ def plot_scatter(param, label, urls, yfmt=".3f"):
         The label associated with the parameter that will be displayed on the plot's axes.
     urls : list of str
         Local html paths to link points to their individual reports.
-    yfmt : str, optional, default: ".3f"
-        The format to the y-axis labels used to ensure labels are all the same length, ensuring
-        plots are aligned.
 
     Returns
     -------

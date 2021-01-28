@@ -47,7 +47,7 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak',
     sig = normalize_sig(sig, mean=0, variance=1) if normalize else sig
     extract_motifs_kwargs = {} if extract_motifs_kwargs is None else extract_motifs_kwargs
     motifs, dfs_osc = extract_motifs(fm, df_features, sig, fs, **extract_motifs_kwargs)
-    motif_exists = [True if ~np.isnan(motif).all() else False for motif in motifs]
+    motif_exists = [isinstance(motif, np.ndarray) for motif in motifs]
 
     # Initialize figure
     ncols = len(motifs)
@@ -111,7 +111,7 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak',
                           row=2, col=idx+1)
 
             # Plot example bursting segments
-            (start, end) = _find_short_burst(df_osc, sig, n_bursts, center)
+            (start, end) = _find_short_burst(df_osc, n_bursts, center)
 
             fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
                                      line={'color': color}, showlegend=False),
@@ -155,15 +155,13 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak',
     return fig
 
 
-def _find_short_burst(df_features, sig, n_bursts=5, center='peak'):
+def _find_short_burst(df_features, n_bursts=5, center='peak'):
     """Find n consectutive bursting sample locations.
 
     Parameters
     ----------
     df_features : pandas.DataFrame
         A dataframe containing bycycle features.
-    sig : 1d array
-        Time series.
     n_bursts : int
         The length, in samples, of the representative burst.
     center : {'peak', 'trough'}, optional
@@ -183,7 +181,7 @@ def _find_short_burst(df_features, sig, n_bursts=5, center='peak'):
     # Split samples into bursting segments
     bursts = np.split(indices, diffs)
 
-    # Get the longest burst and liit to n_bursts
+    # Get the longest burst and limit to n_bursts
     burst = bursts[np.argmax(np.array([len(arr) for arr in bursts]))]
     burst = burst[:n_bursts]
 

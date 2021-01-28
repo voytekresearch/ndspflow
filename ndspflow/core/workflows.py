@@ -2,7 +2,6 @@
 
 import numpy as np
 
-from nipype import Workflow
 import nipype.pipeline.engine as pe
 from nipype.interfaces import utility as niu
 
@@ -95,7 +94,7 @@ def wf_fooof(fooof_params):
 
     for param in ['freqs', 'power_spectrum']:
         if param not in fooof_params:
-             raise ValueError("Undefined required fooof parameters.")
+            raise ValueError("Undefined required fooof parameters.")
 
     # Create node
     fooof_node = pe.Node(FOOOFNode(), name='fooof_node')
@@ -135,7 +134,7 @@ def wf_bycycle(bycycle_params):
 
     for param in ['sig', 'fs', 'f_range_bycycle']:
         if param not in bycycle_params:
-             raise ValueError("Undefined required bycycle parameters.")
+            raise ValueError("Undefined required bycycle parameters.")
 
     # Create node
     bycycle_node = pe.Node(BycycleNode(), name='bycycle_node')

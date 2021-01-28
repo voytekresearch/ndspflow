@@ -1,13 +1,12 @@
 """Utility functions for organizing fooof and bycycle outputs."""
 
 
-import warnings
 import os
 
 import numpy as np
 import pandas as pd
 
-from fooof import FOOOF, FOOOFGroup, fit_fooof_3d
+from fooof import FOOOF, FOOOFGroup
 
 
 def flatten_fms(model, output_dir):
@@ -32,6 +31,7 @@ def flatten_fms(model, output_dir):
     fms = []
     fm_paths = []
 
+    # Type is required over isinstance - we don't want class inheritance checks
     if type(model) is FOOOF:
 
         # For 1d arrays results
@@ -53,14 +53,14 @@ def flatten_fms(model, output_dir):
         # For 3d arrays results
         label_template = "spectrum_dim1-{dim_a}_dim2-{dim_b}"
 
-        for fg_idx in range(len(model)):
+        for fg_idx, fg in enumerate(model):
 
-            for fm_idx in range(len(model[0].get_results())):
+            for fm_idx, _ in enumerate(model[0].get_results()):
 
                 label = label_template.format(dim_a=str(fg_idx).zfill(4),
                                               dim_b=str(fm_idx).zfill(4))
                 fm_paths.append(os.path.join(output_dir, label))
-                fms.append(model[fg_idx].get_fooof(fm_idx))
+                fms.append(fg.get_fooof(fm_idx))
 
     return fms, fm_paths
 
@@ -131,7 +131,7 @@ def flatten_bms(df_features, output_dir, sigs=None):
     return df_features, bc_paths, sigs_2d
 
 
-def limit_df(df_features, fs, f_range, only_bursts=True, verbose=True):
+def limit_df(df_features, fs, f_range, only_bursts=True):
     """Limit a bycycle dataframe to a frequency range.
 
     Parameters
@@ -144,8 +144,6 @@ def limit_df(df_features, fs, f_range, only_bursts=True, verbose=True):
         The frequency range of interest.
     only_bursts : bool, optional, default: True
         Limits the dataframe to bursting cycles when True.
-    verbose : bool, optional, default: True
-        Prints warnings to console when True.
 
     Returns
     -------
@@ -170,12 +168,8 @@ def limit_df(df_features, fs, f_range, only_bursts=True, verbose=True):
     cycles = np.where((freqs >= f_range[0]) & (freqs < f_range[1]))[0]
     df_filt = df_filt.iloc[cycles]
 
-    # Raise warning if no cycles are found within freq range
+    # Return nan if no cycles are found within freq range
     if len(df_filt) == 0:
-
-        if verbose:
-            warnings.warn("No cycles to plot in the specificed frequency range. Returning np.nan.",
-                          category=RuntimeWarning)
 
         return np.nan
 

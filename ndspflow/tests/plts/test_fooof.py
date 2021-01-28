@@ -1,7 +1,7 @@
 """Test FOOOF plotting functions."""
 
 
-from pytest import mark, param
+from pytest import mark
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 
 
@@ -11,7 +11,7 @@ def test_plot_fm(fooof_outs, fill_gaussians):
     fig = plot_fm(fooof_outs['fm'], fill_gaussians=fill_gaussians)
     graph = fig.to_html(full_html=False, include_plotlyjs=False)
 
-    assert type(graph) is str
+    assert isinstance(graph, str)
 
     html_contains = ['Original', 'Full Fit', 'Aperiodic Fit', 'Frequencies', 'log(Power)']
 
@@ -25,7 +25,7 @@ def test_plot_fg(fooof_outs):
 
     graph = plot_fg(fg, urls)
 
-    assert type(graph) is str
+    assert isinstance(graph, str)
 
     html_contains = ['Error', 'R-Squared', 'Peak Parameters', 'Number of Peaks', 'Center Frequency',
                      'Band Width', 'Peak Width', 'Aperiodic Parameters', 'Exponent', 'Offset']
@@ -41,13 +41,13 @@ def test_plot_fgs(fooof_outs):
 
     graphs = plot_fgs(fgs, urls)
 
-    assert type(graphs) is list
+    assert isinstance(graphs, list)
 
     for idx, graph in enumerate(graphs):
 
         if idx % 2 == 0:
 
-            assert type(graph) is str
+            assert isinstance(graph, str)
             assert 'Group Index' in graph
 
         else:

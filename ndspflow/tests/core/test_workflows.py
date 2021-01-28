@@ -22,8 +22,8 @@ def test_create_workflow():
     wf = create_workflow(input_dir, output_dir, run_nodes=['fooof', 'bycycle'],
                          fooof_params=fooof_params, bycycle_params=bycycle_params)
 
-    assert type(wf) is pe.workflows.Workflow
-    assert wf._name is 'wf_ndspflow'
+    assert isinstance(wf, pe.workflows.Workflow)
+    assert wf._name == 'wf_ndspflow'
 
     temp_dir.cleanup()
 

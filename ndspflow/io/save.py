@@ -3,10 +3,6 @@
 import os
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
-from fooof import FOOOF, FOOOFGroup
 from ndspflow.core.utils import flatten_fms, flatten_bms
 from ndspflow.io.paths import clean_mkdir
 

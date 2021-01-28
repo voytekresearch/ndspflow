@@ -1,16 +1,13 @@
 """Test motif extraction functions"""
 
-from pytest import mark, param
+from pytest import mark
 
 import numpy as np
-
-from neurodsp.sim import sim_oscillation
 
 from ndspflow.core.motif import extract_motif, extract_motifs
 
 
 def test_extract_motifs(test_data, bycycle_outs, fooof_outs):
-
 
     # Get sim settings
     fs = test_data['fs']
@@ -44,7 +41,7 @@ def test_extract_motif(test_data, bycycle_outs, normalize):
     fs = test_data['fs']
     df_features = bycycle_outs['bm']
 
-    motif = extract_motif(df_features, sig, scaling=1, normalize=normalize, center='peak')
+    motif = extract_motif(df_features, sig, normalize=normalize, center='peak')
 
     assert isinstance(motif, np.ndarray)
 
@@ -52,6 +49,4 @@ def test_extract_motif(test_data, bycycle_outs, normalize):
     max_freq = 1 / (df_features['period'].min() / fs)
     motif_freq = 1 / (len(motif) / fs)
 
-    assert motif_freq >= min_freq and motif_freq <= max_freq
-
-
+    assert min_freq <= motif_freq <= max_freq

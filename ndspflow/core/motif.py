@@ -64,14 +64,13 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, normalize=True,
             motifs.append(np.nan)
             continue
 
-        motif = extract_motif(df_osc, sig, scaling, normalize, weights, center)
+        motif = extract_motif(df_osc, sig, normalize, weights, center)
         motifs.append(motif)
 
     return motifs, dfs_osc
 
 
-def extract_motif(df_osc, sig, scaling=1, normalize=True,
-                  weights=None, center='peak'):
+def extract_motif(df_osc, sig, normalize=True, weights=None, center='peak'):
     """Get the average cycle from a bycycle dataframe.
 
     Parameters
@@ -81,8 +80,6 @@ def extract_motif(df_osc, sig, scaling=1, normalize=True,
         range of intereset.
     sig : 1d array
         Time series.
-    scaling : float, optional, default: 1
-        The scaling of the bandwidth from the center frequencies to limit cycles to.
     normalize : bool, optional, default: True
         Normalizes each cycle (mean centers with variance of one) when True.
     weights : 1d array, optional, default: None

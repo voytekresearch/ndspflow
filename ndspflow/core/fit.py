@@ -1,6 +1,5 @@
 """FOOOF and Bycycle model fitting."""
 
-import os
 from fooof import FOOOF, FOOOFGroup, fit_fooof_3d
 from bycycle.features import compute_features
 from bycycle.group import compute_features_2d, compute_features_3d
