@@ -1,8 +1,12 @@
 """Utility functions for organizing fooof and bycycle outputs."""
 
+
+import warnings
 import os
+
 import numpy as np
 import pandas as pd
+
 from fooof import FOOOF, FOOOFGroup, fit_fooof_3d
 
 
@@ -127,7 +131,7 @@ def flatten_bms(df_features, output_dir, sigs=None):
     return df_features, bc_paths, sigs_2d
 
 
-def limit_df(df_features, fs, f_range, only_bursts=True):
+def limit_df(df_features, fs, f_range, only_bursts=True, verbose=True):
     """Limit a bycycle dataframe to a frequency range.
 
     Parameters
@@ -138,8 +142,10 @@ def limit_df(df_features, fs, f_range, only_bursts=True):
         Sampling rate, in Hz.
     f_range : tuple of (float, float)
         The frequency range of interest.
-    only_burst : bool, optional, default: True
+    only_bursts : bool, optional, default: True
         Limits the dataframe to bursting cycles when True.
+    verbose : bool, optional, default: True
+        Prints warnings to console when True.
 
     Returns
     -------
@@ -163,5 +169,14 @@ def limit_df(df_features, fs, f_range, only_bursts=True):
     # Get cycles within range
     cycles = np.where((freqs >= f_range[0]) & (freqs < f_range[1]))[0]
     df_filt = df_filt.iloc[cycles]
+
+    # Raise warning if no cycles are found within freq range
+    if len(df_filt) == 0:
+
+        if verbose:
+            warnings.warn("No cycles to plot in the specificed frequency range. Returning np.nan.",
+                          category=RuntimeWarning)
+
+        return np.nan
 
     return df_filt

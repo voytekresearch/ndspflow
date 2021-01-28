@@ -1,9 +1,8 @@
 """Extract motifs using fooof and bycycle."""
 
-import warnings
-
 import numpy as np
 from scipy.signal import resample
+import pandas as pd
 
 from neurodsp.utils.norm import normalize_sig
 from ndspflow.core.utils import limit_df
@@ -56,17 +55,23 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, normalize=True,
 
     for f_range in f_ranges:
 
+        # Restrict dataframe to frequency range
         df_osc = limit_df(df_features, fs, f_range, only_bursts=only_bursts)
         dfs_osc.append(df_osc)
 
-        motif = extract_motif(df_osc, sig, scaling, normalize, weights, only_bursts, center, False)
+        # No cycles left after limiting
+        if not isinstance(df_osc, pd.DataFrame):
+            motifs.append(np.nan)
+            continue
+
+        motif = extract_motif(df_osc, sig, scaling, normalize, weights, center)
         motifs.append(motif)
 
     return motifs, dfs_osc
 
 
-def extract_motif(df_osc, sig, scaling=1, normalize=True, weights=None,
-                  only_bursts=True, center='peak', verbose=True):
+def extract_motif(df_osc, sig, scaling=1, normalize=True,
+                  weights=None, center='peak'):
     """Get the average cycle from a bycycle dataframe.
 
     Parameters
@@ -83,12 +88,8 @@ def extract_motif(df_osc, sig, scaling=1, normalize=True, weights=None,
     weights : 1d array, optional, default: None
         Used for weighting cycles (i.e. a function of distance from the center frequency), when
         averaging cycle waveforms.
-    only_burst : bool, optional, default: True
-        Limits the dataframe to bursting cycles when True.
     center : {'peak', 'trough'}, optional
         The center definition of cycles.
-    verbose : bool, optional, default: True
-        Prints warnings to console when True.
 
     Returns
     -------
@@ -99,7 +100,7 @@ def extract_motif(df_osc, sig, scaling=1, normalize=True, weights=None,
     -----
 
     - The returned motif will contain a number of samples equal to the mean in the dataframe.
-    - When no cycles are found within the frequnecy range, np.nan is returned.
+    - When no cycles are found within the frequency range, np.nan is returned.
 
     """
 
@@ -107,15 +108,6 @@ def extract_motif(df_osc, sig, scaling=1, normalize=True, weights=None,
     side = 'trough' if center == 'peak' else 'peak'
     cyc_start = df_osc['sample_last_' + side].values
     cyc_end = df_osc['sample_next_' + side].values
-
-    # Raise warning if no cycles are found within freq range
-    if len(cyc_start) < 1 or len(cyc_end) < 1:
-
-        if verbose:
-            warnings.warn("No cycles to plot in the specificed frequency range. Returning np.nan.",
-                          category=RuntimeWarning)
-
-        return np.nan
 
     # Get the average number of samples
     samples = np.array([end-start for start, end in zip(cyc_start, cyc_end)])
