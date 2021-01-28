@@ -1,16 +1,19 @@
 """Test FOOOF plotting functions."""
 
+
+from pytest import mark, param
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 
 
-def test_plot_fm(fooof_outs):
+@mark.parametrize("fill_gaussians", [True, ['red']])
+def test_plot_fm(fooof_outs, fill_gaussians):
 
-    graph = plot_fm(fooof_outs['fm'])
+    fig = plot_fm(fooof_outs['fm'], fill_gaussians=fill_gaussians)
+    graph = fig.to_html(full_html=False, include_plotlyjs=False)
 
     assert type(graph) is str
 
-    html_contains = ['Original Spectrum' , 'Full Model Fit', 'Aperiodic Fit',
-                     'Spectrum Fit', 'Frequency', 'Power']
+    html_contains = ['Original', 'Full Fit', 'Aperiodic Fit', 'Frequencies', 'log(Power)']
 
     for term in html_contains:
         assert term in graph

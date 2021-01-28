@@ -1,4 +1,4 @@
-""" Interface definitions."""
+"""Interface definitions."""
 
 import os
 import numpy as np

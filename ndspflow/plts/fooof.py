@@ -1,61 +1,87 @@
 """FOOOF plotting functions for returning ready-to-embed html."""
 
+from itertools import cycle
 import re
 import numpy as np
 import plotly.graph_objects as go
 
+from fooof.plts.fm import gen_periodic
+
 from ndspflow.plts.utils import plot_scatter, two_column_layout
 
 
-def plot_fm(fm):
+def plot_fm(fm, log_freqs=False, fill_gaussians=False, showlegend=True, **kwargs):
     """Plot a single FOOOF fits using plotly.
 
     Parameters
     ----------
     fm : fooof FOOOF
-        A fooof model that has been
+        A fooof model that has been fit.
+    log_freqs : bool, optional, default: False
+        Logs frequencies when True.
+    fill_gaussians : bool or list, optional, default: False
+        Shades gaussians when True. A list of plotly colors, either hex or rgba, may passed to
+        control the color of each shade. The default color is green.
+    showlegend : bool, optional, default: True
+        Show the plot legend when True.
+    **kwargs
+        Additional keyword arguments to pass to the ``update_layout`` method of a plotly figure.
 
     Returns
     -------
-    graph : str
-        The fooof plot as a string containing html.
+    fig : plotly.graph_objs.Figure
+        A plotly figure of the spectrum and fit.
     """
 
     # Create figure
     fig = go.Figure()
 
-    config = {'responsive': True}
+    # Plot traces
+    freqs = np.log10(fm.freqs) if log_freqs else fm.freqs
 
-    # Original
-    fig.add_trace(go.Scatter(x=fm.freqs, y=fm.power_spectrum, mode='lines',
-                                name='Original Spectrum', line=dict(color='black', width=3)))
+    y_traces = [fm.power_spectrum, fm.fooofed_spectrum_, fm._ap_fit]
+    styles = [{'color': 'black'}, {'color': '#d62728'}, {'dash': 'dash', 'color': '#1f77b4'}]
+    names = ['Original', 'Full Fit', 'Aperiodic Fit']
 
-    # Model
-    fig.add_trace(go.Scatter(x=fm.freqs, y=fm.fooofed_spectrum_, mode='lines',
-                                name='Full Model Fit', line=dict(color='rgba(214, 39, 40, .7)',
-                                                                width=3)))
+    for y_trace, ls, name in zip(y_traces, styles, names):
 
-    # Aperiodic
-    fig.add_trace(go.Scatter(x=fm.freqs, y=fm._ap_fit, mode='lines', name='Aperiodic Fit',
-                            line=dict(color='rgba(31, 119, 180, .7)', width=3, dash='dash')))
+        fig.add_trace(go.Scatter(x=freqs, y=y_trace, line=ls, name=name, showlegend=showlegend))
 
-    # Plot settings
-    fig.update_layout(
-        title="Spectrum Fit",
-        xaxis_title="Frequency",
-        yaxis_title="Power",
-        font=dict(
-            family="sans-serif",
-            size=18,
-            color='black'
-        ),
-        margin=dict(l=20, r=20, t=40, b=20)
-    )
+    # Fill gaussians
+    if fill_gaussians is not False:
 
-    graph = fig.to_html(full_html=False, default_height='475', default_width='700',
-                        include_plotlyjs=False)
+        if isinstance(fill_gaussians, list):
 
-    return graph
+            # Custom gaussian colors
+            fill_colors = cycle(fill_gaussians)
+
+        else:
+
+            # Default gaussian colors
+            fill_colors = cycle(['rgba(44,160,44,.5)'])
+
+        pe_params = fm.get_params('gaussian_params')
+
+        for param in pe_params:
+
+            fill = next(fill_colors)
+
+            peak = fm._ap_fit + gen_periodic(fm.freqs, param)
+
+            fig.add_trace(go.Scatter(x=np.concatenate([fm.freqs, fm.freqs[::-1]]),
+                                     y=np.concatenate([peak, fm._ap_fit[::-1]]),
+                                     fill='toself', fillcolor=fill, hoverinfo='none',
+                                     mode='none', showlegend=False))
+
+    # Update kwargs
+    fig.update_xaxes(title="log(Frequencies)" if log_freqs else "Frequencies")
+    fig.update_yaxes(title="log(Power)")
+
+    title = kwargs.pop('title', "Spectrum Fit")
+
+    fig.update_layout(title=title, **kwargs)
+
+    return fig
 
 
 def plot_fg(fg, urls):

@@ -8,21 +8,14 @@ from fooof import FOOOF
 from neurodsp.sim import sim_combined
 from neurodsp.spectral import compute_spectrum
 
+from ndspflow.tests.settings import (N_SECONDS, FS, EXP, FREQ, F_RANGE)
 from ndspflow.core.fit import fit_fooof, fit_bycycle
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 from ndspflow.plts.bycycle import plot_bm
 
 
-
 @pytest.fixture(scope='module')
 def sim_sig():
-
-    # Simulation settings
-    N_SECONDS = 10
-    FS = 500
-    EXP = -2
-    FREQ = 10
-    F_RANGE = (1, 40)
 
     # Simulate a 1d timeseries that contains an oscillation + 1/f
     SIG = sim_combined(N_SECONDS, FS, {'sim_powerlaw': {'exponent': EXP},
@@ -81,7 +74,7 @@ def fooof_outs(test_data):
     fgs = fit_fooof(freqs, powers_3d, f_range, {'verbose': False}, 1)
 
     # Plot
-    fm_graph = plot_fm(fm)
+    fm_graph = plot_fm(fm).to_html(full_html=False, include_plotlyjs=False)
     fg_graph = plot_fg(fg, ['' for i in range(len(fg))])
     fgs_graph = plot_fgs(fgs, ['' for i in range(int(len(fgs)*len(fgs[0])))])
 

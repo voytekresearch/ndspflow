@@ -225,8 +225,8 @@ def get_parser():
     # Workflow selector
     parser.add_argument(
         '-run_nodes',
-        default=None,
-        choices=['fooof', 'bycycle', 'both'],
+        nargs='+',
+        default=['fooof', 'bycycle'],
         required=False,
         help="List of nodes to run: fooof and/or bycyle (default: fooof bycycle)."
     )
@@ -260,7 +260,7 @@ def main():
 
     req_args_bycycle = dict(sig=args['sig'], fs=args['fs'], f_range_bycycle=args['f_range_bycycle'])
 
-    if 'fooof' in run_nodes or 'both' in run_nodes:
+    if 'fooof' in run_nodes:
 
         for arg, val in req_args_fooof.items():
             if val is None:
@@ -277,7 +277,7 @@ def main():
     else:
         fooof_params = None
 
-    if 'bycycle' in run_nodes or 'both' in run_nodes:
+    if 'bycycle' in run_nodes:
 
         for arg, val in req_args_bycycle.items():
 

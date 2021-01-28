@@ -3,10 +3,11 @@
 import pytest
 from tempfile import TemporaryDirectory
 
+import numpy as np
 import pandas as pd
 
 from fooof import FOOOF
-from ndspflow.core.utils import flatten_fms, flatten_bms
+from ndspflow.core.utils import flatten_fms, flatten_bms, limit_df
 
 
 @pytest.mark.parametrize("ndim", [1, 2, 3])
@@ -69,4 +70,26 @@ def test_flatten_bms(ndim, test_data, bycycle_outs):
 
     assert sigs_2d.ndim == 2
 
+
+@pytest.mark.parametrize("only_burst", [True, False])
+@pytest.mark.parametrize("verbose", [True, False])
+@pytest.mark.parametrize("isnan", [True, False])
+def test_limit_df(test_data, bycycle_outs, only_burst, verbose, isnan):
+
+    fs = test_data['fs']
+    f_range = test_data['f_range']
+
+    if isnan:
+        f_range = (f_range[1] * 2, f_range[1] * 3)
+
+    df_features = bycycle_outs['bm']
+    df_filt = limit_df(df_features, fs, f_range, only_bursts=only_burst, verbose=verbose)
+
+    if isnan:
+        assert np.isnan(df_filt)
+    else:
+        assert isinstance(df_filt, pd.DataFrame)
+        for freq in df_filt['freqs']:
+            assert freq >= f_range[0]
+            assert freq <= f_range[1]
 
