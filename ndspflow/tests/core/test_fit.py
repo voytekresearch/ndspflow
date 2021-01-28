@@ -1,8 +1,6 @@
 """Test FOOOOF and Bycycle fitting functions."""
 
-import os
 import pytest
-import numpy as np
 import pandas as pd
 
 from fooof import FOOOF, FOOOFGroup
@@ -30,7 +28,7 @@ def test_fit_fooof(ndim, test_data):
     if ndim == 1:
 
         # Check type
-        assert type(model) is FOOOF
+        assert isinstance(model, FOOOF)
 
         # Check that results exist
         assert model.has_model
@@ -38,7 +36,7 @@ def test_fit_fooof(ndim, test_data):
     elif ndim == 2:
 
         # Check type
-        assert type(model) is FOOOFGroup
+        assert isinstance(model, FOOOFGroup)
 
         # Check number of results
         assert len(model) == 2
@@ -51,7 +49,7 @@ def test_fit_fooof(ndim, test_data):
     elif ndim == 3:
 
         # Check type
-        assert type(model) is list
+        assert isinstance(model, list)
 
         # Check number of results
         assert len(model) == 2
@@ -90,6 +88,3 @@ def test_fit_bycycle(ndim, test_data):
 
     elif ndim == 3:
         assert isinstance(df[0][0], pd.DataFrame)
-
-
-

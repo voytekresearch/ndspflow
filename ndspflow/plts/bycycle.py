@@ -2,17 +2,15 @@
 
 from itertools import cycle
 import re
-from os import path
 
 import numpy as np
 from scipy.stats import zscore
 from scipy.signal import resample
-import pandas as pd
 
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from bycycle.utils import get_extrema_df
+from bycycle.utils import get_extrema_df, limit_df, limit_signal
 
 from ndspflow.core.utils import flatten_bms
 
@@ -56,6 +54,10 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, df_idx, xlim=None, plot_only
     # Determine time array and limits
     times = np.arange(0, len(sig) / fs, 1 / fs)
     xlim = (times[0], times[-1]) if xlim is None else xlim
+
+    # Limit signal and dataframe
+    sig, times = limit_signal(times, sig, start=xlim[0], stop=xlim[1])
+    df_features = limit_df(df_features, fs, start=xlim[0], stop=xlim[1])
 
     # Determine if peak of troughs are the sides of an oscillation
     center_e, side_e = get_extrema_df(df_features)
@@ -117,7 +119,7 @@ def plot_bm(df_features, sig, fs, threshold_kwargs, df_idx, xlim=None, plot_only
 
     # Get burst traces
     trace_id = len(fig.data) - 2
-    burst_traces = [idx for idx in range(0, len(df_features))]
+    burst_traces = list(range(len(df_features)))
 
     # Get the div id containg the plot
     div_id = re.search("<div id=.+?\"", graph)[0]
@@ -204,6 +206,10 @@ def plot_bg(dfs_features, sigs, fs, titles=None, btn=True, xlim=None):
         # Determine time array and limits
         times = np.arange(0, len(sig) / fs, 1 / fs)
         xlim = (times[0], times[-1]) if xlim is None else xlim
+
+        # Limit signal and dataframe
+        sig, times = limit_signal(times, sig, start=xlim[0], stop=xlim[1])
+        df_features = limit_df(df_features, fs, start=xlim[0], stop=xlim[1])
 
         # Get extrema
         center_e, side_e = get_extrema_df(df_features)
@@ -318,7 +324,7 @@ def plot_bgs(dfs_features, sigs, fs, xlim=None):
         titles.append("Indices: [{s0}][{s1}] - [{e0}][{e1}]".format(s0=start[0], s1=start[1],
                                                                     e0=end[0], e1=end[1]))
 
-    graphs = plot_bg(dfs_features_2d, sigs_2d, fs, titles=titles, xlim=None)
+    graphs = plot_bg(dfs_features_2d, sigs_2d, fs, titles=titles, xlim=xlim)
 
     return graphs
 

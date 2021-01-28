@@ -1,10 +1,8 @@
 """Configuration file for pytest for ndspflow."""
 
-import os
 import numpy as np
 import pytest
 
-from fooof import FOOOF
 from neurodsp.sim import sim_combined
 from neurodsp.spectral import compute_spectrum
 
@@ -21,10 +19,7 @@ def sim_sig():
     SIG = sim_combined(N_SECONDS, FS, {'sim_powerlaw': {'exponent': EXP},
                                        'sim_oscillation': {'freq': FREQ}})
 
-    # Collect settings and signal
-    sim_sig = dict(n_seconds=N_SECONDS, fs=FS, exp=EXP, freq=FREQ, f_range=F_RANGE, sig=SIG)
-
-    yield sim_sig
+    yield dict(n_seconds=N_SECONDS, fs=FS, exp=EXP, freq=FREQ, f_range=F_RANGE, sig=SIG)
 
 
 @pytest.fixture(scope='module')

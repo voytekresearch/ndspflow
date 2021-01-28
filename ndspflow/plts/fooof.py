@@ -1,7 +1,6 @@
-"""FOOOF plotting functions for returning ready-to-embed html."""
+"""FOOOF plotting functions."""
 
 from itertools import cycle
-import re
 import numpy as np
 import plotly.graph_objects as go
 
@@ -137,7 +136,7 @@ def plot_fg(fg, urls):
     graphs.append('<br><br><center><h1>Aperiodic Parameters</h1></center>')
 
     fig_exp = plot_scatter(fg.get_params('aperiodic', 'exponent'), 'Exponent', urls)
-    fig_off = plot_scatter(fg.get_params('aperiodic', 'offset'), 'Offset', urls, yfmt=".2f")
+    fig_off = plot_scatter(fg.get_params('aperiodic', 'offset'), 'Offset', urls)
 
     graphs = two_column_layout(fig_exp, fig_off, graphs)
 

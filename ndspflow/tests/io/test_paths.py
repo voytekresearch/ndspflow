@@ -1,8 +1,10 @@
 """Test input/output utility functions"""
 
 import os
-import pytest
 from tempfile import TemporaryDirectory
+
+import pytest
+
 from ndspflow.tests.settings import TEST_DATA_PATH
 from ndspflow.io.paths import check_dirs
 

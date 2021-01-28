@@ -1,7 +1,6 @@
 """Test FOOOOF and Bycycle nipype interfaces."""
 
 import os
-from pathlib import Path
 from tempfile import TemporaryDirectory
 from pytest import mark, param
 
@@ -31,7 +30,7 @@ def test_FOOOF():
     assert fooof.inputs.peak_width_limits == (0.5, 12.0)
 
     # Check results, ensure empty on initialization
-    assert type(fooof._results) is dict
+    assert isinstance(fooof._results, dict)
     assert len(fooof._results) == 0
 
     # Check running the interface on a node
@@ -78,7 +77,7 @@ def test_Bycycle(axis, burst_method):
     assert bycycle.inputs.n_jobs == 1
 
     # Check results, ensure empty on initialization
-    assert type(bycycle._results) is dict
+    assert isinstance(bycycle._results, dict)
     assert len(bycycle._results) == 0
 
     # Check running the interface on a node
