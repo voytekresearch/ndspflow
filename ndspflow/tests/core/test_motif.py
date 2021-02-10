@@ -4,10 +4,11 @@ from pytest import mark
 
 import numpy as np
 
-from ndspflow.core.motif import extract_motif, extract_motifs
+from ndspflow.core.motif import extract_motifs, split_signal, cluster_motifs
 
 
-def test_extract_motifs(test_data, bycycle_outs, fooof_outs):
+@mark.parametrize("return_cycles", [True, False])
+def test_extract_motifs(test_data, bycycle_outs, fooof_outs, return_cycles):
 
     # Get sim settings
     fs = test_data['fs']
@@ -26,27 +27,53 @@ def test_extract_motifs(test_data, bycycle_outs, fooof_outs):
     peak_params[1][0] = 20
     _fm.peak_params_ = peak_params
 
-    motifs, dfs_osc = extract_motifs(_fm, bm, sig, fs)
+    if return_cycles:
 
-    assert len(motifs) == len(dfs_osc)
+        motifs, oscs = extract_motifs(_fm, bm, sig, fs, return_cycles=return_cycles, thresh=0.1)
+
+        for key in oscs:
+            assert len(motifs) == len(oscs[key])
+
+    else:
+
+        motifs = extract_motifs(_fm, bm, sig, fs, return_cycles=return_cycles, thresh=0.1)
+
     assert len(motifs) == len(peak_params)
-    assert isinstance(motifs[0], np.ndarray)
+    assert isinstance(motifs[0][0], np.ndarray)
     assert np.isnan(motifs[1])
 
 
-@mark.parametrize("normalize", [True, False])
-def test_extract_motif(test_data, bycycle_outs, normalize):
+
+def test_split_signal(test_data, bycycle_outs):
+
+    df_osc = bycycle_outs['bm'].copy()
+    df_osc = df_osc[df_osc['is_burst'] == True]
 
     sig = test_data['sig_1d']
-    fs = test_data['fs']
-    df_features = bycycle_outs['bm']
+    center = 'peak'
 
-    motif = extract_motif(df_features, sig, normalize=normalize, center='peak')
+    sig_cyc = split_signal(df_osc, sig, True, center)
 
-    assert isinstance(motif, np.ndarray)
+    assert sig_cyc.ndim == 2
+    assert np.shape(sig_cyc)[0] == len(df_osc)
+    assert np.shape(sig_cyc)[1] == np.mean(df_osc['period'].values, dtype=int)
 
-    min_freq = 1 / (df_features['period'].max() / fs)
-    max_freq = 1 / (df_features['period'].min() / fs)
-    motif_freq = 1 / (len(motif) / fs)
 
-    assert min_freq <= motif_freq <= max_freq
+def test_cluster_motifs(test_data, bycycle_outs):
+
+    df_osc = bycycle_outs['bm'].copy()
+    df_osc = df_osc[df_osc['is_burst'] == True]
+
+    sig = test_data['sig_1d']
+    center = 'peak'
+
+    motifs = split_signal(df_osc, sig, True, center)
+
+    labels = cluster_motifs(motifs, thresh=0.1, max_clusters=10)
+    assert len(labels) == len(df_osc)
+
+    osc = split_signal(df_osc, sig, True, center)[0]
+    motifs = np.reshape(osc, (1, len(osc)))
+
+    labels = cluster_motifs(motifs, thresh=0.1, max_clusters=10)
+    assert np.isnan(labels)

@@ -23,6 +23,8 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, only_bursts=True,
         A dataframe containing bycycle features.
     sig : 1d array
         Time series.
+    fs : float
+        Sampling rate, in Hz.
     scaling : float, optional, default: 1
         The scaling of the bandwidth from the center frequencies to limit cycles to.
     only_burst : bool, optional, default: True
@@ -127,11 +129,9 @@ def split_signal(df_osc, sig, normalize=True, center='peak'):
     cyc_end = df_osc['sample_next_' + side].values
 
     # Get the average number of samples
-    samples = np.array([end-start for start, end in zip(cyc_start, cyc_end)])
+    n_samples = np.mean(df_osc['period'].values, dtype=int)
 
-    n_samples = np.mean(samples, dtype=int)
-
-    sigs = np.zeros((len(cyc_start), n_samples))
+    sigs = np.zeros((len(df_osc), n_samples))
 
     # Slice cycles and resample to center frequency
     for idx, (start, end) in enumerate(zip(cyc_start, cyc_end)):
