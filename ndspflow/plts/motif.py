@@ -12,13 +12,13 @@ from ndspflow.plts.fooof import plot_fm
 from ndspflow.core.motif import extract_motifs
 
 
-def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak',
-                normalize=True, extract_motifs_kwargs=None, plot_fm_kwargs=None):
+def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', normalize=True,
+                motifs=None, cycles=None, extract_motifs_kwargs=None, plot_fm_kwargs=None):
     """Plot cycle motifs using fooof fits and bycycle cycles.
 
     Parameters
     ----------
-    fm : fooof FOOOF
+    fm : fooof FOOOF or tuple
         A fooof model that has been fit.
     df_features : pandas.DataFrame
         A dataframe containing bycycle features.
@@ -46,8 +46,11 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak',
     # Extract motifs
     sig = normalize_sig(sig, mean=0, variance=1) if normalize else sig
     extract_motifs_kwargs = {} if extract_motifs_kwargs is None else extract_motifs_kwargs
-    motifs, cycles = extract_motifs(fm, df_features, sig, fs, return_cycles=True,
-                                    **extract_motifs_kwargs)
+
+    if motifs is None or cycles is None:
+
+        motifs, cycles = extract_motifs(fm, df_features, sig, fs, return_cycles=True,
+                                        **extract_motifs_kwargs)
 
     # Get indices where motifs are found with greater than 1 cycle
     dfs_osc = cycles['dfs_osc']
@@ -65,10 +68,10 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak',
         *[[{'colspan': ncols, 'b': .1/nrows}, *[None] * (ncols-1)]] * (nrows-2)
     ]
 
-    row_heights = [2, 1, *[1] * (nrows-2)]
-
-    titles = fm.get_params('gaussian_params')[:, 0].round(1).astype(str)
+    titles = [str(round(fs/len(motif[0]))) for motif in motifs if not isinstance(motif, float)]
     titles = [osc + ' hz Motif' for osc in titles]
+
+    row_heights = [2, 1, *[1] * (nrows-2)]
 
     fig = make_subplots(
         rows=nrows, cols=ncols, row_heights=row_heights, specs=specs,
