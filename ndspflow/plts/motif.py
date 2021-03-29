@@ -95,7 +95,7 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', normalize=T
 
     # Label axes
     xaxis_title = 'log(Frequencies)' if log_freqs else 'Frequencies'
-    xaxis_title = plot_fm_kwargs.pop('xaxis_title', 'Frequencies')
+    xaxis_title = plot_fm_kwargs.pop('xaxis_title', xaxis_title)
     yaxis_title = plot_fm_kwargs.pop('yaxis_title', 'log(Power)')
 
     fig.update_xaxes(title_text=xaxis_title, row=1, col=1)
@@ -121,14 +121,14 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', normalize=T
                 # Plot motifs
                 fig.add_trace(go.Scatter(x=times, y=sub_motif, line={'color': color}, mode='lines',
                                         showlegend=False, hoverinfo='none'),
-                            row=2, col=idx+1)
+                              row=2, col=idx+1)
 
                 # Plot example bursting segments
                 (start, end) = _find_short_burst(df_osc, n_bursts, center)
 
                 fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
                                         line={'color': color}, showlegend=False),
-                            row=2+row_idx, col=1)
+                              row=2+row_idx, col=1)
 
                 if idx == last_motif_idx:
                     fig.update_xaxes(title_text='Time (s)', row=2+row_idx, col=1)

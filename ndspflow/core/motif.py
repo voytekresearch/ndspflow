@@ -11,22 +11,23 @@ from sklearn.metrics import silhouette_score
 
 from neurodsp.utils.norm import normalize_sig
 from ndspflow.core.utils import limit_df
+from ndspflow.core.fit import fit_bycycle
 
 
-def extract_motifs(fm, df_features, sig, fs, scaling=1, only_bursts=True,
-                   center='peak', thresh=1, max_clusters=10, return_cycles=False):
+def extract_motifs(fm, sig, fs, df_features=None, scaling=1, only_bursts=True,
+                   center='peak', thresh=1, max_clusters=10, min_n_cycles=10, return_cycles=False):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
 
     Parameters
     ----------
     fm : fooof.FOOOF, optional, or list of tuple
         A fooof model that has been fit, or a list of (center_freq, bandwidth).
-    df_features : pandas.DataFrame
-        A dataframe containing bycycle features.
     sig : 1d array
         Time series.
     fs : float
         Sampling rate, in Hz.
+    df_features : pandas.DataFrame, optional, default: None
+        A dataframe containing bycycle features.
     scaling : float, optional, default: 1
         The scaling of the bandwidth from the center frequencies to limit cycles to.
     only_burst : bool, optional, default: True
@@ -37,6 +38,8 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, only_bursts=True,
         The silhouette score for accepting putative k clusters.
     max_clusters : int, optional, default: 10
         The maximum number of clusters to evaluate.
+    min_n_cycles : int, optional, default: 10
+        The minimum number of cycles required to be considered at motif.
     return_cycles : bool, optiona, default: False
         Returns the signal, dataframe, and label for each cycle.
 
@@ -72,6 +75,9 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, only_bursts=True,
 
     for f_range in f_ranges:
 
+        if df_features is None:
+            df_features = fit_bycycle(sig, fs, f_range, center)
+
         # Restrict dataframe to frequency range
         df_osc = limit_df(df_features, fs, f_range, only_bursts=only_bursts)
 
@@ -86,13 +92,10 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, only_bursts=True,
         sig_cyc = split_signal(df_osc, sig, True, center)
 
         # Cluster cycles
-        labels = cluster_motifs(sig_cyc, thresh=thresh, max_clusters=max_clusters)
+        labels = cluster_cycles(sig_cyc, thresh=thresh, max_clusters=max_clusters)
 
-        # Collect cycles if requested
-        cycles['sigs'].append(sig_cyc)
-        cycles['dfs_osc'].append(df_osc)
-        cycles['labels'].append(labels)
-        cycles['f_ranges'].append(f_range)
+        if len(sig_cyc) <  min_n_cycles:
+            continue
 
         if not isinstance(labels, np.ndarray):
             # No superthreshold clusters found
@@ -103,6 +106,24 @@ def extract_motifs(fm, df_features, sig, fs, scaling=1, only_bursts=True,
             for idx in range(max(labels)+1):
                 multi_motifs.append(np.mean(sig_cyc[np.where(labels == idx)[0]], axis=0))
             motifs.append(multi_motifs)
+
+            # Recompute labels using cross-correlation coefficient
+            labels = np.zeros_like(labels)
+
+            for idx, cyc in enumerate(sig_cyc):
+
+                corrs = []
+                for motif in multi_motifs:
+                    corrs.append(np.correlate(motif, cyc, mode='valid')[0])
+
+                labels[idx] = np.argmax(corrs)
+
+        if return_cycles:
+            # Collect cycles if requested
+            cycles['sigs'].append(sig_cyc)
+            cycles['dfs_osc'].append(df_osc)
+            cycles['labels'].append(labels)
+            cycles['f_ranges'].append(f_range)
 
     if return_cycles:
         return motifs, cycles
@@ -138,11 +159,13 @@ def split_signal(df_osc, sig, normalize=True, center='peak'):
 
     # Get the average number of samples
     n_samples = np.mean(df_osc['period'].values, dtype=int)
-
     sigs = np.zeros((len(df_osc), n_samples))
 
     # Slice cycles and resample to center frequency
     for idx, (start, end) in enumerate(zip(cyc_start, cyc_end)):
+
+        if start < 0:
+            continue
 
         sig_cyc = sig[start:end]
         sig_cyc = resample(sig_cyc, num=n_samples)
@@ -155,44 +178,49 @@ def split_signal(df_osc, sig, normalize=True, center='peak'):
     return sigs
 
 
-def cluster_motifs(motifs, thresh=0.5, min_clusters=2, max_clusters=10):
-    """K-means clustering of motifs.
+def cluster_cycles(cycles, thresh=0.5, min_clusters=2, max_clusters=10):
+    """K-means clustering of cycles.
 
     Parameters
     ----------
-    motifs : 2D array
+    cycles : 2D array
         Cycles within a frequency range.
     thresh : float, optional, default: 0.5
         The silhouette score for accepting putative k clusters.
-    max_cluster : int, optional, default: 10
+    max_clusters : int, optional, default: 10
+        The minimum number of clusters to evaluate.
+    max_clusters : int, optional, default: 10
         The maximum number of clusters to evaluate.
 
     Returns
     -------
     labels : 1d array
-        The predicted cluster each motif belongs to.
+        The predicted cluster each cycle belongs to.
     """
 
     # Nothing to cluster
-    if len(motifs) == 1 or max_clusters == 1:
+    if len(cycles) == 1 or max_clusters == 1:
         return np.nan
 
-    max_clusters = len(motifs) if len(motifs) < max_clusters else max_clusters
+    max_clusters = len(cycles) if len(cycles) < max_clusters else max_clusters
 
     labels = []
     scores = []
     for n_clusters in range(min_clusters, max_clusters+1):
 
+        if n_clusters > len(cycles) - 1:
+            break
+
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            clusters = KMeans(n_clusters=n_clusters, algorithm="full").fit_predict(motifs)
+            clusters = KMeans(n_clusters=n_clusters, algorithm="full").fit_predict(cycles)
 
         labels.append(clusters)
 
-        scores.append(silhouette_score(motifs, clusters))
+        scores.append(silhouette_score(cycles, clusters))
 
     # No superthreshold clusters found
-    if max(scores) < thresh:
+    if len(scores) < 1 or max(scores) < thresh:
         return np.nan
 
     # Split motifs based on highest silhouette score
@@ -201,7 +229,7 @@ def cluster_motifs(motifs, thresh=0.5, min_clusters=2, max_clusters=10):
     return labels
 
 
-def decompose_sig(sig, motifs, dfs_osc, center='peak', non_bursts='nan'):
+def decompose_sig(sig, motifs, dfs_osc, center='peak', non_bursts='nan', labels=None):
     """Decompose a signal into its periodic/aperioidic components.
 
     Parameters
@@ -210,12 +238,9 @@ def decompose_sig(sig, motifs, dfs_osc, center='peak', non_bursts='nan'):
         Time series.
     motifs : list of 1d arrays
          Motifs for each center frequency
-
-    sig_ap_re, sig_pe_re
     """
 
     side = 'trough' if center == 'peak' else 'peak'
-
 
     # Intialize array of nans
     sig_ap_re = np.zeros_like(sig)
@@ -224,11 +249,11 @@ def decompose_sig(sig, motifs, dfs_osc, center='peak', non_bursts='nan'):
     first_cyc_start = []
     last_cyc_end = []
 
-    for motif, df_osc in zip(motifs, dfs_osc):
+    for idx_motif, (motif, df_osc) in enumerate(zip(motifs, dfs_osc)):
 
         if not isinstance(motif, float):
 
-            for _, cyc in df_osc.iterrows():
+            for idx_cyc, (_, cyc) in enumerate(df_osc.iterrows()):
 
                 # Isolate each cycle
                 start = int(cyc['sample_last_' + side])
@@ -236,10 +261,13 @@ def decompose_sig(sig, motifs, dfs_osc, center='peak', non_bursts='nan'):
                 sig_cyc = sig[start:end]
 
                 # Resample motif if needed
+                motif_idx = int(labels[idx_motif][idx_cyc]) if labels and \
+                    not isinstance(labels[idx_motif], float) else 0
+
                 if len(motif[0]) != len(sig_cyc):
-                    sig_motif = resample(motif[0], len(sig_cyc))
+                    sig_motif = resample(motif[motif_idx], len(sig_cyc))
                 else:
-                    sig_motif = motif[0]
+                    sig_motif = motif[motif_idx]
 
                 # Remove motif to get aperiodic signal
                 sig_ap_re[start:end] = (sig_cyc - sig_motif)

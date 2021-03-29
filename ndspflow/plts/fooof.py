@@ -39,6 +39,7 @@ def plot_fm(fm, log_freqs=False, fill_gaussians=False, showlegend=True, **kwargs
     freqs = np.log10(fm.freqs) if log_freqs else fm.freqs
 
     y_traces = [fm.power_spectrum, fm.fooofed_spectrum_, fm._ap_fit]
+
     styles = [{'color': 'black'}, {'color': '#d62728'}, {'dash': 'dash', 'color': '#1f77b4'}]
     names = ['Original', 'Full Fit', 'Aperiodic Fit']
 
@@ -67,7 +68,7 @@ def plot_fm(fm, log_freqs=False, fill_gaussians=False, showlegend=True, **kwargs
 
             peak = fm._ap_fit + gen_periodic(fm.freqs, param)
 
-            fig.add_trace(go.Scatter(x=np.concatenate([fm.freqs, fm.freqs[::-1]]),
+            fig.add_trace(go.Scatter(x=np.concatenate([freqs, freqs[::-1]]),
                                      y=np.concatenate([peak, fm._ap_fit[::-1]]),
                                      fill='toself', fillcolor=fill, hoverinfo='none',
                                      mode='none', showlegend=False))

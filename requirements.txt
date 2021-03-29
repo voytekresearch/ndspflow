@@ -1,5 +1,5 @@
 nipype >= 1.5.1
-bycycle == 1.0.0rc2
+bycycle >= 1.0.0
 fooof >= 1.0.0
 plotly >= 4.10.0
 ipywidgets >= 7.5.1
