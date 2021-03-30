@@ -77,7 +77,6 @@ def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=5., center='peak'):
         motifs.append(motifs_burst[0])
 
         # Collect cycles
-
         cycles['sigs'].append(cycles_burst['sigs'][idx])
         cycles['dfs_osc'].append(cycles_burst['dfs_osc'][idx])
         cycles['labels'].append(cycles_burst['labels'][idx])
