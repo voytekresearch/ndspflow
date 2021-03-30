@@ -9,19 +9,18 @@ import plotly.graph_objects as go
 from neurodsp.utils.norm import normalize_sig
 
 from ndspflow.plts.fooof import plot_fm
-from ndspflow.core.motif import extract_motifs
+from ndspflow.motif import extract
 
 
-def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', normalize=True,
-                motifs=None, cycles=None, extract_motifs_kwargs=None, plot_fm_kwargs=None):
+def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak', normalize=True,
+                extract_kwargs=None, plot_fm_kwargs=None):
     """Plot cycle motifs using fooof fits and bycycle cycles.
 
     Parameters
     ----------
     fm : fooof FOOOF or tuple
         A fooof model that has been fit.
-    df_features : pandas.DataFrame
-        A dataframe containing bycycle features.
+
     sig : 1d array
         Time series.
     fs : float
@@ -32,8 +31,8 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', normalize=T
         Defines centers of bycycle cycles.
     normalize : book, optiona, default: True
         Signal is mean centered with variance of one if True.
-    extract_motifs_kwargs : dict, optional, default: None
-        Keyword arguments for the :func:`~.extract_motifs` function.
+    extract_kwargs : dict, optional, default: None
+        Keyword arguments for the :func:`~.extract` function.
     plot_fm_kwargs : dict, optional, default: None
         Keyword arguments for the :func:`~.plot_fm` function.
 
@@ -45,12 +44,7 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', normalize=T
 
     # Extract motifs
     sig = normalize_sig(sig, mean=0, variance=1) if normalize else sig
-    extract_motifs_kwargs = {} if extract_motifs_kwargs is None else extract_motifs_kwargs
-
-    if motifs is None or cycles is None:
-
-        motifs, cycles = extract_motifs(fm, df_features, sig, fs, return_cycles=True,
-                                        **extract_motifs_kwargs)
+    extract_kwargs = {} if extract_kwargs is None else extract_kwargs
 
     # Get indices where motifs are found with greater than 1 cycle
     dfs_osc = cycles['dfs_osc']
@@ -68,7 +62,9 @@ def plot_motifs(fm, df_features, sig, fs, n_bursts=5, center='peak', normalize=T
         *[[{'colspan': ncols, 'b': .1/nrows}, *[None] * (ncols-1)]] * (nrows-2)
     ]
 
-    titles = [str(round(fs/len(motif[0]))) for motif in motifs if not isinstance(motif, float)]
+    cfs = fm.get_params('peak', 'CF')
+    cfs = [round(cfs, 1)] if not isinstance(cfs, np.ndarray) else cfs.round(1)
+    titles = [str(cf) for cf in cfs]
     titles = [osc + ' hz Motif' for osc in titles]
 
     row_heights = [2, 1, *[1] * (nrows-2)]

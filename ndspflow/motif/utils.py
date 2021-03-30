@@ -6,6 +6,8 @@ from scipy.signal import resample
 
 from neurodsp.utils.norm import normalize_sig
 
+from skimage.transform import estimate_transform, AffineTransform
+
 
 def split_signal(df_osc, sig, normalize=True, center='peak'):
     """Split the signal using a bycycle dataframe.
@@ -54,5 +56,30 @@ def split_signal(df_osc, sig, normalize=True, center='peak'):
     return sigs
 
 
+def motif_to_cycle(motif, cycle):
+    """Affine transform motif to cycle.
 
+    Parameters
+    ----------
+    motif : 1d array
+        Mean waveform.
+    cycle : 1d array
+        Individual cycle waveform.
 
+    Returns
+    -------
+    motif_trans : 1d array
+        Motif waveform tranformed to cycle space.
+    tform : 2d array
+        Transformation matrix.
+    """
+
+    _times = np.arange(0, len(motif))
+
+    src = np.vstack((_times, motif)).T
+    dst = np.vstack((_times, cycle)).T
+
+    tform = estimate_transform('affine', src, dst)
+    motif_trans = AffineTransform(tform.params)(src).T[1]
+
+    return motif_trans, tform
