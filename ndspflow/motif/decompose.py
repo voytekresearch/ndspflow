@@ -49,11 +49,7 @@ def decompose(sig, motifs, dfs_osc, center='peak', labels=None, mean_center=True
 
     sig_pe = sig_ap.copy()
 
-    first_cyc_start = []
-    last_cyc_end = []
-
     tforms = []
-
     for idx_motif, (motif, df_osc) in enumerate(zip(motifs, dfs_osc)):
 
         sig_motif_rm = np.zeros_like(sig)
