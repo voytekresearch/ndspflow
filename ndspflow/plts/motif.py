@@ -64,8 +64,7 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak', normaliz
 
     cfs = fm.get_params('peak', 'CF')
     cfs = [round(cfs, 1)] if not isinstance(cfs, np.ndarray) else cfs.round(1)
-    titles = [str(cf) for cf in cfs]
-    titles = [osc + ' hz Motif' for osc in titles]
+    titles = [str(cf) + ' hz Motif' for cf in cfs]
 
     row_heights = [2, 1, *[1] * (nrows-2)]
 
@@ -108,6 +107,7 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak', normaliz
     for idx, (motif, df_osc) in enumerate(zip(motifs, dfs_osc)):
 
         color = default_fills[idx % len(default_fills)]
+        color = color.replace('.5', '1')
 
         if idx in motif_idxs:
 

@@ -12,7 +12,7 @@ from ndspflow.motif.burst import motif_burst_detection
 from ndspflow.motif.utils import split_signal
 
 
-def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=5., center='peak'):
+def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=5., center='peak', **extract_kwargs):
     """Extract bursting using motifs after motif burst detection.
 
     Parameters
@@ -26,7 +26,7 @@ def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=5., center='peak'):
     clust_score : float, optional, default: 0.5
         The silhouette score to accept k clusters.
     corr_thresh : float, optional, default: 5
-        Cross-correlation coefficient threshold.
+        Correlation coefficient threshold.
     center : {'peak', 'trough'}, optional
         The center definition of cycles.
 
@@ -48,7 +48,7 @@ def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=5., center='peak'):
     motifs = []
     cycles = {'sigs': [], 'dfs_osc': [], 'labels': [], 'f_ranges': []}
 
-    for idx, (motif, f_range) in enumerate(zip(motifs_, cycles_['f_ranges'])):
+    for motif, f_range in zip(motifs_, cycles_['f_ranges']):
 
         # Skip null motifs (np.nan)
         if isinstance(f_range, float):
@@ -66,27 +66,36 @@ def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=5., center='peak'):
 
         # Re-extract motifs from bursts
         motifs_burst, cycles_burst = extract(fm, sig, fs, df_features=bm, clust_score=clust_score,
-                                             center=center, only_bursts=True)
+                                             center=center, only_bursts=True, **extract_kwargs)
 
-        if isinstance(motifs_burst[0], float):
+        # Match re-extraction results to frequency range of interest
+        motif_idx = [idx for idx, cyc_range in enumerate(cycles_burst['f_ranges']) \
+                     if not isinstance(cyc_range, float) and \
+                     round(cyc_range[0] - f_range[0]) == 0 and \
+                     round(cyc_range[1] - f_range[1]) == 0]
+
+        # No motif found
+        if len(motif_idx) != 1:
             motifs.append(np.nan)
             for key in cycles:
                 cycles[key].append(np.nan)
             continue
 
-        motifs.append(motifs_burst[0])
+        motif_idx = motif_idx[0]
+
+        motifs.append(motifs_burst[motif_idx])
 
         # Collect cycles
-        cycles['sigs'].append(cycles_burst['sigs'][idx])
-        cycles['dfs_osc'].append(cycles_burst['dfs_osc'][idx])
-        cycles['labels'].append(cycles_burst['labels'][idx])
-        cycles['f_ranges'].append(cycles_burst['f_ranges'][idx])
+        cycles['sigs'].append(cycles_burst['sigs'][motif_idx])
+        cycles['dfs_osc'].append(cycles_burst['dfs_osc'][motif_idx])
+        cycles['labels'].append(cycles_burst['labels'][motif_idx])
+        cycles['f_ranges'].append(cycles_burst['f_ranges'][motif_idx])
 
     return motifs, cycles
 
 
 def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True,
-            center='peak', clust_score=1, max_clusters=10, min_n_cycles=10):
+            center='peak', clust_score=1, min_clusters=2, max_clusters=10, min_n_cycles=10):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
 
     Parameters
@@ -106,7 +115,9 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True,
     center : {'peak', 'trough'}, optional
         The center definition of cycles.
     clust_score : float, optional, default: 1
-        The silhouette score to accept k clusters..
+        The silhouette score to accept k clusters. The default skips clustering.
+    max_clusters : int, optional, default: 2
+        The minimum number of clusters to evaluate.
     max_clusters : int, optional, default: 10
         The maximum number of clusters to evaluate.
     min_n_cycles : int, optional, default: 10
@@ -151,7 +162,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True,
         df_osc = limit_df(df_features, fs, f_range, only_bursts=only_bursts)
 
         # No cycles found in frequency range
-        if not isinstance(df_osc, pd.DataFrame):
+        if not isinstance(df_osc, pd.DataFrame) or len(df_osc) < min_n_cycles:
             motifs.append(np.nan)
             for key in cycles:
                 cycles[key].append(np.nan)
@@ -161,13 +172,11 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True,
         sig_cyc = split_signal(df_osc, sig, True, center)
 
         # Cluster cycles
-        labels = cluster_cycles(sig_cyc, clust_score=clust_score, max_clusters=max_clusters)
-
-        if len(sig_cyc) <  min_n_cycles:
-            continue
+        labels = cluster_cycles(sig_cyc, clust_score=clust_score, min_clusters=min_clusters,
+                                max_clusters=max_clusters)
 
         if not isinstance(labels, np.ndarray):
-            # No clusters found
+            # No superthreshold clusters found
             motifs.append([np.mean(sig_cyc, axis=0)])
         else:
             # Multiple motifs found at the current frequency range

@@ -3,8 +3,10 @@
 import numpy as np
 from scipy.signal import resample
 
+from ndspflow.motif.utils import motif_to_cycle
 
-def motif_burst_detection(motifs, df_features, sig, corr_thresh=5):
+
+def motif_burst_detection(motifs, df_features, sig, corr_thresh=.75):
     """Use motifs to detect bursts.
 
     Parameters
@@ -17,7 +19,7 @@ def motif_burst_detection(motifs, df_features, sig, corr_thresh=5):
     sig : 1d array
         Voltage time series.
     corr_thresh : float, optional, default: 5
-        Cross-correlation coefficient threshold.
+        Correlation coefficient threshold.
 
     Returns
     -------
@@ -31,14 +33,17 @@ def motif_burst_detection(motifs, df_features, sig, corr_thresh=5):
 
         for row, (_, cyc) in enumerate(df_features.iterrows()):
 
-            # Slice, normalize, and resample each cycle
+            # Slice, normalize, and resample
             cyc = sig[cyc['sample_last_trough']:cyc['sample_next_trough']]
-            cyc = resample(cyc, len(motif))
+
+            motif_resamp = resample(motif, len(cyc))
+            motif_tform, _ = motif_to_cycle(motif_resamp, cyc)
 
             # Correlation coefficient
-            coeff = np.correlate(cyc, motif, mode='valid')[0]
+            coeff_cyc_tform = np.corrcoef(cyc, motif_tform)[0][1]
+            coeff_resamp_tform = np.corrcoef(motif_resamp, motif_tform)[0][1]
 
-            if coeff >= corr_thresh:
+            if coeff_cyc_tform >= corr_thresh and coeff_resamp_tform >= corr_thresh:
                 is_burst[idx][row] = True
 
     is_burst = np.sum(is_burst, axis=0, dtype=bool)
