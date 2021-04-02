@@ -8,3 +8,4 @@
     plot_1_quickstart
     plot_2_fooof
     plot_3_bycycle
+    plot_4_motifs

@@ -156,7 +156,7 @@ class Motif:
             self.results.append(result)
 
 
-    def decompose(self, center='peak', mean_center=True, transform=False):
+    def decompose(self, center='peak', mean_center=True, transform=True):
         """Decompose a signal into its periodic/aperioidic components.
 
         Parameters
@@ -242,7 +242,7 @@ class Motif:
 
         # Plot the aperiodic decomposition
         plot_time_series(times, [self.sig, self.results[result_index].sig_ap],
-                         labels=['Original', 'A[eriodic'], title='Aperiodic Reconstruction',
+                         labels=['Original', 'Aperiodic'], title='Aperiodic Reconstruction',
                          alpha=alpha, figsize=figsize, **kwargs)
 
 
@@ -264,8 +264,57 @@ class Motif:
         _, ax = plt.subplots(figsize=figsize)
 
         plot_power_spectra(freqs, [powers, powers_pe, powers_ap],
-                           title="Reconstructed Components", labels=['Orig', 'PE Recon', 'AP Recon'],
+                           title="Reconstructed Components",
+                           labels=['Orig', 'PE Recon', 'AP Recon'],
                            ax=ax, alpha=[0.7, 0.7, 0.7], lw=3)
+
+    def plot_transform(self, result_index, center='peak', xlim=None, figsize=(10, 1.5)):
+
+        if self.results[result_index].sig_pe is None or self.results[result_index].sig_ap is None:
+            self.decompose()
+
+        fig, axes = plt.subplots(figsize=(figsize[0], figsize[1]*(7)), nrows=7, sharex=True)
+
+        side = 'trough' if center == 'peak' else 'peak'
+        starts = self.results[result_index].df_features['sample_last_' + side]
+        ends = self.results[result_index].df_features['sample_next_' + side]
+
+        # Get affine matrix parameters
+        tforms = self.results[result_index].tforms
+        rotations = [tform.rotation for tform in tforms]
+        translations_x = [tform.translation[0] for tform in tforms]
+        translations_y = [tform.translation[1] for tform in tforms]
+        scales_x = [tform.scale[0] for tform in tforms]
+        scales_y = [tform.scale[0] for tform in tforms]
+        shears = [tform.shear for tform in tforms]
+
+        params = [rotations, translations_x, translations_y, scales_x, scales_y, shears]
+
+        param_arr = np.zeros((len(params), len(self.sig)))
+        param_arr[:, :] = np.nan
+
+        for idx, params in enumerate(params):
+            for cyc_idx, (start, end) in enumerate(zip(starts, ends)):
+                param_arr[idx][start:end] = params[cyc_idx]
+
+        # Plot bursts
+        times = np.arange(0, len(self.sig)/self.fs, 1/self.fs)
+        plot_time_series(times, [self.sig, self.results[result_index].sig_pe], xlim=xlim,
+                         alpha=[0.5, 1, 1], ax=axes[0])
+
+        axes[0].set_ylabel("")
+        axes[0].set_xlabel("")
+        axes[0].set_title('Motif Detection and Fitting', fontsize=20)
+        axes[0].tick_params(axis='y', labelsize=12)
+
+        # Plot affine matrix params
+        titles = ['Rotation', 'Translation X', 'Translation Y', 'Scale X', 'Scale Y', 'Shear']
+        for idx in range(len(param_arr)):
+            axes[idx+1].plot(times, param_arr[idx])
+            axes[idx+1].set_xlim(xlim)
+            axes[idx+1].set_title(titles[idx], fontsize=16)
+
+        axes[len(param_arr)].set_xlabel('Time', fontsize=16)
 
 
 class MotifResult:
@@ -303,6 +352,7 @@ class MotifResult:
         self.sig_pe = None
         self.sig_ap = None
         self.tforms = None
+
 
     def add_decompose(self, sig_pe, sig_ap, tforms=None):
         """Add decomposed periodic and aperiodic signals.

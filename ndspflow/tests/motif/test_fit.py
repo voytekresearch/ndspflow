@@ -136,3 +136,14 @@ def test_motif_plot_spectra(sim_sig, fooof_outs):
     motif = Motif()
     motif.fit(fm, sig, fs)
     motif.plot_spectra(0)
+
+
+def test_motif_plot_transform(sim_sig, fooof_outs):
+
+    sig = sim_sig['sig']
+    fs = sim_sig['fs']
+    fm = fooof_outs['fm']
+
+    motif = Motif()
+    motif.fit(fm, sig, fs)
+    motif.plot_transform(0)
