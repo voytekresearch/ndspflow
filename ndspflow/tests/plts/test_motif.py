@@ -2,6 +2,8 @@
 
 import numpy as np
 import plotly.graph_objs as go
+
+from ndspflow.motif import extract
 from ndspflow.plts.motif import plot_motifs
 
 
@@ -20,8 +22,8 @@ def test_plot_motifs(fooof_outs, bycycle_outs, test_data):
     _fm.peak_params_ = peak_params
 
     df_features = bycycle_outs['bm']
-
-    fig = plot_motifs(_fm, df_features, sig, fs)
+    motifs, cycles = extract(_fm, sig, fs, df_features=df_features)
+    fig = plot_motifs(_fm, motifs, cycles, sig, fs)
     assert isinstance(fig, go.Figure)
 
     html = fig.to_html(full_html=False, include_plotlyjs=False)

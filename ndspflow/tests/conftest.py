@@ -16,10 +16,10 @@ from ndspflow.plts.bycycle import plot_bm
 def sim_sig():
 
     # Simulate a 1d timeseries that contains an oscillation + 1/f
-    SIG = sim_combined(N_SECONDS, FS, {'sim_powerlaw': {'exponent': EXP},
+    sig = sim_combined(N_SECONDS, FS, {'sim_powerlaw': {'exponent': EXP},
                                        'sim_oscillation': {'freq': FREQ}})
 
-    yield dict(n_seconds=N_SECONDS, fs=FS, exp=EXP, freq=FREQ, f_range=F_RANGE, sig=SIG)
+    yield dict(n_seconds=N_SECONDS, fs=FS, exp=EXP, freq=FREQ, f_range=F_RANGE, sig=sig)
 
 
 @pytest.fixture(scope='module')

@@ -47,9 +47,9 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak', normaliz
     extract_kwargs = {} if extract_kwargs is None else extract_kwargs
 
     # Get indices where motifs are found with greater than 1 cycle
-    dfs_osc = cycles['dfs_osc']
+    dfs_features = cycles['dfs_features']
     motif_exists = ~np.array([isinstance(motif, float) for motif in motifs])
-    drop = [idx for idx in np.where(motif_exists)[0] if len(dfs_osc[idx]) <= 1]
+    drop = [idx for idx in np.where(motif_exists)[0] if len(dfs_features[idx]) <= 1]
     motif_exists[drop] = False
 
     # Initialize figure
@@ -104,7 +104,7 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak', normaliz
 
     # Iterate over each center freq
     row_idx = 1
-    for idx, (motif, df_osc) in enumerate(zip(motifs, dfs_osc)):
+    for idx, (motif, df_osc) in enumerate(zip(motifs, dfs_features)):
 
         color = default_fills[idx % len(default_fills)]
         color = color.replace('.5', '1')

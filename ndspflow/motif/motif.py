@@ -48,7 +48,7 @@ def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=0.5, var_thresh=0.0
                                only_bursts=False, max_clusters=10)
 
     motifs = []
-    cycles = {'sigs': [], 'dfs_osc': [], 'labels': [], 'f_ranges': []}
+    cycles = {'sigs': [], 'dfs_features': [], 'labels': [], 'f_ranges': []}
 
     for motif, f_range in zip(motifs_, cycles_['f_ranges']):
 
@@ -87,7 +87,7 @@ def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=0.5, var_thresh=0.0
 
         # Collect cycles
         cycles['sigs'].append(cycles_burst['sigs'][motif_idx])
-        cycles['dfs_osc'].append(cycles_burst['dfs_osc'][motif_idx])
+        cycles['dfs_features'].append(cycles_burst['dfs_features'][motif_idx])
         cycles['labels'].append(cycles_burst['labels'][motif_idx])
         cycles['f_ranges'].append(cycles_burst['f_ranges'][motif_idx])
 
@@ -153,7 +153,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
 
     # Get cycles within freq ranges
     motifs = []
-    cycles = {'sigs': [], 'dfs_osc': [], 'labels': [], 'f_ranges': []}
+    cycles = {'sigs': [], 'dfs_features': [], 'labels': [], 'f_ranges': []}
 
     for f_range in f_ranges:
 
@@ -220,7 +220,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
 
         # Collect cycles
         cycles['sigs'].append(sig_cyc)
-        cycles['dfs_osc'].append(df_osc)
+        cycles['dfs_features'].append(df_osc)
         cycles['labels'].append(labels)
         cycles['f_ranges'].append(f_range)
 
