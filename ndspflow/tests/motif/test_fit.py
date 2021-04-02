@@ -1,5 +1,7 @@
 """Tests for the Motif class."""
 
+from pytest import raises
+
 import numpy as np
 
 from ndspflow.motif import Motif
@@ -85,15 +87,20 @@ def test_motif_decompose(sim_sig, fooof_outs):
     motif.fit(fm, sig, fs)
 
     motif.decompose(transform=False)
-    assert isinstance(motif.sig_ap, np.ndarray)
-    assert isinstance(motif.sig_pe, np.ndarray)
-    assert motif.sig_ap.shape == motif.sig_pe.shape
+    assert isinstance(motif[0].sig_ap, np.ndarray)
+    assert isinstance(motif[0].sig_pe, np.ndarray)
+    assert motif[0].sig_ap.shape == motif[0].sig_pe.shape
 
     motif.decompose(transform=True)
-    assert isinstance(motif.tforms, list)
-    assert isinstance(motif.tforms[0], list)
-    assert isinstance(motif.tforms[0][0].params, np.ndarray)
-    assert motif.tforms[0][0].params.shape == (3, 3)
+    assert isinstance(motif[0].tforms, list)
+    assert isinstance(motif[0].tforms[0].params, np.ndarray)
+    assert motif[0].tforms[0].params.shape == (3, 3)
+
+    # Fitting must be prior to decomposition
+    motif = Motif()
+    with raises(ValueError):
+        motif.decompose()
+
 
 
 def test_motif_plot(sim_sig, fooof_outs):
@@ -117,3 +124,15 @@ def test_motif_plot_decompose(sim_sig, fooof_outs):
 
     motif = Motif()
     motif.fit(fm, sig, fs)
+    motif.plot_decompose(0)
+
+
+def test_motif_plot_spectra(sim_sig, fooof_outs):
+
+    sig = sim_sig['sig']
+    fs = sim_sig['fs']
+    fm = fooof_outs['fm']
+
+    motif = Motif()
+    motif.fit(fm, sig, fs)
+    motif.plot_spectra(0)

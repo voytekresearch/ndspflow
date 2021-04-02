@@ -1,8 +1,10 @@
 """Motif class object."""
 
+import matplotlib.pyplot as plt
 import numpy as np
 
-from neurodsp.plts import plot_time_series
+from neurodsp.plts import plot_time_series, plot_power_spectra
+from neurodsp.spectral import compute_spectrum
 
 from ndspflow.core.fit import fit_bycycle
 from ndspflow.motif.burst import motif_burst_detection
@@ -167,6 +169,9 @@ class Motif:
             Applies an affine transfrom from motif to cycle if True.
         """
 
+        if len(self.results) == 0:
+            raise ValueError("Object must be fit prior to decomposing.")
+
         from ndspflow.motif import extract, decompose
 
         motifs = [result.motif for result in self.results]
@@ -174,19 +179,22 @@ class Motif:
         labels = [result.labels for result in self.results]
 
         if transform:
-            sig_pe, sig_ap, tforms = decompose(self.sig, motifs, dfs_features, center, labels,
-                                              mean_center, transform)
-            self.sig_pe = sig_pe
-            self.sig_ap = sig_ap
-            self.tforms = tforms
-
+            sigs_pe, sigs_ap, tforms = decompose(self.sig, motifs, dfs_features, center, labels,
+                                                 mean_center, transform)
         else:
-            sig_pe, sig_ap = decompose(self.sig, motifs, dfs_features, center, labels,
-                                       mean_center, transform)
+            sigs_pe, sigs_ap = decompose(self.sig, motifs, dfs_features, center, labels,
+                                         mean_center, transform)
 
-            self.sig_pe = sig_pe
-            self.sig_ap = sig_ap
-            self.tforms = None
+        sig_idx = 0
+        for result in self.results:
+            if not isinstance(result.motif, float):
+
+                if transform:
+                    result.add_decompose(sigs_pe[sig_idx], sigs_ap[sig_idx], tforms[sig_idx])
+                else:
+                    result.add_decompose(sigs_pe[sig_idx], sigs_ap[sig_idx])
+
+                sig_idx += 1
 
 
     def plot(self, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs=None, show=True):
@@ -216,10 +224,10 @@ class Motif:
             fig.show()
 
 
-    def plot_decompose(self, **kwargs):
+    def plot_decompose(self, result_index, **kwargs):
         """Plot periodic and aperiodic signal decomposition."""
 
-        if self.sig_ap is None or self.sig_pe is None:
+        if self.results[result_index].sig_pe is None or self.results[result_index].sig_ap is None:
             self.decompose()
 
         times = np.arange(0, len(self.sig)/self.fs, 1/self.fs)
@@ -228,14 +236,36 @@ class Motif:
         alpha = kwargs.pop('alpha', [0.75, 1])
 
         # Plot the periodic decomposition
-        plot_time_series(times, [self.sig, *[sig for sig in self.sig_pe]],
+        plot_time_series(times, [self.sig, self.results[result_index].sig_pe],
                          labels=['Original', 'Periodic'], title='Periodic Reconstruction',
                          alpha=alpha, figsize=figsize, **kwargs)
 
         # Plot the aperiodic decomposition
-        plot_time_series(times, [self.sig, *[sig for sig in self.sig_ap]],
+        plot_time_series(times, [self.sig, self.results[result_index].sig_ap],
                          labels=['Original', 'A[eriodic'], title='Aperiodic Reconstruction',
                          alpha=alpha, figsize=figsize, **kwargs)
+
+
+    def plot_spectra(self, result_index, f_range=(1, 100), figsize=(8, 8)):
+
+        if self.results[result_index].sig_pe is None or self.results[result_index].sig_ap is None:
+            self.decompose()
+
+        # Compute spectra
+        freqs, powers = compute_spectrum(self.sig, self.fs, f_range=f_range)
+
+        freqs_pe, powers_pe = compute_spectrum(self.results[result_index].sig_pe,
+                                               self.fs, f_range=f_range)
+
+        freqs_ap, powers_ap = compute_spectrum(self.results[result_index].sig_ap,
+                                               self.fs, f_range=f_range)
+
+        # Plot
+        _, ax = plt.subplots(figsize=figsize)
+
+        plot_power_spectra(freqs, [powers, powers_pe, powers_ap],
+                           title="Reconstructed Components", labels=['Orig', 'PE Recon', 'AP Recon'],
+                           ax=ax, alpha=[0.7, 0.7, 0.7], lw=3)
 
 
 class MotifResult:
@@ -253,6 +283,12 @@ class MotifResult:
         Bycycle dataframe.
     labels : 1d array, optional, default: np.nan
         Cluster labels.
+    sig_pe : 1d array
+        Periodic signal.
+    sig_ap : 1d array
+        Aperiodic signal.
+    tforms : list of 2d array, optional
+        Transformation matrix for each cycle
     """
 
     def __init__(self, f_range, motif=np.nan, sigs=np.nan, df_features=np.nan, labels=np.nan):
@@ -263,3 +299,24 @@ class MotifResult:
         self.sigs = sigs
         self.df_features = df_features
         self.labels = labels
+
+        self.sig_pe = None
+        self.sig_ap = None
+        self.tforms = None
+
+    def add_decompose(self, sig_pe, sig_ap, tforms=None):
+        """Add decomposed periodic and aperiodic signals.
+
+        Parameters
+        ----------
+        sig_pe : 1d array
+            Periodic signal.
+        sig_ap : 1d array
+            Aperiodic signal.
+        tforms : list of 2d array, optional, default: None
+            Transformation matrix for each cycle
+        """
+
+        self.sig_pe = sig_pe
+        self.sig_ap = sig_ap
+        self.tforms = tforms
