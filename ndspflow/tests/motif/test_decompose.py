@@ -19,8 +19,6 @@ def test_decompose(sim_sig, fooof_outs):
     sig_ap, sig_pe, tforms = decompose(sig, motifs, cycles['dfs_features'], center='peak',
                                        labels=cycles['labels'], mean_center=True, transform=True)
 
-    # Periodic signal will have greater variation
-    assert np.var(sig_ap[0]) < np.var(sig_pe[0])
     assert len(sig_ap) == len(sig_pe) == len(tforms) == 1
     assert sig_ap[0].shape == sig_pe[0].shape
 

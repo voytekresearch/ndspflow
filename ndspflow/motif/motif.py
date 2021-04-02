@@ -7,95 +7,12 @@ from ndspflow.core.utils import limit_df
 from ndspflow.core.fit import fit_bycycle
 
 from ndspflow.motif.cluster import cluster_cycles
-from ndspflow.motif.burst import motif_burst_detection
+
 from ndspflow.motif.utils import split_signal
 
 
-def robust_extract(fm, sig, fs, clust_score=0.5, corr_thresh=0.5, var_thresh=0.05,
-                   center='peak', **extract_kwargs):
-    """Extract bursting using motifs after motif burst detection.
-
-    Parameters
-    ----------
-    fm : fooof.FOOOF or list of tuple
-        A fooof model that has been fit, or a list of (center_freq, bandwidth).
-    sig : 1d array
-        Time series.
-    fs : float
-        Sampling rate, in Hz.
-    clust_score : float, optional, default: 0.5
-        The silhouette score to accept k clusters.
-    corr_thresh : float, optional, default: 0.5
-        Correlation coefficient threshold.
-    var_thresh : float, optional, default: 0.05
-        Height threshold in variance.
-    center : {'peak', 'trough'}, optional
-        The center definition of cycles.
-
-    Returns
-    -------
-    motifs : list of list of 1d arrays
-        Motifs for each center frequency in ascending order. Inner list contains multiple arrays
-        if multiple motifs are found at one frequency.
-    cycles : dict
-        The timeseries, dataframes, frequency ranges, and predicted labels for each cycle.
-        Valid keys include: 'sigs', 'dfs_osc', 'labels', 'f_ranges'.
-        Only returned when ``return_cycles`` is True.
-    """
-
-    # First pass motif extraction
-    motifs_, cycles_ = extract(fm, sig, fs, clust_score=clust_score, center=center,
-                               only_bursts=False, max_clusters=10)
-
-    motifs = []
-    cycles = {'sigs': [], 'dfs_features': [], 'labels': [], 'f_ranges': []}
-
-    for motif, f_range in zip(motifs_, cycles_['f_ranges']):
-
-        # Skip null motifs (np.nan)
-        if isinstance(f_range, float):
-            motifs, cycles = _nan_append(motifs, cycles)
-            continue
-
-        # Motif correlation burst detection
-        bm = fit_bycycle(sig, fs, f_range)
-
-        is_burst = motif_burst_detection(motif, bm, sig, corr_thresh=corr_thresh,
-                                         var_thresh=var_thresh)
-
-        bm['is_burst'] = is_burst
-
-        # Re-extract motifs from bursts
-        motifs_burst, cycles_burst = extract(fm, sig, fs, df_features=bm, clust_score=clust_score,
-                                             var_thresh=var_thresh, center=center, only_bursts=True,
-                                             **extract_kwargs)
-
-        # Match re-extraction results to frequency range of interest
-        motif_idx = [idx for idx, cyc_range in enumerate(cycles_burst['f_ranges']) \
-                     if not isinstance(cyc_range, float) and \
-                     round(cyc_range[0] - f_range[0]) == 0 and \
-                     round(cyc_range[1] - f_range[1]) == 0]
-
-        # No cycles found in the given frequency range
-        if len(motif_idx) != 1:
-            motifs, cycles = _nan_append(motifs, cycles)
-            continue
-
-        motif_idx = motif_idx[0]
-
-        motifs.append(motifs_burst[motif_idx])
-
-        # Collect cycles
-        cycles['sigs'].append(cycles_burst['sigs'][motif_idx])
-        cycles['dfs_features'].append(cycles_burst['dfs_features'][motif_idx])
-        cycles['labels'].append(cycles_burst['labels'][motif_idx])
-        cycles['f_ranges'].append(cycles_burst['f_ranges'][motif_idx])
-
-    return motifs, cycles
-
-
 def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='peak',
-            clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10):
+            min_clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
 
     Parameters
@@ -114,11 +31,11 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
         Limits the dataframe to bursting cycles when True.
     center : {'peak', 'trough'}, optional
         The center definition of cycles.
-    clust_score : float, optional, default: 1
-        The silhouette score to accept k clusters. The default skips clustering.
+    min_clust_score : float, optional, default: 1
+        The minimum silhouette score to accept k clusters. The default skips clustering.
     var_thresh : float, optional, default: 0.05
         Height threshold in variance.
-    max_clusters : int, optional, default: 2
+    min_clusters : int, optional, default: 2
         The minimum number of clusters to evaluate.
     max_clusters : int, optional, default: 10
         The maximum number of clusters to evaluate.
@@ -172,7 +89,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
         sig_cyc = split_signal(df_osc, sig, True, center)
 
         # Cluster cycles
-        labels = cluster_cycles(sig_cyc, clust_score=clust_score, min_clusters=min_clusters,
+        labels = cluster_cycles(sig_cyc, min_clust_score=min_clust_score, min_clusters=min_clusters,
                                 max_clusters=max_clusters)
 
         # Single clusters found

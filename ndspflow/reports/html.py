@@ -11,7 +11,7 @@ from fooof.core.strings import gen_results_fm_str, gen_results_fg_str
 from fooof.core.strings import gen_settings_str as gen_settings_fm_str
 
 from ndspflow.core.utils import flatten_fms, flatten_bms
-from ndspflow.motif import robust_extract
+from ndspflow.motif import Motif
 from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
 from ndspflow.plts.bycycle import plot_bm, plot_bg, plot_bgs
 from ndspflow.plts.motif import plot_motifs
@@ -80,9 +80,16 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
                 df_features = bms[0][idx]
                 sig = bms[1]['sig'][idx]
                 fs = bms[1]['fs']
-                motifs, cycles = robust_extract(fm, sig, fs)
+
+                motif = Motif()
+                motif.fit(fm, sig, fs)
+
+                motifs = [result.motif for result in motif.results]
+                dfs_features = [result.df_features for result in motif.results]
+                cycles = {'dfs_features': dfs_features}
+
                 graph = plot_motifs(fm, motifs, cycles, sig, fs).to_html(full_html=False,
-                                                                        include_plotlyjs=False)
+                                                                         include_plotlyjs=False)
 
             html_report = generate_fooof_report(fm, graph, html_report)
 

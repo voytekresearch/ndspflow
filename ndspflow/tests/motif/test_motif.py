@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from ndspflow.core.fit import fit_bycycle
-from ndspflow.motif import extract, robust_extract
+from ndspflow.motif import extract
 
 
 def test_extract(sim_sig, fooof_outs):
@@ -29,17 +29,17 @@ def test_extract(sim_sig, fooof_outs):
     _check_results(motifs, cycles, 'valid', 1)
 
     # Force multi-motif
-    motifs, cycles = extract(fm, sig, fs, min_clusters=2, clust_score=0,
+    motifs, cycles = extract(fm, sig, fs, min_clusters=2, min_clust_score=0,
                              var_thresh=0, min_n_cycles=2)
     _check_results(motifs, cycles, 'valid', 1)
 
     # Force multi-motif and subthresh variance
-    motifs, cycles = extract(fm, sig, fs, min_clusters=2, clust_score=0,
+    motifs, cycles = extract(fm, sig, fs, min_clusters=2, min_clust_score=0,
                              var_thresh=1, min_n_cycles=2)
     _check_results(motifs, cycles, 'invalid', 1)
 
     # Force single motif
-    motifs, cycles = extract(params, sig, fs, clust_score=1.1)
+    motifs, cycles = extract(params, sig, fs, min_clust_score=1.1)
     _check_results(motifs, cycles, 'valid', 1)
 
     # Minimum cycles - no cycles will survive
@@ -48,27 +48,6 @@ def test_extract(sim_sig, fooof_outs):
 
     # Sub Variance threshold - no cycles will survive
     motifs, cycles = extract(params, sig, fs, min_n_cycles=0, var_thresh=np.inf)
-    _check_results(motifs, cycles, 'invalid', 1)
-
-
-def test_robust_extract(sim_sig, fooof_outs):
-
-    sig = sim_sig['sig']
-    fs = sim_sig['fs']
-    fm = fooof_outs['fm']
-
-    # Defaults
-    motifs, cycles = robust_extract(fm, sig, fs)
-    _check_results(motifs, cycles, 'valid', 1)
-
-    # No cycles in one f_range
-    params = [(fm.get_params('peak_params', 'CF'), fm.get_params('peak_params', 'BW')),
-              (100, 10)]
-    motifs, cycles = robust_extract(params, sig, fs)
-    _check_results(motifs, cycles, 'valid', 2)
-
-    # No  cycles >= correlation coeff threshold
-    motifs, cycles = robust_extract(fm, sig, fs, corr_thresh=1.1)
     _check_results(motifs, cycles, 'invalid', 1)
 
 
@@ -94,7 +73,6 @@ def _check_results(motifs, cycles, validity, n_params):
     else:
 
         assert len(motifs) == n_params
-        print(motifs[0])
         assert np.isnan(motifs[0])
         for key in cycles:
             assert len(cycles[key]) == 1

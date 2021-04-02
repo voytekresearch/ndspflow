@@ -8,15 +8,15 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
 
-def cluster_cycles(cycles, clust_score=0.5, min_clusters=2, max_clusters=10):
+def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10):
     """K-means clustering of cycles.
 
     Parameters
     ----------
     cycles : 2D array
         Cycles within a frequency range.
-    score : float, optional, default: 0.5
-        The silhouette score for accepting k clusters.
+    min_clust_score : float, optional, default: 0.5
+        The minimum silhouette score to accept k clusters..
     max_clusters : int, optional, default: 10
         The minimum number of clusters to evaluate.
     max_clusters : int, optional, default: 10
@@ -56,7 +56,7 @@ def cluster_cycles(cycles, clust_score=0.5, min_clusters=2, max_clusters=10):
         scores.append(silhouette_score(cycles, clusters))
 
     # No superthreshold clusters found
-    if len(scores) < 1 or max(scores) < clust_score:
+    if len(scores) < 1 or max(scores) < min_clust_score:
         return np.nan
 
     # Split motifs based on highest silhouette score

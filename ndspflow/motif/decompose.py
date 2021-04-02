@@ -9,7 +9,8 @@ from neurodsp.utils.norm import normalize_sig
 from ndspflow.motif.utils import motif_to_cycle
 
 
-def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center=True, transform=False):
+def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center=True,
+              transform=True):
     """Decompose a signal into its periodic/aperioidic components.
 
     Parameters
@@ -24,8 +25,10 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
         Center extrema definition.
     labels : list, optional, default: None
         Cluster labels found using :func:`~.cluster_cycles`.
-    mean_center  : bool, optional, default: True
+    mean_center : bool, optional, default: True
         Global detrending (mean centering of the original signal).
+    transfrom : bool, optional, default: True
+        Applies an affine transfrom from motif to cycle if True.
 
     Returns
     -------

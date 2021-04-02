@@ -12,15 +12,14 @@ from ndspflow.plts.fooof import plot_fm
 from ndspflow.motif import extract
 
 
-def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak', normalize=True,
-                extract_kwargs=None, plot_fm_kwargs=None):
+def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
+                normalize=True, plot_fm_kwargs=None):
     """Plot cycle motifs using fooof fits and bycycle cycles.
 
     Parameters
     ----------
     fm : fooof FOOOF or tuple
         A fooof model that has been fit.
-
     sig : 1d array
         Time series.
     fs : float
@@ -44,7 +43,6 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak', normaliz
 
     # Extract motifs
     sig = normalize_sig(sig, mean=0, variance=1) if normalize else sig
-    extract_kwargs = {} if extract_kwargs is None else extract_kwargs
 
     # Get indices where motifs are found with greater than 1 cycle
     dfs_features = cycles['dfs_features']
