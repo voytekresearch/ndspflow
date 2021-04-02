@@ -225,7 +225,7 @@ def get_parser():
     # Workflow selector
     parser.add_argument(
         '-run_nodes',
-        nargs='+',
+        nargs=1,
         default=['fooof', 'bycycle'],
         required=False,
         help="List of nodes to run: fooof and/or bycyle (default: fooof bycycle)."
@@ -253,7 +253,7 @@ def main():
     run_nodes = args['run_nodes']
 
     if run_nodes is None:
-        raise ValueError("Undefined required \"run_nodes\" argument.")
+        run_nodes = ['fooof', 'bycycle']
 
     req_args_fooof = dict(freqs=args['freqs'], power_spectrum=args['power_spectrum'],
                           f_range_fooof=args['f_range_fooof'])
