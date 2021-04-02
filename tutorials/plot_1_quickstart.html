@@ -401,7 +401,7 @@ usage: ndspflow [-h] [-power_spectrum powers.npy] [-freqs freqs.npy]
                 [-period_consistency_threshold float]
                 [-monotonicity_threshold float] [-min_n_cycles int]
                 [-burst_fraction_threshold float] [-axis {0, 1, 0, 1, None}]
-                [-n_jobs int] [-run_nodes {fooof,bycycle,both}]
+                [-n_jobs int] [-run_nodes RUN_NODES]
                 /path/to/input /path/to/output
 
 A Nipype workflow for FOOOF and Bycycle.
@@ -473,8 +473,7 @@ optional arguments:
 
   -n_jobs int           The maximum number of jobs to run in parallel at one time.
                         Only utilized for 2d and 3d arrays (default: 1).
-  -run_nodes {fooof,bycycle,both}
-                        List of nodes to run: fooof and/or bycyle (default: fooof bycycle).
+  -run_nodes RUN_NODES  List of nodes to run: fooof and/or bycyle (default: fooof bycycle).
 </pre></div></div>
 </div>
 </div>

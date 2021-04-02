@@ -315,3 +315,7 @@ display: flex;
   color: #555555;
   border: 2px solid #555555;
 }
+
+a, a:visited, a:hover, a:active {
+  color: inherit;
+}

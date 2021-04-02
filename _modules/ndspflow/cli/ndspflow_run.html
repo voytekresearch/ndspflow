@@ -321,8 +321,8 @@
     <span class="c1"># Workflow selector</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
         <span class="s1">&#39;-run_nodes&#39;</span><span class="p">,</span>
-        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;fooof&#39;</span><span class="p">,</span> <span class="s1">&#39;bycycle&#39;</span><span class="p">,</span> <span class="s1">&#39;both&#39;</span><span class="p">],</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;fooof&#39;</span><span class="p">,</span> <span class="s1">&#39;bycycle&#39;</span><span class="p">],</span>
         <span class="n">required</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">help</span><span class="o">=</span><span class="s2">&quot;List of nodes to run: fooof and/or bycyle (default: fooof bycycle).&quot;</span>
     <span class="p">)</span>
@@ -349,14 +349,14 @@
     <span class="n">run_nodes</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s1">&#39;run_nodes&#39;</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">run_nodes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Undefined required </span><span class="se">\&quot;</span><span class="s2">run_nodes</span><span class="se">\&quot;</span><span class="s2"> argument.&quot;</span><span class="p">)</span>
+        <span class="n">run_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;fooof&#39;</span><span class="p">,</span> <span class="s1">&#39;bycycle&#39;</span><span class="p">]</span>
 
     <span class="n">req_args_fooof</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">freqs</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s1">&#39;freqs&#39;</span><span class="p">],</span> <span class="n">power_spectrum</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s1">&#39;power_spectrum&#39;</span><span class="p">],</span>
                           <span class="n">f_range_fooof</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s1">&#39;f_range_fooof&#39;</span><span class="p">])</span>
 
     <span class="n">req_args_bycycle</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">sig</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s1">&#39;sig&#39;</span><span class="p">],</span> <span class="n">fs</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s1">&#39;fs&#39;</span><span class="p">],</span> <span class="n">f_range_bycycle</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s1">&#39;f_range_bycycle&#39;</span><span class="p">])</span>
 
-    <span class="k">if</span> <span class="s1">&#39;fooof&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span> <span class="ow">or</span> <span class="s1">&#39;both&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;fooof&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span><span class="p">:</span>
 
         <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">req_args_fooof</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">val</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -373,7 +373,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">fooof_params</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">if</span> <span class="s1">&#39;bycycle&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span> <span class="ow">or</span> <span class="s1">&#39;both&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s1">&#39;bycycle&#39;</span> <span class="ow">in</span> <span class="n">run_nodes</span><span class="p">:</span>
 
         <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">req_args_bycycle</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
 

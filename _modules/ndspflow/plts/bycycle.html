@@ -98,17 +98,15 @@
 
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">cycle</span>
 <span class="kn">import</span> <span class="nn">re</span>
-<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">path</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">zscore</span>
 <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">resample</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
 <span class="kn">from</span> <span class="nn">plotly.subplots</span> <span class="kn">import</span> <span class="n">make_subplots</span>
 
-<span class="kn">from</span> <span class="nn">bycycle.utils</span> <span class="kn">import</span> <span class="n">get_extrema_df</span>
+<span class="kn">from</span> <span class="nn">bycycle.utils</span> <span class="kn">import</span> <span class="n">get_extrema_df</span><span class="p">,</span> <span class="n">limit_df</span><span class="p">,</span> <span class="n">limit_signal</span>
 
 <span class="kn">from</span> <span class="nn">ndspflow.core.utils</span> <span class="kn">import</span> <span class="n">flatten_bms</span>
 
@@ -152,6 +150,10 @@
     <span class="c1"># Determine time array and limits</span>
     <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span> <span class="o">/</span> <span class="n">fs</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">fs</span><span class="p">)</span>
     <span class="n">xlim</span> <span class="o">=</span> <span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">xlim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">xlim</span>
+
+    <span class="c1"># Limit signal and dataframe</span>
+    <span class="n">sig</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="n">limit_signal</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stop</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">df_features</span> <span class="o">=</span> <span class="n">limit_df</span><span class="p">(</span><span class="n">df_features</span><span class="p">,</span> <span class="n">fs</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stop</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
     <span class="c1"># Determine if peak of troughs are the sides of an oscillation</span>
     <span class="n">center_e</span><span class="p">,</span> <span class="n">side_e</span> <span class="o">=</span> <span class="n">get_extrema_df</span><span class="p">(</span><span class="n">df_features</span><span class="p">)</span>
@@ -213,7 +215,7 @@
 
     <span class="c1"># Get burst traces</span>
     <span class="n">trace_id</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fig</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
-    <span class="n">burst_traces</span> <span class="o">=</span> <span class="p">[</span><span class="n">idx</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">df_features</span><span class="p">))]</span>
+    <span class="n">burst_traces</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df_features</span><span class="p">)))</span>
 
     <span class="c1"># Get the div id containg the plot</span>
     <span class="n">div_id</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">&quot;&lt;div id=.+?</span><span class="se">\&quot;</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">graph</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
@@ -300,6 +302,10 @@
         <span class="c1"># Determine time array and limits</span>
         <span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="p">)</span> <span class="o">/</span> <span class="n">fs</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">fs</span><span class="p">)</span>
         <span class="n">xlim</span> <span class="o">=</span> <span class="p">(</span><span class="n">times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="k">if</span> <span class="n">xlim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">xlim</span>
+
+        <span class="c1"># Limit signal and dataframe</span>
+        <span class="n">sig</span><span class="p">,</span> <span class="n">times</span> <span class="o">=</span> <span class="n">limit_signal</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stop</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">df_features</span> <span class="o">=</span> <span class="n">limit_df</span><span class="p">(</span><span class="n">df_features</span><span class="p">,</span> <span class="n">fs</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">stop</span><span class="o">=</span><span class="n">xlim</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
         <span class="c1"># Get extrema</span>
         <span class="n">center_e</span><span class="p">,</span> <span class="n">side_e</span> <span class="o">=</span> <span class="n">get_extrema_df</span><span class="p">(</span><span class="n">df_features</span><span class="p">)</span>
@@ -414,7 +420,7 @@
         <span class="n">titles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Indices: [</span><span class="si">{s0}</span><span class="s2">][</span><span class="si">{s1}</span><span class="s2">] - [</span><span class="si">{e0}</span><span class="s2">][</span><span class="si">{e1}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s0</span><span class="o">=</span><span class="n">start</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">s1</span><span class="o">=</span><span class="n">start</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                                                                     <span class="n">e0</span><span class="o">=</span><span class="n">end</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">e1</span><span class="o">=</span><span class="n">end</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
 
-    <span class="n">graphs</span> <span class="o">=</span> <span class="n">plot_bg</span><span class="p">(</span><span class="n">dfs_features_2d</span><span class="p">,</span> <span class="n">sigs_2d</span><span class="p">,</span> <span class="n">fs</span><span class="p">,</span> <span class="n">titles</span><span class="o">=</span><span class="n">titles</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">graphs</span> <span class="o">=</span> <span class="n">plot_bg</span><span class="p">(</span><span class="n">dfs_features_2d</span><span class="p">,</span> <span class="n">sigs_2d</span><span class="p">,</span> <span class="n">fs</span><span class="p">,</span> <span class="n">titles</span><span class="o">=</span><span class="n">titles</span><span class="p">,</span> <span class="n">xlim</span><span class="o">=</span><span class="n">xlim</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">graphs</span></div>
 

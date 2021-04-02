@@ -107,8 +107,10 @@
 <span class="kn">from</span> <span class="nn">fooof.core.strings</span> <span class="kn">import</span> <span class="n">gen_settings_str</span> <span class="k">as</span> <span class="n">gen_settings_fm_str</span>
 
 <span class="kn">from</span> <span class="nn">ndspflow.core.utils</span> <span class="kn">import</span> <span class="n">flatten_fms</span><span class="p">,</span> <span class="n">flatten_bms</span>
+<span class="kn">from</span> <span class="nn">ndspflow.motif</span> <span class="kn">import</span> <span class="n">Motif</span>
 <span class="kn">from</span> <span class="nn">ndspflow.plts.fooof</span> <span class="kn">import</span> <span class="n">plot_fm</span><span class="p">,</span> <span class="n">plot_fg</span><span class="p">,</span> <span class="n">plot_fgs</span>
 <span class="kn">from</span> <span class="nn">ndspflow.plts.bycycle</span> <span class="kn">import</span> <span class="n">plot_bm</span><span class="p">,</span> <span class="n">plot_bg</span><span class="p">,</span> <span class="n">plot_bgs</span>
+<span class="kn">from</span> <span class="nn">ndspflow.plts.motif</span> <span class="kn">import</span> <span class="n">plot_motifs</span>
 
 
 <div class="viewcode-block" id="generate_report"><a class="viewcode-back" href="../../../generated/ndspflow.reports.html.generate_report.html#ndspflow.reports.html.generate_report">[docs]</a><span class="k">def</span> <span class="nf">generate_report</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">fms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">group_fname</span><span class="o">=</span><span class="s1">&#39;report_group.html&#39;</span><span class="p">):</span>
@@ -156,13 +158,36 @@
 
         <span class="c1"># Individual spectrum reports</span>
         <span class="n">nav_links</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">fm</span><span class="p">,</span> <span class="n">fm_path</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">fm_list</span><span class="p">,</span> <span class="n">fm_paths</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">fm_path</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">fm_list</span><span class="p">,</span> <span class="n">fm_paths</span><span class="p">)):</span>
 
             <span class="c1"># Inject header and fooof report</span>
             <span class="n">label</span> <span class="o">=</span> <span class="n">fm_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_header</span><span class="p">(</span><span class="s2">&quot;subject&quot;</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="s2">&quot;fooof&quot;</span><span class="p">,</span> <span class="n">n_fooofs</span><span class="o">=</span><span class="n">n_fms</span><span class="p">,</span>
                                           <span class="n">n_bycycles</span><span class="o">=</span><span class="n">n_bms</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">group_link</span><span class="o">=</span><span class="n">group_url</span><span class="p">)</span>
-            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_fooof_report</span><span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">plot_fm</span><span class="p">(</span><span class="n">fm</span><span class="p">),</span> <span class="n">html_report</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">bms</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">fm_list</span><span class="p">)):</span>
+
+                <span class="n">graph</span> <span class="o">=</span> <span class="n">plot_fm</span><span class="p">(</span><span class="n">fm</span><span class="p">)</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">full_html</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">default_height</span><span class="o">=</span><span class="s1">&#39;475&#39;</span><span class="p">,</span>
+                                            <span class="n">default_width</span><span class="o">=</span><span class="s1">&#39;700&#39;</span><span class="p">,</span> <span class="n">include_plotlyjs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">bms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">fm_list</span><span class="p">)):</span>
+
+                <span class="c1"># Plot motifs in addition to fits if bycycle was ran</span>
+                <span class="n">df_features</span> <span class="o">=</span> <span class="n">bms</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">sig</span> <span class="o">=</span> <span class="n">bms</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;sig&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+                <span class="n">fs</span> <span class="o">=</span> <span class="n">bms</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;fs&#39;</span><span class="p">]</span>
+
+                <span class="n">motif</span> <span class="o">=</span> <span class="n">Motif</span><span class="p">()</span>
+                <span class="n">motif</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">fs</span><span class="p">)</span>
+
+                <span class="n">motifs</span> <span class="o">=</span> <span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">motif</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">motif</span><span class="o">.</span><span class="n">results</span><span class="p">]</span>
+                <span class="n">dfs_features</span> <span class="o">=</span> <span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">df_features</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">motif</span><span class="o">.</span><span class="n">results</span><span class="p">]</span>
+                <span class="n">cycles</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;dfs_features&#39;</span><span class="p">:</span> <span class="n">dfs_features</span><span class="p">}</span>
+
+                <span class="n">graph</span> <span class="o">=</span> <span class="n">plot_motifs</span><span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">motifs</span><span class="p">,</span> <span class="n">cycles</span><span class="p">,</span> <span class="n">sig</span><span class="p">,</span> <span class="n">fs</span><span class="p">)</span><span class="o">.</span><span class="n">to_html</span><span class="p">(</span><span class="n">full_html</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                                         <span class="n">include_plotlyjs</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+            <span class="n">html_report</span> <span class="o">=</span> <span class="n">generate_fooof_report</span><span class="p">(</span><span class="n">fm</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">html_report</span><span class="p">)</span>
 
             <span class="c1"># Write the html to a file</span>
             <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fm_path</span><span class="p">,</span> <span class="s1">&#39;report.html&#39;</span><span class="p">)</span>

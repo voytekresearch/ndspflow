@@ -94,19 +94,13 @@
     <div class="body col-md-12 content" role="main">
       
   <h1>Source code for ndspflow.core.interfaces</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot; Interface definitions.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;Interface definitions.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">nipype.interfaces.base</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">BaseInterface</span><span class="p">,</span>
-    <span class="n">BaseInterfaceInputSpec</span><span class="p">,</span>
-    <span class="n">SimpleInterface</span><span class="p">,</span>
-    <span class="n">TraitedSpec</span><span class="p">,</span>
-    <span class="n">traits</span>
-<span class="p">)</span>
 
-<span class="kn">from</span> <span class="nn">fooof</span> <span class="kn">import</span> <span class="n">FOOOF</span><span class="p">,</span> <span class="n">FOOOFGroup</span>
+<span class="kn">from</span> <span class="nn">nipype.interfaces.base</span> <span class="kn">import</span> <span class="n">BaseInterfaceInputSpec</span><span class="p">,</span> <span class="n">SimpleInterface</span><span class="p">,</span> <span class="n">TraitedSpec</span><span class="p">,</span> <span class="n">traits</span>
+
 <span class="kn">from</span> <span class="nn">ndspflow.core.fit</span> <span class="kn">import</span> <span class="n">fit_fooof</span><span class="p">,</span> <span class="n">fit_bycycle</span>
 <span class="kn">from</span> <span class="nn">ndspflow.io.save</span> <span class="kn">import</span> <span class="n">save_fooof</span><span class="p">,</span> <span class="n">save_bycycle</span>
 <span class="kn">from</span> <span class="nn">ndspflow.reports.html</span> <span class="kn">import</span> <span class="n">generate_report</span>
@@ -243,17 +237,17 @@
 
         <span class="c1"># Infer axis type from string (traits doesn&#39;t support multi-type)</span>
         <span class="n">axis</span> <span class="o">=</span> <span class="kc">None</span>  <span class="k">if</span> <span class="s1">&#39;None&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span>
-        <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="s1">&#39;(0,1)&#39;</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">axis</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;(0,1)&#39;</span> <span class="k">else</span> <span class="n">axis</span>
 
         <span class="n">axis_error</span> <span class="o">=</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Axis must be 0, 1, (0, 1), or None.&quot;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">axis</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">axis</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">axis</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">axis_error</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span> <span class="kn">from</span> <span class="nn">axis_error</span>
 
         <span class="k">if</span> <span class="n">axis</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="kc">None</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="n">axis_error</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span> <span class="kn">from</span> <span class="nn">axis_error</span>
 
         <span class="c1"># Get thresholds</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">burst_method</span> <span class="o">==</span> <span class="s1">&#39;cycles&#39;</span><span class="p">:</span>
@@ -315,8 +309,6 @@
 <span class="k">class</span> <span class="nc">ReportNodeOutputSpec</span><span class="p">(</span><span class="n">BaseInterfaceInputSpec</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Output interface for reporting.&quot;&quot;&quot;</span>
 
-    <span class="k">pass</span>
-
 
 <span class="k">class</span> <span class="nc">ReportNode</span><span class="p">(</span><span class="n">SimpleInterface</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Interface wrapper for reporting.&quot;&quot;&quot;</span>
@@ -333,7 +325,6 @@
         <span class="n">generate_report</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="o">.</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">fms</span><span class="o">=</span><span class="n">fms</span><span class="p">,</span> <span class="n">bms</span><span class="o">=</span><span class="n">bms</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">runtime</span>
-
 </pre></div>
 
     </div>
