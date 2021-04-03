@@ -58,7 +58,6 @@ install:
 	-min_n_cycles 3 \
 	-axis 0 \
 	-n_jobs -1 \
-	-run_nodes both \
 	$(PWD)/tutorials/data $(PWD)/_build/html/results
 	# Ensure js is available and convert local paths
 	mkdir -p $(PWD)/_build/html/resources/js $(PWD)/_build/html/resources/css
