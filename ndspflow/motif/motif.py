@@ -110,12 +110,14 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
             multi_motifs = []
             for idx in range(max(labels)+1):
 
-                motif = np.mean(sig_cyc[np.where(labels == idx)[0]], axis=0)
+                label_idxs = np.where(labels == idx)[0]
+
+                motif = np.mean(sig_cyc[label_idxs], axis=0)
 
                 if np.var(motif) < var_thresh:
-                    continue
-
-                multi_motifs.append(motif)
+                    multi_motifs.append(np.nan)
+                else:
+                    multi_motifs.append(motif)
 
             # Variance too small
             if len(multi_motifs) == 0:
@@ -123,17 +125,6 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
                 continue
 
             motifs.append(multi_motifs)
-
-            # Recompute labels using correlation coefficient
-            labels = np.zeros_like(labels)
-
-            for idx, cyc in enumerate(sig_cyc):
-
-                corrs = []
-                for motif in multi_motifs:
-                    corrs.append(np.correlate(motif, cyc, mode='valid')[0])
-
-                labels[idx] = np.argmax(corrs)
 
         # Collect cycles
         cycles['sigs'].append(sig_cyc)

@@ -113,6 +113,10 @@ def plot_motifs(motif, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs
             # Plot mean waveforms
             for sub_motif in result:
 
+                # Subthreshold variance
+                if isinstance(sub_motif, float):
+                    continue
+
                 # Plot motifs
                 fig.add_trace(go.Scatter(x=times, y=sub_motif, line={'color': color}, mode='lines',
                                         showlegend=False, hoverinfo='none'),
