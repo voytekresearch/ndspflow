@@ -95,7 +95,7 @@ class Motif:
         Parameters
         ----------
         fm : fooof.FOOOF or list of tuple
-        A fooof model that has been fit, or a list of (center_freq, bandwidth).
+            A fooof model that has been fit, or a list of (center_freq, bandwidth).
         sig : 1d array
             Time series.
         fs : float
@@ -214,11 +214,7 @@ class Motif:
 
         from ndspflow.plts.motif import plot_motifs
 
-        motifs = [result.motif for result in self.results]
-        dfs_features = [result.df_features for result in self.results]
-
-        fig = plot_motifs(self.fm, motifs, {'dfs_features': dfs_features}, self.sig, self.fs,
-                          n_bursts, center, normalize, plot_fm_kwargs)
+        fig = plot_motifs(self, n_bursts, center, normalize, plot_fm_kwargs)
 
         if show:
             fig.show()
