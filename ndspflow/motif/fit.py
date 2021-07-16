@@ -45,8 +45,8 @@ class Motif:
     """
 
 
-    def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5,
-                 min_clusters=2, max_clusters=10, min_n_cycles=10, center='peak'):
+    def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=2,
+                 max_clusters=10, min_n_cycles=10, center='peak', only_bursts=True):
         """Initialize the object."""
 
         # Optional settings
@@ -57,6 +57,7 @@ class Motif:
         self.max_clusters = max_clusters
         self.min_n_cycles = min_n_cycles
         self.center = center
+        self.only_bursts = only_bursts
 
         # Fit args
         self.fm = None
@@ -95,7 +96,7 @@ class Motif:
         Parameters
         ----------
         fm : fooof.FOOOF or list of tuple
-        A fooof model that has been fit, or a list of (center_freq, bandwidth).
+            A fooof model that has been fit, or a list of (center_freq, bandwidth).
         sig : 1d array
             Time series.
         fs : float
@@ -129,7 +130,7 @@ class Motif:
 
             # Re-extract motifs from bursts
             extract_kwargs = dict(
-                center=self.center, only_bursts=True, var_thresh=self.var_thresh,
+                center=self.center, only_bursts=self.only_bursts, var_thresh=self.var_thresh,
                 min_clust_score=self.min_clust_score, min_clusters=self.min_clusters,
                 max_clusters=self.max_clusters, min_n_cycles=self.min_n_cycles
             )
@@ -214,11 +215,7 @@ class Motif:
 
         from ndspflow.plts.motif import plot_motifs
 
-        motifs = [result.motif for result in self.results]
-        dfs_features = [result.df_features for result in self.results]
-
-        fig = plot_motifs(self.fm, motifs, {'dfs_features': dfs_features}, self.sig, self.fs,
-                          n_bursts, center, normalize, plot_fm_kwargs)
+        fig = plot_motifs(self, n_bursts, center, normalize, plot_fm_kwargs)
 
         if show:
             fig.show()

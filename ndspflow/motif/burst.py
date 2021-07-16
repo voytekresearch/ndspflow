@@ -18,7 +18,7 @@ def motif_burst_detection(motifs, df_features, sig, corr_thresh=.75, var_thresh=
         Bycycle features fit to the corresponding motif(s) frequency range.
     sig : 1d array
         Voltage time series.
-    corr_thresh : float, optional, default: 5
+    corr_thresh : float, optional, default: 0.05
         Correlation coefficient threshold. Applied to (motif, motif affine transformed) and
         (motif_transformed, cycle).
     var_thresh : float, optional, default: 0.05

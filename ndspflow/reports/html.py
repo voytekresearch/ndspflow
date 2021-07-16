@@ -84,12 +84,7 @@ def generate_report(output_dir, fms=None, bms=None, group_fname='report_group.ht
                 motif = Motif()
                 motif.fit(fm, sig, fs)
 
-                motifs = [result.motif for result in motif.results]
-                dfs_features = [result.df_features for result in motif.results]
-                cycles = {'dfs_features': dfs_features}
-
-                graph = plot_motifs(fm, motifs, cycles, sig, fs).to_html(full_html=False,
-                                                                         include_plotlyjs=False)
+                graph = plot_motifs(motif).to_html(full_html=False, include_plotlyjs=False)
 
             html_report = generate_fooof_report(fm, graph, html_report)
 

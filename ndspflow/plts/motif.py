@@ -12,26 +12,19 @@ from ndspflow.plts.fooof import plot_fm
 from ndspflow.motif import extract
 
 
-def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
-                normalize=True, plot_fm_kwargs=None):
+def plot_motifs(motif, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs=None):
     """Plot cycle motifs using fooof fits and bycycle cycles.
 
     Parameters
     ----------
-    fm : fooof FOOOF or tuple
-        A fooof model that has been fit.
-    sig : 1d array
-        Time series.
-    fs : float
-        Sampling rate, in Hz.
+    motif : ndspflow.motif.Motif
+        Motif object that has been fit.
     n_bursts : int, optional, default: 5
-        The number of example bursts to plot per peak.
+        Max number of example bursts to plot per peak.
     center : {'peak', 'trough'}, optional
         Defines centers of bycycle cycles.
     normalize : book, optiona, default: True
         Signal is mean centered with variance of one if True.
-    extract_kwargs : dict, optional, default: None
-        Keyword arguments for the :func:`~.extract` function.
     plot_fm_kwargs : dict, optional, default: None
         Keyword arguments for the :func:`~.plot_fm` function.
 
@@ -41,18 +34,27 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
         A plotly figure of the spectrum, motif(s), and signal.
     """
 
-    # Extract motifs
+    # Extract required attributes
+    fm = motif.fm
+    sig = motif.sig
     sig = normalize_sig(sig, mean=0, variance=1) if normalize else sig
+    fs = motif.fs
+    dfs_features = [result.df_features for result in motif.results]
+    results = [result.motif for result in motif.results]
 
     # Get indices where motifs are found with greater than 1 cycle
-    dfs_features = cycles['dfs_features']
-    motif_exists = ~np.array([isinstance(motif, float) for motif in motifs])
+    motif_exists = ~np.array([isinstance(result, float) for result in results])
+
     drop = [idx for idx in np.where(motif_exists)[0] if len(dfs_features[idx]) <= 1]
     motif_exists[drop] = False
 
     # Initialize figure
-    ncols = len(motifs)
-    nrows = len(np.nonzero(motif_exists)[0]) + 2
+    ncols = len(results)
+
+    nrows = 2
+    for idx, result in enumerate(results):
+        if motif_exists[idx]:
+            nrows += len(result)
 
     specs = [
         [{'colspan': ncols, 'b': .4/nrows}, *[None] * (ncols-1)],
@@ -82,7 +84,6 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
     log_freqs = plot_fm_kwargs.pop('log_freqs', False)
 
     fooof_fig = plot_fm(fm, fill_gaussians=fill_gaussians, log_freqs=log_freqs, **plot_fm_kwargs)
-
     for trace in fooof_fig.select_traces():
         fig.add_trace(trace, row=1, col=1)
 
@@ -102,34 +103,50 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
 
     # Iterate over each center freq
     row_idx = 1
-    for idx, (motif, df_osc) in enumerate(zip(motifs, dfs_features)):
+    for idx, (result, df_osc) in enumerate(zip(results, dfs_features)):
 
         color = default_fills[idx % len(default_fills)]
         color = color.replace('.5', '1')
 
         if idx in motif_idxs:
 
-            # Iterate over motif(s) at each center freq
-            for sub_motif in motif:
+            # Plot mean waveforms
+            for sub_motif in result:
+
+                # Subthreshold variance
+                if isinstance(sub_motif, float):
+                    continue
 
                 # Plot motifs
                 fig.add_trace(go.Scatter(x=times, y=sub_motif, line={'color': color}, mode='lines',
                                         showlegend=False, hoverinfo='none'),
                               row=2, col=idx+1)
 
-                # Plot example bursting segments
-                (start, end) = _find_short_burst(df_osc, n_bursts, center)
+            # Plot example bursting segments
+            for midx in range(len(motif[idx].motif)):
+
+                if not isinstance(motif[idx].labels, float):
+                    # Multi cluster
+                    labels = np.where(motif[idx].labels == midx)
+                    df = df_osc.iloc[labels] if len(labels) != 0 else df_osc
+                else:
+                    # Single cluster
+                    df = df_osc
+
+                (start, end) = _find_short_burst(df, n_bursts, center)
 
                 fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
                                         line={'color': color}, showlegend=False),
                               row=2+row_idx, col=1)
 
-                if idx == last_motif_idx:
-                    fig.update_xaxes(title_text='Time (s)', row=2+row_idx, col=1)
+                row_idx += 1
 
-                fig.update_yaxes(title_text='Normalized Voltage', row=2+row_idx, col=1)
+            # Label axes
+            if idx == last_motif_idx:
 
-            row_idx += 1
+                fig.update_xaxes(title_text='Time (s)', row=1+row_idx, col=1)
+
+                fig.update_yaxes(title_text='Normalized Voltage', row=1+row_idx, col=1)
 
         else:
 
@@ -169,16 +186,16 @@ def _find_short_burst(df_features, n_bursts=5, center='peak'):
     Parameters
     ----------
     df_features : pandas.DataFrame
-        A dataframe containing bycycle features.
+        Dataframe containing bycycle features.
     n_bursts : int
-        The length, in samples, of the representative burst.
+        Maximum number of consecutive cycles to plot.
     center : {'peak', 'trough'}, optional
-        The center definition of cycles.
+        Center definition of cycles.
 
     Returns
     -------
     locs : tuple of (int, int)
-        The sample location (indices) of the first n consectuive bursts.
+        Sample location (indices) of the first n consectuive bursts.
     """
 
     # Get indices of non-consecutive samples

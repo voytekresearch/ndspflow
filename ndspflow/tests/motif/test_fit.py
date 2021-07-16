@@ -111,9 +111,6 @@ def test_motif_plot(sim_sig, fooof_outs):
 
     motif = Motif()
     motif.fit(fm, sig, fs)
-
-    motif = Motif()
-    motif.fit(fm, sig, fs)
     motif.plot(show=False)
 
 def test_motif_plot_decompose(sim_sig, fooof_outs):
