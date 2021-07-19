@@ -12,7 +12,8 @@ from ndspflow.motif.utils import split_signal
 
 
 def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='peak',
-            min_clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10):
+            min_clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10,
+            random_state=None):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
 
     Parameters
@@ -41,6 +42,9 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
         The maximum number of clusters to evaluate.
     min_n_cycles : int, optional, default: 10
         The minimum number of cycles required to be considered at motif.
+    random_state : int, optional, default: None
+        Determines random number generation for centroid initialization.
+        Use an int to make the randomness deterministic for reproducible results.
 
     Returns
     -------
@@ -90,7 +94,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
 
         # Cluster cycles
         labels = cluster_cycles(sig_cyc, min_clust_score=min_clust_score, min_clusters=min_clusters,
-                                max_clusters=max_clusters)
+                                max_clusters=max_clusters, random_state=random_state)
 
         # Single clusters found
         if not isinstance(labels, np.ndarray):

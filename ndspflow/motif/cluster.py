@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
 
-def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10):
+def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10, random_state=None):
     """K-means clustering of cycles.
 
     Parameters
@@ -21,6 +21,9 @@ def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10)
         The minimum number of clusters to evaluate.
     max_clusters : int, optional, default: 10
         The maximum number of clusters to evaluate.
+    random_state : int, optional, default: None
+        Determines random number generation for centroid initialization.
+        Use an int to make the randomness deterministic for reproducible results.
 
     Returns
     -------
@@ -48,7 +51,9 @@ def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10)
 
             # Skip to next cluster definition if k-means fails
             try:
-                clusters = KMeans(n_clusters=n_clusters, algorithm="full").fit_predict(cycles)
+                clusters = KMeans(n_clusters=n_clusters, algorithm="full",
+                                  random_state=random_state)
+                clusters = clusters.fit_predict(cycles)
             except:
                 continue
 

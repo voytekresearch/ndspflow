@@ -42,11 +42,15 @@ class Motif:
         The minimum number of cycles required to be considered at motif.
     center : str, {'peak', 'trough'}
         Center extrema definition.
+    random_state : int, optional, default: None
+        Determines random number generation for centroid initialization.
+        Use an int to make the randomness deterministic for reproducible results.
     """
 
 
     def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=2,
-                 max_clusters=10, min_n_cycles=10, center='peak', only_bursts=True):
+                 max_clusters=10, min_n_cycles=10, center='peak', only_bursts=True,
+                 random_state=None):
         """Initialize the object."""
 
         # Optional settings
@@ -58,6 +62,7 @@ class Motif:
         self.min_n_cycles = min_n_cycles
         self.center = center
         self.only_bursts = only_bursts
+        self.random_state = random_state
 
         # Fit args
         self.fm = None
@@ -113,7 +118,7 @@ class Motif:
         # First pass motif extraction
         _motifs, _cycles = extract(self.fm, self.sig, self.fs, only_bursts=False,
                                    center=self.center, min_clusters=self.min_clusters,
-                                   max_clusters=self.max_clusters)
+                                   max_clusters=self.max_clusters, random_state=random_state)
 
         for motif, f_range in zip(_motifs, _cycles['f_ranges']):
 
@@ -132,7 +137,8 @@ class Motif:
             extract_kwargs = dict(
                 center=self.center, only_bursts=self.only_bursts, var_thresh=self.var_thresh,
                 min_clust_score=self.min_clust_score, min_clusters=self.min_clusters,
-                max_clusters=self.max_clusters, min_n_cycles=self.min_n_cycles
+                max_clusters=self.max_clusters, min_n_cycles=self.min_n_cycles,
+                random_state=random_state
             )
 
             motifs_burst, cycles_burst = extract(fm, sig, fs, df_features=bm, **extract_kwargs)
