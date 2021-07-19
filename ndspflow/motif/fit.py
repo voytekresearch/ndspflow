@@ -48,9 +48,10 @@ class Motif:
     """
 
 
-    def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=2,
-                 max_clusters=10, min_n_cycles=10, center='peak', only_bursts=True,
-                 random_state=None):
+
+    def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=1,
+                 max_clusters=10, min_n_cycles=10, center='peak', random_state=None):
+
         """Initialize the object."""
 
         # Optional settings
@@ -61,7 +62,6 @@ class Motif:
         self.max_clusters = max_clusters
         self.min_n_cycles = min_n_cycles
         self.center = center
-        self.only_bursts = only_bursts
         self.random_state = random_state
 
         # Fit args
@@ -116,9 +116,9 @@ class Motif:
         self.results = []
 
         # First pass motif extraction
-        _motifs, _cycles = extract(self.fm, self.sig, self.fs, only_bursts=False,
+        _motifs, _cycles = extract(self.fm, self.sig, self.fs, use_thresh=False,
                                    center=self.center, min_clusters=self.min_clusters,
-                                   max_clusters=self.max_clusters, random_state=random_state)
+                                   max_clusters=self.max_clusters, random_state=self.random_state)
 
         for motif, f_range in zip(_motifs, _cycles['f_ranges']):
 
@@ -135,10 +135,10 @@ class Motif:
 
             # Re-extract motifs from bursts
             extract_kwargs = dict(
-                center=self.center, only_bursts=self.only_bursts, var_thresh=self.var_thresh,
+                center=self.center, use_thresh=True, var_thresh=self.var_thresh,
                 min_clust_score=self.min_clust_score, min_clusters=self.min_clusters,
                 max_clusters=self.max_clusters, min_n_cycles=self.min_n_cycles,
-                random_state=random_state
+                random_state=self.random_state
             )
 
             motifs_burst, cycles_burst = extract(fm, sig, fs, df_features=bm, **extract_kwargs)
@@ -204,7 +204,8 @@ class Motif:
                 sig_idx += 1
 
 
-    def plot(self, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs=None, show=True):
+    def plot(self, n_bursts=5, center='peak', normalize=True,
+             plot_fm_kwargs=None, plot_sig=True, show=True):
         """Plot a motif summary.
 
         Parameters
@@ -217,11 +218,15 @@ class Motif:
             Signal is mean centered with variance of one if True.
         plot_fm_kwargs : dict, optional, default: None
             Keyword arguments for the :func:`~.plot_fm` function.
+        plot_sig : bool, optional, default: True
+            Whether to plot example segments from the signal.
+        show : bool, optional, default: True
+            Whether to render the figure after the call.
         """
 
         from ndspflow.plts.motif import plot_motifs
 
-        fig = plot_motifs(self, n_bursts, center, normalize, plot_fm_kwargs)
+        fig = plot_motifs(self, n_bursts, center, normalize, plot_fm_kwargs, plot_sig)
 
         if show:
             fig.show()
@@ -270,6 +275,7 @@ class Motif:
                            title="Reconstructed Components",
                            labels=['Orig', 'PE Recon', 'AP Recon'],
                            ax=ax, alpha=[0.7, 0.7, 0.7], lw=3)
+
 
     def plot_transform(self, result_index, center='peak', xlim=None, figsize=(10, 1.5)):
 

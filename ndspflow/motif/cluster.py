@@ -17,7 +17,7 @@ def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10,
         Cycles within a frequency range.
     min_clust_score : float, optional, default: 0.5
         The minimum silhouette score to accept k clusters..
-    max_clusters : int, optional, default: 10
+    min_clusters : int, optional, default: 2
         The minimum number of clusters to evaluate.
     max_clusters : int, optional, default: 10
         The maximum number of clusters to evaluate.
@@ -41,6 +41,9 @@ def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10,
     scores = []
 
     for n_clusters in range(min_clusters, max_clusters+1):
+
+        if n_clusters == 1:
+            continue
 
         if n_clusters > len(cycles) - 1:
             break

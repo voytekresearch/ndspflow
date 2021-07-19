@@ -12,7 +12,8 @@ from ndspflow.plts.fooof import plot_fm
 from ndspflow.motif import extract
 
 
-def plot_motifs(motif, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs=None):
+def plot_motifs(motif, n_bursts=5, center='peak', normalize=True,
+                plot_fm_kwargs=None, plot_sig=True):
     """Plot cycle motifs using fooof fits and bycycle cycles.
 
     Parameters
@@ -27,6 +28,8 @@ def plot_motifs(motif, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs
         Signal is mean centered with variance of one if True.
     plot_fm_kwargs : dict, optional, default: None
         Keyword arguments for the :func:`~.plot_fm` function.
+    plot_sig : bool, optional, default: True
+        Whether to plot example segments from the signal.
 
     Returns
     -------
@@ -39,22 +42,24 @@ def plot_motifs(motif, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs
     sig = motif.sig
     sig = normalize_sig(sig, mean=0, variance=1) if normalize else sig
     fs = motif.fs
-    dfs_features = [result.df_features for result in motif.results]
-    results = [result.motif for result in motif.results]
+    dfs_features = [result.df_features for result in motif]
+    results = [result.motif for result in motif]
+    labels = [result.labels for result in motif]
 
-    # Get indices where motifs are found with greater than 1 cycle
-    motif_exists = ~np.array([isinstance(result, float) for result in results])
-
-    drop = [idx for idx in np.where(motif_exists)[0] if len(dfs_features[idx]) <= 1]
-    motif_exists[drop] = False
-
-    # Initialize figure
+    # Initialize figure and settings
     ncols = len(results)
 
     nrows = 2
-    for idx, result in enumerate(results):
-        if motif_exists[idx]:
-            nrows += len(result)
+
+    if plot_sig:
+        # Add extra rows for example signals
+        for result in results:
+            if isinstance(result, np.ndarray):
+                nrows += 1
+            elif isinstance(result, list):
+                for sub_result in result:
+                    if isinstance(sub_result, np.ndarray):
+                        nrows+=1
 
     specs = [
         [{'colspan': ncols, 'b': .4/nrows}, *[None] * (ncols-1)],
@@ -98,76 +103,58 @@ def plot_motifs(motif, n_bursts=5, center='peak', normalize=True, plot_fm_kwargs
     # Plot motifs and example bursting segments
     times = np.arange(0, len(sig)/fs, 1/fs)
 
-    motif_idxs = np.where(motif_exists)[0]
-    last_motif_idx = motif_idxs[-1] if len(motif_idxs) > 0 else None
-
     # Iterate over each center freq
     row_idx = 1
-    for idx, (result, df_osc) in enumerate(zip(results, dfs_features)):
+    for result_idx, (result, df_osc) in enumerate(zip(results, dfs_features)):
 
-        color = default_fills[idx % len(default_fills)]
+        color = default_fills[result_idx % len(default_fills)]
         color = color.replace('.5', '1')
 
-        if idx in motif_idxs:
+        if isinstance(result, float):
+            _plot_motif(fig, color, result_idx+1, null=True)
+            continue
 
-            # Plot mean waveforms
-            for sub_motif in result:
+        plt_none = 0
+        for motif_idx, motif in enumerate(result):
 
-                # Subthreshold variance
-                if isinstance(sub_motif, float):
-                    continue
+            if isinstance(motif, float):
+                plt_none += 1
+                continue
 
-                # Plot motifs
-                fig.add_trace(go.Scatter(x=times, y=sub_motif, line={'color': color}, mode='lines',
-                                        showlegend=False, hoverinfo='none'),
-                              row=2, col=idx+1)
+            # Plot motif waveforms
+            fig.add_trace(go.Scatter(x=times, y=motif, line={'color': color},
+                                        mode='lines', showlegend=False, hoverinfo='none'),
+                        row=2, col=result_idx+1)
 
-            # Plot example bursting segments
-            for midx in range(len(motif[idx].motif)):
+            _plot_motif(fig, color, result_idx+1, False, x=times, y=motif)
 
-                if not isinstance(motif[idx].labels, float):
-                    # Multi cluster
-                    labels = np.where(motif[idx].labels == midx)
-                    df = df_osc.iloc[labels] if len(labels) != 0 else df_osc
-                else:
-                    # Single cluster
-                    df = df_osc
+            # Split dataframe by cluster
+            if not plot_sig:
+                continue
 
-                (start, end) = _find_short_burst(df, n_bursts, center)
+            if not isinstance(labels[result_idx], float):
+                # Multiple clusters
+                sub_labels = np.where(labels[result_idx] == motif_idx)
+                df = df_osc.iloc[sub_labels] if len(sub_labels) != 0 else df_osc
+            else:
+                # Single cluster
+                df = df_osc
 
-                fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
-                                        line={'color': color}, showlegend=False),
-                              row=2+row_idx, col=1)
+            (start, end) = _find_short_burst(df, n_bursts, center)
 
-                row_idx += 1
+            fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
+                                    line={'color': color}, showlegend=False),
+                        row=2+row_idx, col=1)
 
-            # Label axes
-            if idx == last_motif_idx:
+            row_idx += 1
 
-                fig.update_xaxes(title_text='Time (s)', row=1+row_idx, col=1)
+            fig.update_yaxes(title_text='Normalized Voltage', row=1+row_idx, col=1)
 
-                fig.update_yaxes(title_text='Normalized Voltage', row=1+row_idx, col=1)
+        if plt_none == len(result):
+            _plot_motif(fig, color, result_idx+1, null=True)
 
-        else:
-
-            # Plot text for peaks with no detected oscillations
-            fig.add_trace(
-                go.Scatter(x=[0], y=[0],
-                    mode="text",
-                    text=["No<br>Oscillation<br>Found"],
-                    textposition="middle center",
-                    textfont=dict(
-                        size=18,
-                        color=color.replace('.5', '.75')
-                    ),
-                    showlegend=False,
-                    hoverinfo='none'
-                ),
-                row=2, col=idx+1
-            )
-
-        fig.update_xaxes(showticklabels=False, showgrid=False, zeroline=False, row=2, col=idx+1)
-        fig.update_yaxes(showticklabels=False, showgrid=False, zeroline=False, row=2, col=idx+1)
+    if plot_sig:
+        fig.update_xaxes(title_text='Time (s)', row=1+row_idx, col=1)
 
     # Set layout
     fig.update_layout(
@@ -215,3 +202,34 @@ def _find_short_burst(df_features, n_bursts=5, center='peak'):
             df_features['sample_next_' + side][burst[-1]])
 
     return locs
+
+
+def _plot_motif(fig, color, col, null=True, x=None, y=None):
+    """Plot a noramlized motif."""
+
+    # Plot text for peaks with no detected oscillations
+    if null:
+        fig.add_trace(
+            go.Scatter(x=[0], y=[0],
+                mode="text",
+                text=["No<br>Oscillation<br>Found"],
+                textposition="middle center",
+                textfont=dict(
+                    size=18,
+                    color=color.replace('.5', '.75')
+                ),
+                showlegend=False,
+                hoverinfo='none'
+            ),
+            row=2, col=col
+        )
+    else:
+        fig.add_trace(go.Scatter(x=x, y=y, line={'color': color},
+                                 mode='lines', showlegend=False, hoverinfo='none'),
+                        row=2, col=col)
+
+    fig.update_xaxes(showticklabels=False, showgrid=False,
+                     zeroline=False, row=2, col=col)
+
+    fig.update_yaxes(showticklabels=False, showgrid=False,
+                     zeroline=False, row=2, col=col)

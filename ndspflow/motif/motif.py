@@ -11,7 +11,8 @@ from ndspflow.motif.cluster import cluster_cycles
 from ndspflow.motif.utils import split_signal
 
 
-def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='peak',
+
+def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='peak',
             min_clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10,
             random_state=None):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
@@ -28,8 +29,8 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
         A dataframe containing bycycle features.
     scaling : float, optional, default: 1
         The scaling of the bandwidth from the center frequencies to limit cycles to.
-    only_burst : bool, optional, default: True
-        Limits the dataframe to bursting cycles when True.
+    use_thresh : bool, optional, default: True
+        Limits the dataframe to super variance and correlation thresholds.
     center : {'peak', 'trough'}, optional
         The center definition of cycles.
     min_clust_score : float, optional, default: 1
@@ -82,7 +83,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
             df_features = fit_bycycle(sig, fs, f_range, center)
 
         # Restrict dataframe to frequency range
-        df_osc = limit_df(df_features, fs, f_range, only_bursts=only_bursts)
+        df_osc = limit_df(df_features, fs, f_range, only_bursts=use_thresh)
 
         # No cycles found in frequency range
         if not isinstance(df_osc, pd.DataFrame) or len(df_osc) < min_n_cycles:
