@@ -149,9 +149,9 @@ class Motif:
 
             # Match re-extraction results to frequency range of interest
             motif_idx = [idx for idx, cyc_range in enumerate(cycles_burst['f_ranges']) \
-                        if not isinstance(cyc_range, float) and \
-                        round(cyc_range[0] - f_range[0]) == 0 and \
-                        round(cyc_range[1] - f_range[1]) == 0]
+                         if not isinstance(cyc_range, float) and \
+                         round(cyc_range[0] - f_range[0]) == 0 and \
+                         round(cyc_range[1] - f_range[1]) == 0]
 
             # No cycles found in the given frequency range
             if len(motif_idx) != 1:
@@ -433,7 +433,7 @@ class MotifGroup:
         self.random_state = random_state
 
         # Fit args
-        self.fms = None
+        self.fg = None
         self.sigs = None
         self.fs = None
 
@@ -463,12 +463,12 @@ class MotifGroup:
         return self.results[index]
 
 
-    def fit(self, fms, sigs, fs, n_jobs=-1, progress=None):
+    def fit(self, fg, sigs, fs, n_jobs=-1, progress=None):
         """Robust motif extraction.
 
         Parameters
         ----------
-        fms : fooof.FOOOFGroup
+        fg : fooof.FOOOFGroup
             Fit fooof group object.
         sigs : 2d array.
             Voltage timeseries.
@@ -481,13 +481,14 @@ class MotifGroup:
         """
 
         # Set attributes
-        self.fms = fms
+        self.fg = fg
         self.sigs = sigs
         self.fs = fs
 
         # Run in parallel
         n_jobs = cpu_count() if n_jobs == -1 else n_jobs
 
+        # Condense Motif initialization call
         init_kwargs = dict(
             corr_thresh=self.corr_thresh, var_thresh=self.var_thresh,
             min_clust_score=self.min_clust_score, min_clusters=self.min_clusters,
@@ -495,12 +496,16 @@ class MotifGroup:
             random_state=self.random_state
         )
 
+        # Convert to list of fms
+        fms = [fg.get_fooof(ind) for ind in range(len(fg))]
+
         with Pool(processes=n_jobs) as pool:
 
             mapping = pool.imap(partial(_motif_proxy, fs=fs, init_kwargs=init_kwargs),
                                 zip(sigs, fms))
 
-        self.results = list(progress_bar(mapping, progress, len(sigs)))
+            self.results = list(progress_bar(mapping, progress, len(sigs),
+                                             pbar_desc='Computing Motifs'))
 
 
 def _motif_proxy(args, fs, init_kwargs):
