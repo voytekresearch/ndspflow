@@ -1,5 +1,7 @@
 """Extract motifs from frequency ranges."""
 
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -71,7 +73,8 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
         cfs = np.array(fm)[:, 0]
         bws = np.array(fm)[:, 1]
 
-    f_ranges = [(cf-(scaling * bws[idx]), cf+(scaling * bws[idx])) for idx, cf in enumerate(cfs)]
+    f_ranges = [(round(cf-(scaling * bws[idx]), 1), round(cf+(scaling * bws[idx]), 1))
+                for idx, cf in enumerate(cfs)]
 
     # Get cycles within freq ranges
     motifs = []
@@ -80,7 +83,23 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
     for f_range in f_ranges:
 
         if df_features is None:
-            df_features = fit_bycycle(sig, fs, f_range, center)
+
+            # Floor lower frequency bound at zero
+            f_range = (0, f_range[1]) if f_range[0] < 0 else f_range
+
+            # Step lower frequency bound if needed
+            for _ in range(10):
+
+                try:
+                    df_features = fit_bycycle(sig, fs, f_range, center)
+                    break
+                except ValueError:
+                    # Lower frequency is too small
+                    #   increment by 0.5hz, up to + 5hz, and try again
+                    f_range = (f_range[0] + .05, f_range[1])
+
+        if df_features is None:
+            motifs, cycles = _nan_append(motifs, cycles)
 
         # Restrict dataframe to frequency range
         df_osc = limit_df(df_features, fs, f_range, only_bursts=use_thresh)
@@ -103,7 +122,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
             motif = np.mean(sig_cyc, axis=0)
 
             # The variance of the motif is too small (i.e. flat line)
-            if np.var(motif) < var_thresh:
+            if use_thresh and np.var(motif) < var_thresh:
                 motifs, cycles = _nan_append(motifs, cycles)
                 continue
 
@@ -119,7 +138,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
 
                 motif = np.mean(sig_cyc[label_idxs], axis=0)
 
-                if np.var(motif) < var_thresh:
+                if use_thresh and np.var(motif) < var_thresh:
                     multi_motifs.append(np.nan)
                 else:
                     multi_motifs.append(motif)
