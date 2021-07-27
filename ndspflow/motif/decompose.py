@@ -52,6 +52,8 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
 
     sig_pe = sig_ap.copy()
 
+    _sig = sig.copy()
+
     tforms = []
     for idx_motif, (motif, df_osc) in enumerate(zip(motifs, dfs_features)):
 
@@ -65,11 +67,10 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
 
         for idx_cyc, (_, cyc) in enumerate(df_osc.iterrows()):
 
-
             # Isolate each cycle
             start = int(cyc['sample_last_' + side])
             end = int(cyc['sample_next_' + side]) + 1
-            sig_cyc = sig[start:end]
+            sig_cyc = _sig[start:end]
 
             # Resample motif if needed
             motif_idx = int(labels[idx_motif][idx_cyc]) if labels and \
@@ -100,10 +101,14 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
 
         sig_ap[idx_motif] = sig_motif_rm
 
-        # Fill non-burst cycles
-        idxs = np.where(np.isnan(sig_motif_rm))[0]
-        sig_ap[idx_motif][idxs] = sig[idxs]
-        sig_pe[idx_motif] = sig - sig_ap[idx_motif]
+        # Convert nans to zeros
+        nans = np.isnan(sig_ap[idx_motif])
+        if len(nans) != 0:
+            sig_ap[idx_motif][nans] = 0
+
+        sig_pe[idx_motif] = _sig - sig_ap[idx_motif]
+
+        _sig = sig_pe[idx_motif].copy()
 
     if transform:
         return sig_pe, sig_ap, tforms
