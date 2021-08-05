@@ -54,19 +54,30 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
     """
 
     # Extract center freqs and bandwidths from fooof fit
-    if not isinstance(fm, list):
+    if not isinstance(fm, (list, np.ndarray)):
 
         cfs = fm.get_params('peak_params', 'CF')
         bws = fm.get_params('peak_params', 'BW')
         cfs = cfs if isinstance(cfs, (list, np.ndarray)) else [cfs]
         bws = bws if isinstance(bws, (list, np.ndarray)) else [bws]
 
-    else:
+    elif isinstance(fm, list):
 
         cfs = np.array(fm)[:, 0]
         bws = np.array(fm)[:, 1]
 
-    f_ranges = [(cf-(scaling * bws[idx]), cf+(scaling * bws[idx])) for idx, cf in enumerate(cfs)]
+    elif isinstance(fm, np.ndarray) and fm.ndim == 2:
+
+        cfs = fm[:, 0]
+        bws = fm[:, 1]
+
+    elif isinstance(fm, np.ndarray) and fm.ndim == 1:
+
+        cfs = [fm[0]]
+        bws = [fm[1]]
+
+    f_ranges = [(round(cf-(scaling * bws[idx]), 1), round(cf+(scaling * bws[idx]), 1))
+                for idx, cf in enumerate(cfs)]
 
     # Get cycles within freq ranges
     motifs = []

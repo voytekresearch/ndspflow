@@ -45,6 +45,10 @@ def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
     -------
     fm : fooof.FOOOF
         Updated FOOOF fit.
+    imf : 2d array
+        Intrinsic modes functions.
+    pe_mask : 1d array
+        Booleans to mark imfs above aperiodic fit.
     """
     # Compute modes
     imf = compute_emd(sig, **imf_kwargs)
@@ -83,7 +87,10 @@ def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
 
     fm.fooofed_spectrum_ = fm._peak_fit + fm._ap_fit
 
-    return fm
+    fm._calc_r_squared()
+    fm._calc_error()
+
+    return fm, imf, pe_mask
 
 
 def select_modes(powers_imf, powers_ap, power_thresh=0.2):
@@ -111,7 +118,7 @@ def select_modes(powers_imf, powers_ap, power_thresh=0.2):
         diff = power_imf - powers_ap
         inds = np.where(diff > 0)[0]
 
-        if len(inds) != 0:
+        if len(inds) > 2:
             power_over_ap[ind] = np.mean(diff[inds])
 
     pe_mask = power_over_ap > power_thresh
@@ -163,6 +170,17 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
                freqs[inds[np.argmin(np.abs(power_imf[inds][:center] - (height * .4)))]]
     max_width = compute_gauss_std(max_fwhm)
 
+    # Non-monotonic or short sequences may produce infesible width bounds
+    if min_width > width:
+        min_width = width * .5
+
+    if max_width < width:
+        max_width = width * 2
+
+    if min_width == max_width:
+        min_width = width * .5
+        max_width = width * 2
+
     # Convert center to frequency
     center = freqs[inds][center]
 
@@ -173,10 +191,14 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
     min_center = center - width
     max_center = center + width
 
-    bounds = [
-        (min_center, height - 2*np.std(powers[inds]), min_width),
-        (max_center, height + 2*np.std(powers[inds]), max_width)
-    ]
+    lower_bounds = [min_center, height - 2*np.std(powers[inds]), min_width]
+    upper_bounds = [max_center, height + 2*np.std(powers[inds]), max_width]
+
+    # Negative bounds to zero
+    lower_bounds = [0 if bound < 0 else bound for bound in lower_bounds]
+    upper_bounds = [0 if bound < 0 else bound for bound in upper_bounds]
+
+    bounds = [lower_bounds, upper_bounds]
 
     return guess, bounds
 
@@ -211,6 +233,9 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask):
     for ind, power_imf in enumerate(powers_imf[pe_mask][::-1]):
 
         inds = np.where(power_imf > powers_ap)[0]
+
+        # Ensure indices are continuous
+        inds = np.arange(min(inds), max(inds)+1)
 
         _guess, _bounds = guess_params(freqs, powers, power_imf, powers_ap, inds)
 
