@@ -13,7 +13,6 @@ from fooof.utils.params import compute_gauss_std
 from fooof.sim.gen import gen_periodic, gen_aperiodic
 
 
-
 def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
     """Refit a power spectrum using EMD based parameter estimation.
 
@@ -47,7 +46,6 @@ def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
     fm : fooof.FOOOF
         Updated FOOOF fit.
     """
-
     # Compute modes
     imf = compute_emd(sig, **imf_kwargs)
 
@@ -144,6 +142,7 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
     bounds : list of tuple
         Lower and upper parameter bounds.
     """
+    # Remove aperiodic fit from imf (i.e. flatten)
     power_imf = power_imf - ap_fit
 
     # Estimate center location and power height
