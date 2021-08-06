@@ -1,5 +1,7 @@
 """Optimize spectral fits."""
 
+import warnings
+
 import numpy as np
 from scipy.optimize import curve_fit
 
@@ -68,6 +70,11 @@ def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
     pe_mask = select_modes(powers_imf, powers_ap, power_thresh=power_thresh)
 
     # Refit periodic
+    if not pe_mask.any():
+        warnings.warn('No IMFs are above the intial aperiodic fit.'
+                      'Returning the inital spectral fit.')
+        return fm, imf, pe_mask
+
     gauss_params = fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask)
 
     pe_fit = gen_periodic(freqs, gauss_params.flatten())

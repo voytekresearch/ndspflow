@@ -1,5 +1,6 @@
 """Motif class object."""
 
+import warnings
 from functools import partial
 from multiprocessing import Pool, cpu_count
 
@@ -139,15 +140,20 @@ class Motif:
 
             sig = np.repeat(sig, len(f_ranges), axis=0)
 
-        for ind, (motif, f_range) in enumerate(zip(_motifs, _cycles['f_ranges'])):
+        for ind, (motif, f_range) in enumerate(zip(_motifs, f_ranges)):
 
             # Skip null motifs (np.nan)
             if isinstance(f_range, float):
                 self.results.append(MotifResult(f_range))
                 continue
 
+            # Floor the lower frequency range to one
+            if f_range[0] < 1:
+                f_range = (1, f_range[1])
+
             # Motif correlation burst detection
             bm = fit_bycycle(sig[ind], fs, f_range)
+
             is_burst = motif_burst_detection(motif, bm, sig[ind], corr_thresh=self.corr_thresh,
                                              var_thresh=self.var_thresh)
             bm['is_burst'] = is_burst

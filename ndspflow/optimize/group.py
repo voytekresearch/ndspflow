@@ -6,9 +6,10 @@ from functools import partial
 from bycycle.group.utils import progress_bar
 from fooof.objs.utils import combine_fooofs
 
+from .refit import refit
 
-def refit_group(fg, sigs, fs, f_range, imf_kwargs={'sd_thresh': .1},
-                power_thresh=.2, n_jobs=-1, progress=None):
+
+def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2, n_jobs=-1, progress=None):
     """Refit a group of spectral fits.
 
     Parameters
@@ -21,7 +22,7 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs={'sd_thresh': .1},
         Sampling rate, in Hz.
     f_range : tuple of [float, float]
         Frequency range to restrict power spectrum to.
-    imf_kwargs : optional, default: {'sd_thresh': .1}
+    imf_kwargs : optional, default: None
         Optional keyword arguments for compute_emd. Includes:
 
         - max_imfs
@@ -47,6 +48,9 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs={'sd_thresh': .1},
     """
 
     n_jobs = cpu_count() if n_jobs == -1 else n_jobs
+
+    if imf_kwargs is None:
+        imf_kwargs = {'sd_thresh': .1}
 
     # Convert FOOOFGroup to list of FOOOF
     fms = [fg.get_fooof(ind) for ind in range(len(fg))]
