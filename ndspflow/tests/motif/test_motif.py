@@ -50,6 +50,12 @@ def test_extract(sim_sig, fooof_outs):
     motifs, cycles = extract(params, sig, fs, min_n_cycles=0, var_thresh=np.inf)
     _check_results(motifs, cycles, 'invalid', 1)
 
+    # Requires lower bound step
+    fm.peak_params_[0][0] = 2
+    fm.peak_params_[0][2] = 1.9
+    motifs, cycles = extract(fm, sig, fs)
+    _check_results(motifs, cycles, 'invalid', 1)
+
 
 def _check_results(motifs, cycles, validity, n_params):
     """Check results using valid or invalid parameters."""
