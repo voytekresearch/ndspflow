@@ -150,7 +150,7 @@ def plot_motifs(motif, n_bursts=5, center='peak', normalize=True,
 
             fig.update_yaxes(title_text='Normalized Voltage', row=1+row_idx, col=1)
 
-        if plt_none == len(result):
+        if plt_none == len(result) and row_idx > 1:
             _plot_motif(fig, color, result_idx+1, null=True)
 
     if plot_sig:

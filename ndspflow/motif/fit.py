@@ -1,5 +1,8 @@
 """Motif class object."""
 
+from functools import partial
+from multiprocessing import Pool, cpu_count
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -8,6 +11,8 @@ from neurodsp.spectral import compute_spectrum
 
 from ndspflow.core.fit import fit_bycycle
 from ndspflow.motif.burst import motif_burst_detection
+
+from bycycle.group.utils import progress_bar
 
 
 class Motif:
@@ -46,7 +51,6 @@ class Motif:
         Determines random number generation for centroid initialization.
         Use an int to make the randomness deterministic for reproducible results.
     """
-
 
 
     def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=1,
@@ -145,9 +149,9 @@ class Motif:
 
             # Match re-extraction results to frequency range of interest
             motif_idx = [idx for idx, cyc_range in enumerate(cycles_burst['f_ranges']) \
-                        if not isinstance(cyc_range, float) and \
-                        round(cyc_range[0] - f_range[0]) == 0 and \
-                        round(cyc_range[1] - f_range[1]) == 0]
+                         if not isinstance(cyc_range, float) and \
+                         round(cyc_range[0] - f_range[0]) == 0 and \
+                         round(cyc_range[1] - f_range[1]) == 0]
 
             # No cycles found in the given frequency range
             if len(motif_idx) != 1:
@@ -379,3 +383,139 @@ class MotifResult:
         self.sig_pe = sig_pe
         self.sig_ap = sig_ap
         self.tforms = tforms
+
+
+class MotifGroup:
+    """Group motif search and signal decomposition.
+
+    Attributes
+    ----------
+    results : list of ndspflow.motif.fit.Motif
+        Motif results for each signal / fm pair.
+    fms : fooof.FOOOFGroup or 2d array-like of tuple
+        A fooof group model that has been fit, or a list of (center_freq, bandwidth).
+    sigs : 2d array
+        Time series.
+    fs : float
+        Sampling rate, in Hz.
+    corr_thresh : float, default: 0.5
+        Correlation coefficient threshold.
+    var_thresh : float, default: 0.05
+        Height threshold in variance.
+    min_clust_score : float, default: 1
+        The minimum silhouette score to accept k clusters. The default skips clustering.
+    min_clusters : int, default: 2
+        The minimum number of clusters to evaluate.
+    max_clusters : int, default: 10
+        The maximum number of clusters to evaluate.
+    min_n_cycles : int, odefault: 10
+        The minimum number of cycles required to be considered at motif.
+    center : str, {'peak', 'trough'}
+        Center extrema definition.
+    random_state : int, optional, default: None
+        Determines random number generation for centroid initialization.
+        Use an int to make the randomness deterministic for reproducible results.
+    """
+
+    def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=1,
+                 max_clusters=10, min_n_cycles=10, center='peak', random_state=None):
+
+        """Initialize the object."""
+
+        # Optional settings
+        self.corr_thresh = corr_thresh
+        self.var_thresh = var_thresh
+        self.min_clust_score = min_clust_score
+        self.min_clusters = min_clusters
+        self.max_clusters = max_clusters
+        self.min_n_cycles = min_n_cycles
+        self.center = center
+        self.random_state = random_state
+
+        # Fit args
+        self.fg = None
+        self.sigs = None
+        self.fs = None
+
+        # Results
+        self.results = []
+        self.sigs_pe = None
+        self.sigs_ap = None
+        self.tforms = None
+
+
+    def __len__(self):
+        """Define the length of the object."""
+
+        return len(self.results)
+
+
+    def __iter__(self):
+        """Allow for iterating across the object."""
+
+        for result in self.results:
+            yield result
+
+
+    def __getitem__(self, index):
+        """Allow for indexing into the object."""
+
+        return self.results[index]
+
+
+    def fit(self, fg, sigs, fs, n_jobs=-1, progress=None):
+        """Robust motif extraction.
+
+        Parameters
+        ----------
+        fg : fooof.FOOOFGroup
+            Fit fooof group object.
+        sigs : 2d array.
+            Voltage timeseries.
+        fs : float
+            Sampling rate, in Hz.
+        n_jobs : int, optional, default: -1
+            The number of jobs to compute features in parallel.
+        progress : {None, 'tqdm', 'tqdm.notebook'}
+            Specify whether to display a progress bar. Uses 'tqdm' if installed.
+        """
+
+        # Set attributes
+        self.fg = fg
+        self.sigs = sigs
+        self.fs = fs
+
+        # Run in parallel
+        n_jobs = cpu_count() if n_jobs == -1 else n_jobs
+
+        # Condense Motif initialization call
+        init_kwargs = dict(
+            corr_thresh=self.corr_thresh, var_thresh=self.var_thresh,
+            min_clust_score=self.min_clust_score, min_clusters=self.min_clusters,
+            max_clusters=self.max_clusters, min_n_cycles=self.min_n_cycles, center=self.center,
+            random_state=self.random_state
+        )
+
+        # Convert to list of fms
+        fms = [fg.get_fooof(ind) for ind in range(len(fg))]
+
+        with Pool(processes=n_jobs) as pool:
+
+            mapping = pool.imap(partial(_motif_proxy, fs=fs, init_kwargs=init_kwargs),
+                                zip(sigs, fms))
+
+            self.results = list(progress_bar(mapping, progress, len(sigs),
+                                             pbar_desc='Computing Motifs'))
+
+
+def _motif_proxy(args, fs, init_kwargs):
+    """Proxy function for the multiprocessing pool."""
+
+    # Unpack zipped args
+    sig = args[0]
+    fm = args[1]
+
+    mtf = Motif(**init_kwargs)
+    mtf.fit(fm, sig, fs)
+
+    return mtf
