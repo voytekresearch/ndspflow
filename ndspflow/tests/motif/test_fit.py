@@ -4,8 +4,8 @@ from pytest import raises
 
 import numpy as np
 
-from ndspflow.motif import Motif
-from ndspflow.motif.fit import MotifResult
+from ndspflow.motif import Motif, MotifGroup
+from ndspflow.motif.fit import MotifResult, _motif_proxy
 
 
 def test_motif():
@@ -144,3 +144,32 @@ def test_motif_plot_transform(sim_sig, fooof_outs):
     motif = Motif()
     motif.fit(fm, sig, fs)
     motif.plot_transform(0)
+
+
+def test_motif_group_fit(test_data, fooof_outs):
+
+    fg = fooof_outs['fg']
+    sigs = test_data['sig_2d']
+    fs = test_data['fs']
+
+    motif_group = MotifGroup()
+
+    motif_group.fit(fg, sigs, fs)
+
+    assert len(motif_group) == len(sigs)
+
+    for motif in motif_group:
+        assert isinstance(motif, Motif)
+
+    assert isinstance(motif_group[0], Motif)
+
+
+def test_motif_proxy(sim_sig, fooof_outs):
+
+    sig = sim_sig['sig']
+    fs = sim_sig['fs']
+    fm = fooof_outs['fm']
+
+    motif = _motif_proxy([sig, fm], fs, {})
+
+    assert isinstance(motif, Motif)

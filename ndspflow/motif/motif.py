@@ -88,18 +88,19 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
             f_range = (0, f_range[1]) if f_range[0] < 0 else f_range
 
             # Step lower frequency bound if needed
-            for _ in range(10):
+            for _ in range(11):
 
                 try:
                     df_features = fit_bycycle(sig, fs, f_range, center)
                     break
                 except ValueError:
                     # Lower frequency is too small
-                    #   increment by 0.5hz, up to + 5hz, and try again
-                    f_range = (f_range[0] + .05, f_range[1])
+                    #   increment by 0.1 hz, up to + 1 hz, and try again
+                    f_range = (f_range[0] + .1, f_range[1])
 
         if df_features is None:
             motifs, cycles = _nan_append(motifs, cycles)
+            continue
 
         # Restrict dataframe to frequency range
         df_osc = limit_df(df_features, fs, f_range, only_bursts=use_thresh)
