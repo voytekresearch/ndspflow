@@ -230,7 +230,7 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask):
     # Upper and lower bounds
     bounds = [[], []]
 
-    for ind, power_imf in enumerate(powers_imf[pe_mask][::-1]):
+    for ind, power_imf in enumerate(powers_imf[pe_mask]):
 
         inds = np.where(power_imf > powers_ap)[0]
 

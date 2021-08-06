@@ -9,6 +9,7 @@ from neurodsp.spectral import compute_spectrum
 from ndspflow.core.fit import fit_bycycle
 from ndspflow.motif.burst import motif_burst_detection
 
+from fooof import FOOOFGroup
 
 class Motif:
     """Motif search and signal decomposition.
@@ -17,8 +18,9 @@ class Motif:
     ----------
     fm : fooof.FOOOF or list of tuple
         A fooof model that has been fit, or a list of (center_freq, bandwidth).
-    sig : 1d array
-        Time series.
+    sig : 1d or 2d array
+        Time series. If 2d, each timeseries is expected to correspond to each peak, in increasing
+        frequency.
     fs : float
         Sampling rate, in Hz.
     sig_pe : 2d array
@@ -95,14 +97,18 @@ class Motif:
         Parameters
         ----------
         fm : fooof.FOOOF or list of tuple
-        A fooof model that has been fit, or a list of (center_freq, bandwidth).
-        sig : 1d array
-            Time series.
+            A fooof model that has been fit, or a list of (center_freq, bandwidth).
+        sig : 1d or 2d array
+            Time series. If 2d, each timeseries is expected to correspond to each peak,
+            in ascending frequency.
         fs : float
             Sampling rate, in Hz.
         """
 
         from ndspflow.motif import extract
+
+        if isinstance(fm, FOOOFGroup):
+            raise ValueError('Use motif.fit.MotifGroup for FOOOFGroup objects.')
 
         self.fm = fm
         self.sig = sig
@@ -112,9 +118,18 @@ class Motif:
         # First pass motif extraction
         _motifs, _cycles = extract(self.fm, self.sig, self.fs, only_bursts=False,
                                    center=self.center, min_clusters=self.min_clusters,
-                                   max_clusters=self.max_clusters)
+                                   max_clusters=self.max_clusters, var_thresh=self.var_thresh)
 
-        for motif, f_range in zip(_motifs, _cycles['f_ranges']):
+        # Vertically stack
+        f_ranges = _cycles['f_ranges']
+
+        if sig.ndim == 1:
+
+            sig = sig.reshape(1, len(sig))
+
+            sig = np.repeat(sig, len(f_ranges), axis=0)
+
+        for ind, (motif, f_range) in enumerate(zip(_motifs, _cycles['f_ranges'])):
 
             # Skip null motifs (np.nan)
             if isinstance(f_range, float):
@@ -122,8 +137,8 @@ class Motif:
                 continue
 
             # Motif correlation burst detection
-            bm = fit_bycycle(sig, fs, f_range)
-            is_burst = motif_burst_detection(motif, bm, sig, corr_thresh=self.corr_thresh,
+            bm = fit_bycycle(sig[ind], fs, f_range)
+            is_burst = motif_burst_detection(motif, bm, sig[ind], corr_thresh=self.corr_thresh,
                                              var_thresh=self.var_thresh)
             bm['is_burst'] = is_burst
 
@@ -134,7 +149,8 @@ class Motif:
                 max_clusters=self.max_clusters, min_n_cycles=self.min_n_cycles
             )
 
-            motifs_burst, cycles_burst = extract(fm, sig, fs, df_features=bm, **extract_kwargs)
+            motifs_burst, cycles_burst = extract(fm, sig[ind], fs, df_features=bm,
+                                                 index=ind, **extract_kwargs)
 
             # Match re-extraction results to frequency range of interest
             motif_idx = [idx for idx, cyc_range in enumerate(cycles_burst['f_ranges']) \

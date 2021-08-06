@@ -41,12 +41,12 @@ def compute_emd(sig, max_imfs=None, sift_thresh=1e-08, env_step_size=1, max_iter
     Returns
     -------
     imf : 2d array
-        Timeseries with shape (n_modes, n_timepoints).
+        Timeseries with shape (n_modes, n_timepoints), in increasing frequency.
     """
 
     imf_opts = dict(env_step_size=env_step_size, max_iters=max_iters, energy_thresh=energy_thresh,
                     stop_method=stop_method, sd_thresh=sd_thresh, rilling_thresh=rilling_thresh)
 
-    imf = emd.sift.sift(sig, imf_opts=imf_opts).T
+    imf = emd.sift.sift(sig, imf_opts=imf_opts).T[::-1]
 
     return imf

@@ -20,7 +20,7 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
     ----------
     fm : fooof FOOOF or tuple
         A fooof model that has been fit.
-    sig : 1d array
+    sig : 1d or 2d array
         Time series.
     fs : float
         Sampling rate, in Hz.
@@ -94,8 +94,15 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
     fig.update_xaxes(title_text=xaxis_title, row=1, col=1)
     fig.update_yaxes(title_text=yaxis_title, row=1, col=1)
 
+    # Vertically stack
+    if sig.ndim == 1:
+
+        sig = sig.reshape(1, len(sig))
+
+        sig = np.repeat(sig, len(motifs), axis=0)
+
     # Plot motifs and example bursting segments
-    times = np.arange(0, len(sig)/fs, 1/fs)
+    times = np.arange(0, len(sig[0])/fs, 1/fs)
 
     motif_idxs = np.where(motif_exists)[0]
     last_motif_idx = motif_idxs[-1] if len(motif_idxs) > 0 else None
@@ -120,7 +127,7 @@ def plot_motifs(fm, motifs, cycles, sig, fs, n_bursts=5, center='peak',
                 # Plot example bursting segments
                 (start, end) = _find_short_burst(df_osc, n_bursts, center)
 
-                fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
+                fig.add_trace(go.Scatter(x=times[start:end], y=sig[idx][start:end],
                                         line={'color': color}, showlegend=False),
                               row=2+row_idx, col=1)
 
