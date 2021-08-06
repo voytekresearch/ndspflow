@@ -1,7 +1,5 @@
 """Extract motifs from frequency ranges."""
 
-from itertools import repeat
-
 import numpy as np
 import pandas as pd
 
@@ -13,9 +11,10 @@ from ndspflow.motif.cluster import cluster_cycles
 from ndspflow.motif.utils import split_signal
 
 
-def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='peak',
+
+def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='peak',
             min_clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10,
-            index=None):
+            index=None, random_state=None):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
 
     Parameters
@@ -31,8 +30,8 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
         A dataframe containing bycycle features.
     scaling : float, optional, default: 1
         The scaling of the bandwidth from the center frequencies to limit cycles to.
-    only_burst : bool, optional, default: True
-        Limits the dataframe to bursting cycles when True.
+    use_thresh : bool, optional, default: True
+        Limits the dataframe to super variance and correlation thresholds.
     center : {'peak', 'trough'}, optional
         The center definition of cycles.
     min_clust_score : float, optional, default: 1
@@ -47,6 +46,9 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
         The minimum number of cycles required to be considered at motif.
     index : int, optional, default: None
         Sub-selects a single frequency range to extract.
+    random_state : int, optional, default: None
+        Determines random number generation for centroid initialization.
+        Use an int to make the randomness deterministic for reproducible results.
 
     Returns
     -------
@@ -103,10 +105,27 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
     for ind, f_range in enumerate(f_ranges):
 
         if df_features is None:
-            df_features = fit_bycycle(sig[ind], fs, f_range, center)
+
+            # Floor lower frequency bound at zero
+            f_range = (0, f_range[1]) if f_range[0] < 0 else f_range
+
+            # Step lower frequency bound if needed
+            for _ in range(11):
+
+                try:
+                    df_features = fit_bycycle(sig[ind], fs, f_range, center)
+                    break
+                except ValueError:
+                    # Lower frequency is too small
+                    #   increment by 0.1 hz, up to + 1 hz, and try again
+                    f_range = (f_range[0] + .1, f_range[1])
+
+        if df_features is None:
+            motifs, cycles = _nan_append(motifs, cycles)
+            continue
 
         # Restrict dataframe to frequency range
-        df_osc = limit_df(df_features, fs, f_range, only_bursts=only_bursts)
+        df_osc = limit_df(df_features, fs, f_range, only_bursts=use_thresh)
 
         # No cycles found in frequency range
         if not isinstance(df_osc, pd.DataFrame) or len(df_osc) < min_n_cycles:
@@ -117,8 +136,8 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
         sig_cyc = split_signal(df_osc, sig[ind], True, center)
 
         # Cluster cycles
-        labels = cluster_cycles(sig_cyc, min_clust_score=min_clust_score,
-                                min_clusters=min_clusters, max_clusters=max_clusters)
+        labels = cluster_cycles(sig_cyc, min_clust_score=min_clust_score, min_clusters=min_clusters,
+                                max_clusters=max_clusters, random_state=random_state)
 
         # Single clusters found
         if not isinstance(labels, np.ndarray):
@@ -126,7 +145,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
             motif = np.mean(sig_cyc, axis=0)
 
             # The variance of the motif is too small (i.e. flat line)
-            if np.var(motif) < var_thresh:
+            if use_thresh and np.var(motif) < var_thresh:
                 motifs, cycles = _nan_append(motifs, cycles)
                 continue
 
@@ -138,12 +157,14 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
             multi_motifs = []
             for idx in range(max(labels)+1):
 
-                motif = np.mean(sig_cyc[np.where(labels == idx)[0]], axis=0)
+                label_idxs = np.where(labels == idx)[0]
 
-                if np.var(motif) < var_thresh:
-                    continue
+                motif = np.mean(sig_cyc[label_idxs], axis=0)
 
-                multi_motifs.append(motif)
+                if use_thresh and np.var(motif) < var_thresh:
+                    multi_motifs.append(np.nan)
+                else:
+                    multi_motifs.append(motif)
 
             # Variance too small
             if len(multi_motifs) == 0:
@@ -151,17 +172,6 @@ def extract(fm, sig, fs, df_features=None, scaling=1, only_bursts=True, center='
                 continue
 
             motifs.append(multi_motifs)
-
-            # Recompute labels using correlation coefficient
-            labels = np.zeros_like(labels)
-
-            for idx, cyc in enumerate(sig_cyc):
-
-                corrs = []
-                for motif in multi_motifs:
-                    corrs.append(np.correlate(motif, cyc, mode='valid')[0])
-
-                labels[idx] = np.argmax(corrs)
 
         # Collect cycles
         cycles['sigs'].append(sig_cyc)

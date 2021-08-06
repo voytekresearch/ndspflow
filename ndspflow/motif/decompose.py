@@ -55,11 +55,16 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
     tforms = []
     for idx_motif, (motif, df_osc) in enumerate(zip(motifs, dfs_features)):
 
+        # Subthreshold variance
+        if isinstance(motif, float):
+            continue
+
         sig_motif_rm = np.zeros_like(sig)
         sig_motif_rm[:] = np.nan
         motif_tforms = []
 
         for idx_cyc, (_, cyc) in enumerate(df_osc.iterrows()):
+
 
             # Isolate each cycle
             start = int(cyc['sample_last_' + side])
@@ -70,7 +75,10 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
             motif_idx = int(labels[idx_motif][idx_cyc]) if labels and \
                 not isinstance(labels[idx_motif], float) else 0
 
-            if len(motif[0]) != len(sig_cyc):
+            if isinstance(motif[motif_idx], float):
+                # Subthreshold variance
+                continue
+            elif len(motif[0]) != len(sig_cyc):
                 sig_motif = resample(motif[motif_idx], len(sig_cyc))
             else:
                 sig_motif = motif[motif_idx]

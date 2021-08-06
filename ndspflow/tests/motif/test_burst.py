@@ -12,7 +12,7 @@ def test_motif_burst_detection(sim_sig, fooof_outs):
     fs = sim_sig['fs']
     fm = fooof_outs['fm']
 
-    motifs, cycles = extract(fm, sig, fs, min_clust_score=1.1, only_bursts=False)
+    motifs, cycles = extract(fm, sig, fs, min_clust_score=1.1, use_thresh=False)
 
     is_burst = motif_burst_detection(motifs[0], cycles['dfs_features'][0], sig)
 

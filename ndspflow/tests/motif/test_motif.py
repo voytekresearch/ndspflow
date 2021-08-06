@@ -50,6 +50,12 @@ def test_extract(sim_sig, fooof_outs):
     motifs, cycles = extract(params, sig, fs, min_n_cycles=0, var_thresh=np.inf)
     _check_results(motifs, cycles, 'invalid', 1)
 
+    # Requires lower bound step
+    fm.peak_params_[0][0] = 2
+    fm.peak_params_[0][2] = 1.9
+    motifs, cycles = extract(fm, sig, fs)
+    _check_results(motifs, cycles, 'invalid', 1)
+
 
 def _check_results(motifs, cycles, validity, n_params):
     """Check results using valid or invalid parameters."""
@@ -72,9 +78,14 @@ def _check_results(motifs, cycles, validity, n_params):
 
     else:
 
-        assert len(motifs) == n_params
-        assert np.isnan(motifs[0])
-        for key in cycles:
-            assert len(cycles[key]) == 1
-            assert np.isnan(cycles[key][0])
-
+        if isinstance(motifs[0], float):
+            # Whole motif rejected
+            assert np.isnan(motifs[0])
+            for key in cycles:
+                assert len(cycles[key]) == 1
+                assert np.isnan(cycles[key][0])
+        else:
+            # Sub-variance threshold
+            assert np.isnan(motifs[0][0])
+            for key in cycles:
+                assert len(cycles[key]) == n_params
