@@ -9,20 +9,22 @@ from neurodsp.utils.norm import normalize_sig
 from skimage.transform import estimate_transform, AffineTransform
 
 
-def split_signal(df_osc, sig, normalize=True, center='peak'):
+def split_signal(df_osc, sig, normalize=True, center='peak', n_samples=None):
     """Split the signal using a bycycle dataframe.
 
     Parameters
     ----------
     df_osc : pandas.DataFrame
-        A dataframe containing bycycle features, that has been limited to an oscillation frequency
+        Dataframe containing bycycle features, that has been limited to an oscillation frequency
         range of interest.
     sig : 1d array
         Time series.
     normalize : bool, optional, default: True
         Normalizes each cycle (mean centers with variance of one) when True.
     center : {'peak', 'trough'}, optional
-        The center definition of cycles.
+        Center definition of cycles.
+    n_samples : int, optional
+        Number of samples to resample cycles to. If None, the mean of cycles is used.
 
     Returns
     -------
@@ -36,7 +38,9 @@ def split_signal(df_osc, sig, normalize=True, center='peak'):
     cyc_end = df_osc['sample_next_' + side].values
 
     # Get the average number of samples
-    n_samples = np.mean(df_osc['period'].values, dtype=int)
+    if n_samples is None:
+        n_samples = np.mean(df_osc['period'].values, dtype=int)
+
     sigs = np.zeros((len(df_osc), n_samples))
 
     # Slice cycles and resample to center frequency

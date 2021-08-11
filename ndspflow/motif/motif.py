@@ -90,6 +90,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
     # Sub-select index if requested
     if index is not None:
         f_ranges = [f_ranges[index]]
+        cfs = [cfs[index]]
 
     # Get cycles within freq ranges
     motifs = []
@@ -102,7 +103,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
 
         sig = np.repeat(sig, len(f_ranges), axis=0)
 
-    for ind, f_range in enumerate(f_ranges):
+    for ind, (f_range, cf) in enumerate(zip(f_ranges, cfs)):
 
         if df_features is None:
 
@@ -115,7 +116,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
                 try:
                     df_features = fit_bycycle(sig[ind], fs, f_range, center)
                     break
-                except ValueError:
+                except (ValueError, ZeroDivisionError):
                     # Lower frequency is too small
                     #   increment by 0.1 hz, up to + 1 hz, and try again
                     f_range = (f_range[0] + .1, f_range[1])
@@ -133,7 +134,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
             continue
 
         # Split signal into 2d array of cycles
-        sig_cyc = split_signal(df_osc, sig[ind], True, center)
+        sig_cyc = split_signal(df_osc, sig[ind], True, center, int(cf * fs))
 
         # Cluster cycles
         labels = cluster_cycles(sig_cyc, min_clust_score=min_clust_score, min_clusters=min_clusters,

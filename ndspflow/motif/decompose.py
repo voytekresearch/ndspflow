@@ -47,6 +47,9 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
     motifs = [motif for motif in motifs if not isinstance(motif, float)]
     dfs_features = [df for df in dfs_features if not isinstance(dfs_features, float)]
 
+    if sig.ndim == 2:
+        sig = np.sum(sig, axis=0)
+
     sig_ap = np.zeros((len(motifs), len(sig)))
     sig_ap[:, :] = np.nan
 

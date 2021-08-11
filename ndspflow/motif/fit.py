@@ -129,7 +129,7 @@ class Motif:
         # First pass motif extraction
         _motifs, _cycles = extract(self.fm, self.sig, self.fs, use_thresh=False,
                                    center=self.center, min_clusters=self.min_clusters,
-                                   max_clusters=self.max_clusters, var_thresh=self.var_thresh)
+                                   max_clusters=self.max_clusters)
 
         # Vertically stack
         f_ranges = _cycles['f_ranges']
