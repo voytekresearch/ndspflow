@@ -5,8 +5,6 @@ import warnings
 import numpy as np
 from scipy.optimize import curve_fit
 
-from .emd import compute_emd
-
 from neurodsp.spectral import compute_spectrum
 
 from fooof import FOOOF
@@ -14,8 +12,10 @@ from fooof.core.funcs import gaussian_function
 from fooof.utils.params import compute_gauss_std
 from fooof.sim.gen import gen_periodic, gen_aperiodic
 
+from .emd import compute_emd
 
-def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
+
+def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2):
     """Refit a power spectrum using EMD based parameter estimation.
 
     Parameters
@@ -28,7 +28,7 @@ def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
         Sampling rate, in Hz.
     f_range : tuple of [float, float]
         Frequency range to restrict power spectrum to.
-    imf_kwargs : optional, default: {'sd_thresh': .1}
+    imf_kwargs : optional, default: None
         Optional keyword arguments for compute_emd. Includes:
 
         - max_imfs
@@ -52,13 +52,16 @@ def refit(fm, sig, fs, f_range, imf_kwargs={'sd_thresh': .1}, power_thresh=.2):
     pe_mask : 1d array
         Booleans to mark imfs above aperiodic fit.
     """
+
+    if imf_kwargs is None:
+        imf_kwargs = {'sd_thresh': .1}
+
     # Compute modes
     imf = compute_emd(sig, **imf_kwargs)
 
     # Convert spectra of mode timeseries
-    freqs_imf, powers_imf = compute_spectrum(imf, fs, f_range=f_range)
+    _, powers_imf = compute_spectrum(imf, fs, f_range=f_range)
 
-    # Convert to log-log
     freqs = fm.freqs
     powers = fm.power_spectrum
     powers_imf = np.log10(powers_imf)
@@ -163,18 +166,29 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
     center = np.argmax(power_imf[inds])
     height = powers[inds][center] - ap_fit[inds][center]
 
-    # Estimate width
-    fwhm = freqs[inds[np.argmin(np.abs(power_imf[inds][center:] - (height * .5))) + center]] - \
-           freqs[inds[np.argmin(np.abs(power_imf[inds][:center] - (height * .5)))]]
+    # Widths
+    if center == 0 or center == len(inds):
+        fwhm = (freqs[-1] - freqs[0]) / 2
+        min_fwhm = .25 * fwhm
+        max_fwhm = 2 * fwhm
+
+    else:
+
+        right = power_imf[inds][center:]
+        left = power_imf[inds][:center]
+
+        fwhm = freqs[inds[np.argmin(np.abs(right - (height * .5))) + center]] - \
+            freqs[inds[np.argmin(np.abs(left - (height * .5)))]]
+
+        min_fwhm = freqs[inds[np.argmin(np.abs(right - (height * .6))) + center]] - \
+            freqs[inds[np.argmin(np.abs(left - (height * .6)))]]
+
+        max_fwhm = freqs[inds[np.argmin(np.abs(right - (height * .4))) + center]] - \
+            freqs[inds[np.argmin(np.abs(left - (height * .4)))]]
+
+    # Convert fwhm to std
     width = compute_gauss_std(fwhm)
-
-    # Width bounds
-    min_fwhm = freqs[inds[np.argmin(np.abs(power_imf[inds][center:] - (height * .6))) + center]] - \
-               freqs[inds[np.argmin(np.abs(power_imf[inds][:center] - (height * .6)))]]
     min_width = compute_gauss_std(min_fwhm)
-
-    max_fwhm = freqs[inds[np.argmin(np.abs(power_imf[inds][center:] - (height * .4))) + center]] - \
-               freqs[inds[np.argmin(np.abs(power_imf[inds][:center] - (height * .4)))]]
     max_width = compute_gauss_std(max_fwhm)
 
     # Non-monotonic or short sequences may produce infesible width bounds
@@ -237,7 +251,7 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask):
     # Upper and lower bounds
     bounds = [[], []]
 
-    for ind, power_imf in enumerate(powers_imf[pe_mask]):
+    for power_imf in powers_imf[pe_mask]:
 
         inds = np.where(power_imf > powers_ap)[0]
 
