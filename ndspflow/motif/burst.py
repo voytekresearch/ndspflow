@@ -43,11 +43,10 @@ def motif_burst_detection(motifs, df_features, sig, corr_thresh=.75, var_thresh=
             motif_tform, _ = motif_to_cycle(motif_resamp, cyc)
 
             # Correlation coefficient and variance thresholds
-            resamp_vs_tform = np.corrcoef(motif_resamp, motif_tform)[0][1] >= corr_thresh
             cyc_vs_tform = np.corrcoef(cyc, motif_tform)[0][1] >= corr_thresh
             variance = np.var(cyc) >= var_thresh
 
-            if resamp_vs_tform and cyc_vs_tform and variance:
+            if cyc_vs_tform and variance:
                 is_burst[idx][row] = True
 
     is_burst = np.sum(is_burst, axis=0, dtype=bool)
