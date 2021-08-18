@@ -170,6 +170,6 @@ def test_motif_proxy(sim_sig, fooof_outs):
     fs = sim_sig['fs']
     fm = fooof_outs['fm']
 
-    motif = _motif_proxy([sig, fm], fs, {})
+    motif = _motif_proxy([sig, fm], fs, {}, 'affine')
 
     assert isinstance(motif, Motif)
