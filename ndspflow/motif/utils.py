@@ -6,7 +6,8 @@ from scipy.signal import resample
 
 from neurodsp.utils.norm import normalize_sig
 
-from skimage.transform import estimate_transform, AffineTransform
+from skimage.transform import (estimate_transform, AffineTransform, EuclideanTransform,
+    SimilarityTransform, ProjectiveTransform, PolynomialTransform)
 
 
 def split_signal(df_osc, sig, normalize=True, center='peak', n_samples=None):
@@ -60,7 +61,7 @@ def split_signal(df_osc, sig, normalize=True, center='peak', n_samples=None):
     return sigs
 
 
-def motif_to_cycle(motif, cycle):
+def motif_to_cycle(motif, cycle, ttype='affine'):
     """Affine transform motif to cycle.
 
     Parameters
@@ -69,6 +70,8 @@ def motif_to_cycle(motif, cycle):
         Mean waveform.
     cycle : 1d array
         Individual cycle waveform.
+    ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+        Transformation type.
 
     Returns
     -------
@@ -83,7 +86,20 @@ def motif_to_cycle(motif, cycle):
     src = np.vstack((_times, motif)).T
     dst = np.vstack((_times, cycle)).T
 
-    tform = estimate_transform('affine', src, dst)
-    motif_trans = AffineTransform(tform.params)(src).T[1]
+    tform = estimate_transform(ttype, src, dst)
+
+    # Select requested transformation type
+    if ttype == 'affine':
+        tfunc = AffineTransform
+    elif ttype == 'similarity':
+        tfunc = SimilarityTransform
+    elif ttype == 'euclidean':
+        tfunc = EuclideanTransform
+    elif ttype == 'projective':
+        tfunc = ProjectiveTransform
+    elif ttype == 'polynomial':
+        tfunc = PolynomialTransform
+
+    motif_trans = tfunc(tform.params)(src).T[1]
 
     return motif_trans, tform

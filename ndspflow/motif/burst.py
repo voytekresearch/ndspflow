@@ -6,7 +6,8 @@ from scipy.signal import resample
 from ndspflow.motif.utils import motif_to_cycle
 
 
-def motif_burst_detection(motifs, df_features, sig, corr_thresh=.75, var_thresh=0.05):
+def motif_burst_detection(motifs, df_features, sig, corr_thresh=.75,
+                          var_thresh=0.05, ttype='affine'):
     """Use motifs to detect bursts.
 
     Parameters
@@ -23,6 +24,8 @@ def motif_burst_detection(motifs, df_features, sig, corr_thresh=.75, var_thresh=
         (motif_transformed, cycle).
     var_thresh : float, optional, default: 0.05
         Height threshold in variance. Applied to cycle.
+    ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+        Transformation type.
 
     Returns
     -------
@@ -40,7 +43,7 @@ def motif_burst_detection(motifs, df_features, sig, corr_thresh=.75, var_thresh=
             cyc = sig[cyc['sample_last_trough']:cyc['sample_next_trough']]
 
             motif_resamp = resample(motif, len(cyc))
-            motif_tform, _ = motif_to_cycle(motif_resamp, cyc)
+            motif_tform, _ = motif_to_cycle(motif_resamp, cyc, ttype)
 
             # Correlation coefficient and variance thresholds
             cyc_vs_tform = np.corrcoef(cyc, motif_tform)[0][1] >= corr_thresh

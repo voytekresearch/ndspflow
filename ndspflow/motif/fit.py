@@ -102,7 +102,7 @@ class Motif:
         return self.results[index]
 
 
-    def fit(self, fm, sig, fs):
+    def fit(self, fm, sig, fs, ttype='affine'):
         """Robust motif extraction.
 
         Parameters
@@ -114,6 +114,8 @@ class Motif:
             in ascending frequency.
         fs : float
             Sampling rate, in Hz.
+        ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+            Transformation type.
         """
 
         from ndspflow.motif import extract
@@ -155,7 +157,7 @@ class Motif:
             bm = fit_bycycle(sig[ind], fs, f_range)
 
             is_burst = motif_burst_detection(motif, bm, sig[ind], corr_thresh=self.corr_thresh,
-                                             var_thresh=self.var_thresh)
+                                             var_thresh=self.var_thresh, ttype=ttype)
             bm['is_burst'] = is_burst
 
             # Re-extract motifs from bursts
@@ -189,7 +191,7 @@ class Motif:
             self.results.append(result)
 
 
-    def decompose(self, center='peak', mean_center=True, transform=True):
+    def decompose(self, center='peak', mean_center=True, transform=True, ttype='affine'):
         """Decompose a signal into its periodic/aperioidic components.
 
         Parameters
@@ -200,6 +202,8 @@ class Motif:
             Global detrending (mean centering of the original signal).
         transfrom : bool, optional, default: True
             Applies an affine transfrom from motif to cycle if True.
+        ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+            Transformation type. Only applied if transform is True.
         """
 
         if len(self.results) == 0:
@@ -213,7 +217,7 @@ class Motif:
 
         if transform:
             sigs_pe, sigs_ap, tforms = decompose(self.sig, motifs, dfs_features, center, labels,
-                                                 mean_center, transform)
+                                                 mean_center, transform, ttype)
         else:
             sigs_pe, sigs_ap = decompose(self.sig, motifs, dfs_features, center, labels,
                                          mean_center, transform)
@@ -485,7 +489,7 @@ class MotifGroup:
         return self.results[index]
 
 
-    def fit(self, fg, sigs, fs, n_jobs=-1, progress=None):
+    def fit(self, fg, sigs, fs, ttype='affine', n_jobs=-1, progress=None):
         """Robust motif extraction.
 
         Parameters
@@ -496,6 +500,8 @@ class MotifGroup:
             Voltage timeseries.
         fs : float
             Sampling rate, in Hz.
+        ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+            Transformation type.
         n_jobs : int, optional, default: -1
             The number of jobs to compute features in parallel.
         progress : {None, 'tqdm', 'tqdm.notebook'}
@@ -523,14 +529,14 @@ class MotifGroup:
 
         with Pool(processes=n_jobs) as pool:
 
-            mapping = pool.imap(partial(_motif_proxy, fs=fs, init_kwargs=init_kwargs),
+            mapping = pool.imap(partial(_motif_proxy, fs=fs, init_kwargs=init_kwargs, ttype=ttype),
                                 zip(sigs, fms))
 
             self.results = list(progress_bar(mapping, progress, len(sigs),
                                              pbar_desc='Computing Motifs'))
 
 
-def _motif_proxy(args, fs, init_kwargs):
+def _motif_proxy(args, fs, init_kwargs, ttype):
     """Proxy function for the multiprocessing pool."""
 
     # Unpack zipped args
@@ -538,6 +544,6 @@ def _motif_proxy(args, fs, init_kwargs):
     fm = args[1]
 
     mtf = Motif(**init_kwargs)
-    mtf.fit(fm, sig, fs)
+    mtf.fit(fm, sig, fs, ttype=ttype)
 
     return mtf

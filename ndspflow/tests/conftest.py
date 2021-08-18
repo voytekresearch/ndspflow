@@ -99,3 +99,15 @@ def bycycle_outs(test_data):
     bm_graph = plot_bm(bm, sig_1d, fs, threshold_kwargs, 0)
 
     yield dict(bm=bm, bm_graph=bm_graph, bg=bg, bgs=bgs, threshold_kwargs=threshold_kwargs)
+
+
+@pytest.fixture(scope='module')
+def motif_outs():
+
+    comps_ref = {'sim_oscillation': {'freq' : 1, 'cycle': 'sine'}}
+    motif_ref = sim_combined(1, 100, comps_ref)
+
+    comps_target = {'sim_oscillation': {'freq' : 1, 'cycle': 'asine','rdsym': .6}}
+    motif_target = sim_combined(1, 100, comps_target)
+
+    yield dict(motif_ref=motif_ref, motif_target=motif_target)
