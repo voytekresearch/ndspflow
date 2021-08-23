@@ -6,16 +6,18 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 from neurodsp.spectral import compute_spectrum
+from neurodsp.utils.norm import normalize_variance
 
 from fooof import FOOOF
 from fooof.core.funcs import gaussian_function
 from fooof.utils.params import compute_gauss_std
 from fooof.sim.gen import gen_periodic, gen_aperiodic
 
+import emd
 from .emd import compute_emd
 
 
-def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2):
+def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=0., refit_ap=False):
     """Refit a power spectrum using EMD based parameter estimation.
 
     Parameters
@@ -42,6 +44,12 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2):
 
     power_thresh : float, optional, default: .2
         IMF power threshold as the mean power above the initial aperiodic fit.
+    energy_thresh : float, optional, default: 0.
+        Normalized HHT energy threshold to define oscillatory frequencies. This aids the removal of
+        harmonic peaks if present.
+    refit_ap : bool, optional, default: None
+        Refits the aperiodic component when True. When False, the aperiodic component is defined
+        from the intial specparam fit.
 
     Returns
     -------
@@ -78,23 +86,42 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2):
                       'Returning the inital spectral fit.')
         return fm, imf, pe_mask
 
-    gauss_params = fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask)
+    if energy_thresh > 0:
 
-    pe_fit = gen_periodic(freqs, gauss_params.flatten())
-    pe_params = fm._create_peak_params(gauss_params)
+        # Limit frequency ranges to fit using HHT
+        freqs_min, freqs_max = limit_freqs_hht(imf[pe_mask], freqs, fs,
+                                               energy_thresh=energy_thresh)
+
+        if freqs_min is None and freqs_max is None:
+            warnings.warn('No superthreshold energy in HHT.'
+                        'Returning the inital spectral fit.')
+            return fm, imf, pe_mask
+
+        limits = (freqs_min, freqs_max)
+
+        gauss_params = fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask, limits)
+
+    else:
+
+        gauss_params = fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask)
+
+    if gauss_params is not None:
+
+        fm.peak_params_ = fm._create_peak_params(gauss_params)
+        fm._peak_fit = gen_periodic(freqs, gauss_params.flatten())
+
+    else:
+        fm.peak_params = None
+        fm._peak_fit = np.zeros_like(freqs)
 
     # Refit aperiodic
-    ap_params, ap_fit = refit_ap(freqs, powers, pe_fit)
+    if refit_ap:
+        ap_params, ap_fit = refit_aperiodic(freqs, powers, fm._peak_fit)
+        fm._ap_fit = ap_fit
+        fm.aperiodic_params_ = ap_params
 
     # Update attibutes
     fm.gaussian_params_ = gauss_params
-
-    fm._peak_fit = gen_periodic(freqs, gauss_params.flatten())
-    fm.peak_params_ = pe_params
-
-    fm._ap_fit = ap_fit
-    fm.aperiodic_params_ = ap_params
-
     fm.fooofed_spectrum_ = fm._peak_fit + fm._ap_fit
 
     fm._calc_r_squared()
@@ -163,7 +190,7 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
     power_imf = power_imf - ap_fit
 
     # Estimate center location and power height
-    center = np.argmax(power_imf[inds])
+    center = np.argmax(powers[inds])
     height = powers[inds][center] - ap_fit[inds][center]
 
     # Widths
@@ -224,7 +251,7 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
     return guess, bounds
 
 
-def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask):
+def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask, limits=None):
     """Fit gaussians based on EMD estimation.
 
     Parameters
@@ -258,12 +285,29 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask):
         # Ensure indices are continuous
         inds = np.arange(min(inds), max(inds)+1)
 
+        # Remove frequencies out of HHT bounds to account for asym harmonics
+        if limits is not None:
+
+            _freqs = np.array([], dtype=int)
+            for lower, upper in zip(*limits):
+                _freqs = np.append(_freqs, np.arange(lower, upper+1))
+
+            inds = np.array([f for f in freqs[inds] if f in _freqs], dtype=int)
+
+            if len(inds) < 3:
+                continue
+
         _guess, _bounds = guess_params(freqs, powers, power_imf, powers_ap, inds)
 
         guess.extend(_guess)
 
         bounds[0].extend(_bounds[0])
         bounds[1].extend(_bounds[1])
+
+
+    # Nothing to fit
+    if len(guess) == 0:
+        return None
 
     # Fit the flatten spectrum
     spectrum_flat = powers - powers_ap
@@ -275,7 +319,7 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask):
     return gauss_params
 
 
-def refit_ap(freqs, powers, peak_fit):
+def refit_aperiodic(freqs, powers, peak_fit):
     """Refit the aperiodic component following the periodic refit.
 
     Parameters
@@ -308,3 +352,55 @@ def refit_ap(freqs, powers, peak_fit):
     ap_fit = gen_aperiodic(freqs, ap_params)
 
     return ap_params, ap_fit
+
+
+def limit_freqs_hht(imfs, freqs, fs, energy_thresh=2.):
+    """Limit specparam frequency ranges using HH transform.
+
+    Parameters
+    ----------
+    imfs : 1d array
+        Sum of masked intrinsic mode functions.
+    freqs : 1d array
+        Frequncies to define the HHT.
+    fs : float
+        Sampling rate, in Hz.
+    energy_thresh : float, optional, default: 1.
+        Normalized energy threshold to define oscillatory frequencies.
+
+    Returns
+    -------
+    freqs_min : 1d array
+        Lower frequency bounds.
+    freqs_max : 1d array
+        Upper frequency bounds.
+    """
+    # Use HHT to identify frequency ranges to fit
+    _, IF, IA = emd.spectra.frequency_transform(imfs.sum(axis=0).T, fs, 'nht')
+
+    # Amplitude weighted HHT
+    spec_weighted = emd.spectra.hilberthuang_1d(IF, IA, freqs).T[0]
+
+    spec_weighted = normalize_variance(spec_weighted)
+
+    # Split spectrum into separate superthresh segments
+    idxs = np.where(spec_weighted > energy_thresh)[0]
+
+    if len(idxs) == 0:
+        return None, None
+
+    # Split where non-continuous
+    idxs = np.split(idxs, np.where(np.diff(idxs) != 1)[0]+1)
+
+    # Require at least 3 freqs
+    idxs = [idx for idx in idxs if len(idx) >= 3]
+
+    # Get frequency ranges of segments
+    freqs_min = np.zeros(len(idxs))
+    freqs_max = np.zeros(len(idxs))
+
+    for idx, seg in enumerate(idxs):
+        freqs_min[idx] = freqs[np.min(seg)]
+        freqs_max[idx] = freqs[np.max(seg)]
+
+    return freqs_min, freqs_max

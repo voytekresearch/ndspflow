@@ -9,7 +9,8 @@ from fooof.objs.utils import combine_fooofs
 from .refit import refit
 
 
-def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2, n_jobs=-1, progress=None):
+def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2,
+                 energy_thresh=0., refit_ap=False, n_jobs=-1, progress=None):
     """Refit a group of spectral fits.
 
     Parameters
@@ -36,6 +37,12 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2, n_jobs=
 
     power_thresh : float, optional, default: .2
         IMF power threshold as the mean power above the initial aperiodic fit.
+    energy_thresh : float, optional, default: 0.
+        Normalized HHT energy threshold to define oscillatory frequencies. This aids the removal of
+        harmonic peaks if present.
+    refit_ap : bool, optional, default: None
+        Refits the aperiodic component when True. When False, the aperiodic component is defined
+        from the intial specparam fit.
 
     Returns
     -------
@@ -57,8 +64,9 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2, n_jobs=
 
     with Pool(processes=n_jobs) as pool:
 
-        mapping = pool.imap(partial(_proxy, fs=fs, f_range=f_range,
-                                    imf_kwargs=imf_kwargs, power_thresh=power_thresh),
+        mapping = pool.imap(partial(_proxy, fs=fs, f_range=f_range, imf_kwargs=imf_kwargs,
+                                    power_thresh=power_thresh, energy_thresh=energy_thresh,
+                                    refit_ap=refit_ap),
                             zip(fms, sigs))
 
         results = list(progress_bar(mapping, progress, len(sigs), pbar_desc='Refitting Spectra'))
@@ -73,8 +81,9 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2, n_jobs=
     return fg_refit, imfs, pe_masks
 
 
-def _proxy(args, fs=None, f_range=None, imf_kwargs=None, power_thresh=None):
+def _proxy(args, fs=None, f_range=None, imf_kwargs=None,
+           power_thresh=None, energy_thresh=None, refit_ap=None):
 
     fm, sig = args[0], args[1]
 
-    return refit(fm, sig, fs, f_range, imf_kwargs, power_thresh)
+    return refit(fm, sig, fs, f_range, imf_kwargs, power_thresh, energy_thresh)
