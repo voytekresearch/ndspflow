@@ -86,4 +86,4 @@ def _proxy(args, fs=None, f_range=None, imf_kwargs=None,
 
     fm, sig = args[0], args[1]
 
-    return refit(fm, sig, fs, f_range, imf_kwargs, power_thresh, energy_thresh)
+    return refit(fm, sig, fs, f_range, imf_kwargs, power_thresh, energy_thresh, refit_ap)

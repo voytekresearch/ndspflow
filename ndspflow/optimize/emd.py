@@ -1,5 +1,7 @@
 """Emprical mode decomposition."""
 
+import numpy as np
+from neurodsp.utils.norm import normalize_variance
 import emd
 
 
@@ -50,3 +52,55 @@ def compute_emd(sig, max_imfs=None, sift_thresh=1e-08, env_step_size=1, max_iter
     imf = emd.sift.sift(sig, max_imfs=max_imfs, sift_thresh=sift_thresh, imf_opts=imf_opts).T[::-1]
 
     return imf
+
+
+def limit_freqs_hht(imfs, freqs, fs, energy_thresh=2.):
+    """Limit specparam frequency ranges using HH transform.
+
+    Parameters
+    ----------
+    imfs : 1d array
+        Sum of masked intrinsic mode functions.
+    freqs : 1d array
+        Frequncies to define the HHT.
+    fs : float
+        Sampling rate, in Hz.
+    energy_thresh : float, optional, default: 1.
+        Normalized energy threshold to define oscillatory frequencies.
+
+    Returns
+    -------
+    freqs_min : 1d array
+        Lower frequency bounds.
+    freqs_max : 1d array
+        Upper frequency bounds.
+    """
+    # Use HHT to identify frequency ranges to fit
+    _, IF, IA = emd.spectra.frequency_transform(imfs.sum(axis=0).T, fs, 'nht')
+
+    # Amplitude weighted HHT
+    spec_weighted = emd.spectra.hilberthuang_1d(IF, IA, freqs).T[0]
+
+    spec_weighted = normalize_variance(spec_weighted)
+
+    # Split spectrum into separate superthresh segments
+    idxs = np.where(spec_weighted > energy_thresh)[0]
+
+    if len(idxs) == 0:
+        return None, None
+
+    # Split where non-continuous
+    idxs = np.split(idxs, np.where(np.diff(idxs) != 1)[0]+1)
+
+    # Require at least 3 freqs
+    idxs = [idx for idx in idxs if len(idx) >= 3]
+
+    # Get frequency ranges of segments
+    freqs_min = np.zeros(len(idxs))
+    freqs_max = np.zeros(len(idxs))
+
+    for idx, seg in enumerate(idxs):
+        freqs_min[idx] = freqs[np.min(seg)]
+        freqs_max[idx] = freqs[np.max(seg)]
+
+    return freqs_min, freqs_max

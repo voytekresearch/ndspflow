@@ -6,15 +6,13 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 from neurodsp.spectral import compute_spectrum
-from neurodsp.utils.norm import normalize_variance
 
 from fooof import FOOOF
 from fooof.core.funcs import gaussian_function
 from fooof.utils.params import compute_gauss_std
 from fooof.sim.gen import gen_periodic, gen_aperiodic
 
-import emd
-from .emd import compute_emd
+from .emd import compute_emd, limit_freqs_hht
 
 
 def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=0., refit_ap=False):
@@ -94,8 +92,8 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
 
         if freqs_min is None and freqs_max is None:
             warnings.warn('No superthreshold energy in HHT.'
-                        'Returning the inital spectral fit.')
-            return fm, imf, pe_mask
+                          'Returning the inital spectral fit.')
+            return fm, imf, np.zeros(len(pe_mask), dtype=bool)
 
         limits = (freqs_min, freqs_max)
 
@@ -304,7 +302,6 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask, limits=None):
         bounds[0].extend(_bounds[0])
         bounds[1].extend(_bounds[1])
 
-
     # Nothing to fit
     if len(guess) == 0:
         return None
@@ -352,55 +349,3 @@ def refit_aperiodic(freqs, powers, peak_fit):
     ap_fit = gen_aperiodic(freqs, ap_params)
 
     return ap_params, ap_fit
-
-
-def limit_freqs_hht(imfs, freqs, fs, energy_thresh=2.):
-    """Limit specparam frequency ranges using HH transform.
-
-    Parameters
-    ----------
-    imfs : 1d array
-        Sum of masked intrinsic mode functions.
-    freqs : 1d array
-        Frequncies to define the HHT.
-    fs : float
-        Sampling rate, in Hz.
-    energy_thresh : float, optional, default: 1.
-        Normalized energy threshold to define oscillatory frequencies.
-
-    Returns
-    -------
-    freqs_min : 1d array
-        Lower frequency bounds.
-    freqs_max : 1d array
-        Upper frequency bounds.
-    """
-    # Use HHT to identify frequency ranges to fit
-    _, IF, IA = emd.spectra.frequency_transform(imfs.sum(axis=0).T, fs, 'nht')
-
-    # Amplitude weighted HHT
-    spec_weighted = emd.spectra.hilberthuang_1d(IF, IA, freqs).T[0]
-
-    spec_weighted = normalize_variance(spec_weighted)
-
-    # Split spectrum into separate superthresh segments
-    idxs = np.where(spec_weighted > energy_thresh)[0]
-
-    if len(idxs) == 0:
-        return None, None
-
-    # Split where non-continuous
-    idxs = np.split(idxs, np.where(np.diff(idxs) != 1)[0]+1)
-
-    # Require at least 3 freqs
-    idxs = [idx for idx in idxs if len(idx) >= 3]
-
-    # Get frequency ranges of segments
-    freqs_min = np.zeros(len(idxs))
-    freqs_max = np.zeros(len(idxs))
-
-    for idx, seg in enumerate(idxs):
-        freqs_min[idx] = freqs[np.min(seg)]
-        freqs_max[idx] = freqs[np.max(seg)]
-
-    return freqs_min, freqs_max
