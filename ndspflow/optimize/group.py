@@ -10,7 +10,7 @@ from .refit import refit
 
 
 def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2,
-                 energy_thresh=0., refit_ap=False, n_jobs=-1, progress=None):
+                energy_thresh=0., refit_ap=False, n_jobs=-1, progress=None):
     """Refit a group of spectral fits.
 
     Parameters
