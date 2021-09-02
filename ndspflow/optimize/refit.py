@@ -109,7 +109,7 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
         fm._peak_fit = gen_periodic(freqs, gauss_params.flatten())
 
     else:
-        fm.peak_params = None
+        fm.peak_params_ = None
         fm._peak_fit = np.zeros_like(freqs)
 
     # Refit aperiodic
@@ -264,6 +264,8 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask, limits=None):
         Aperiodic spectral power, in log10 scale.
     pe_mask : 1d array
         Booleans to mark imfs above aperiodic fit.
+    limits : list of tuple
+        Lower and upper frequency bounds to limit parameter estimation to.
 
     Returns
     -------
@@ -276,31 +278,39 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask, limits=None):
     # Upper and lower bounds
     bounds = [[], []]
 
-    for power_imf in powers_imf[pe_mask]:
+    # Remove frequencies out of HHT bounds to account for asym harmonics
+    if limits is not None:
 
-        inds = np.where(power_imf > powers_ap)[0]
+        _freqs = np.array([], dtype=int)
+        for lower, upper in zip(*limits):
 
-        # Ensure indices are continuous
-        inds = np.arange(min(inds), max(inds)+1)
-
-        # Remove frequencies out of HHT bounds to account for asym harmonics
-        if limits is not None:
-
-            _freqs = np.array([], dtype=int)
-            for lower, upper in zip(*limits):
-                _freqs = np.append(_freqs, np.arange(lower, upper+1))
-
-            inds = np.array([f for f in freqs[inds] if f in _freqs], dtype=int)
+            inds = np.arange(lower, upper, dtype='int')
 
             if len(inds) < 3:
                 continue
 
-        _guess, _bounds = guess_params(freqs, powers, power_imf, powers_ap, inds)
+            _guess, _bounds = guess_params(freqs, powers, powers, powers_ap, inds)
 
-        guess.extend(_guess)
+            guess.extend(_guess)
 
-        bounds[0].extend(_bounds[0])
-        bounds[1].extend(_bounds[1])
+            bounds[0].extend(_bounds[0])
+            bounds[1].extend(_bounds[1])
+
+    else:
+
+        for power_imf in powers_imf[pe_mask]:
+
+            inds = np.where(power_imf > powers_ap)[0]
+
+            # Ensure indices are continuous
+            inds = np.arange(min(inds), max(inds)+1)
+
+            _guess, _bounds = guess_params(freqs, powers, power_imf, powers_ap, inds)
+
+            guess.extend(_guess)
+
+            bounds[0].extend(_bounds[0])
+            bounds[1].extend(_bounds[1])
 
     # Nothing to fit
     if len(guess) == 0:
