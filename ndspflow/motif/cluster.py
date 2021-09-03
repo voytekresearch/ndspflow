@@ -50,8 +50,6 @@ def cluster_cycles(cycles, min_clust_score=0.5, min_clusters=2, max_clusters=10,
 
         with warnings.catch_warnings():
 
-            warnings.simplefilter('ignore')
-
             # Skip to next cluster definition if k-means fails
             try:
                 clusters = KMeans(n_clusters=n_clusters, algorithm="full",

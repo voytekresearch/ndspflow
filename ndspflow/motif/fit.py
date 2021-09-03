@@ -1,6 +1,5 @@
 """Motif class object."""
 
-import warnings
 from functools import partial
 from multiprocessing import Pool, cpu_count
 

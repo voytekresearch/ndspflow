@@ -121,4 +121,6 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
     else:
         raise ValueError('The sig argument must specify a 1d, 2d, or 3d array.')
 
+    warnings.simplefilter("always")
+
     return df_features

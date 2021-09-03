@@ -59,6 +59,8 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
         Booleans to mark imfs above aperiodic fit.
     """
 
+    fm_refit = fm.copy()
+
     if imf_kwargs is None:
         imf_kwargs = {'sd_thresh': .1}
 
@@ -68,21 +70,21 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
     # Convert spectra of mode timeseries
     _, powers_imf = compute_spectrum(imf, fs, f_range=f_range)
 
-    freqs = fm.freqs
-    powers = fm.power_spectrum
+    freqs = fm_refit.freqs
+    powers = fm_refit.power_spectrum
     powers_imf = np.log10(powers_imf)
 
     # Initial aperiodic fit
-    powers_ap = fm._ap_fit
+    powers_ap = fm_refit._ap_fit
 
     # Select superthreshold modes
     pe_mask = select_modes(powers_imf, powers_ap, power_thresh=power_thresh)
 
     # Refit periodic
     if not pe_mask.any():
-        warnings.warn('No IMFs are above the intial aperiodic fit.'
+        warnings.warn('No IMFs are above the intial aperiodic fit. '
                       'Returning the inital spectral fit.')
-        return fm, imf, pe_mask
+        return fm_refit, imf, pe_mask
 
     if energy_thresh > 0:
 
@@ -91,9 +93,9 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
                                                energy_thresh=energy_thresh)
 
         if freqs_min is None and freqs_max is None:
-            warnings.warn('No superthreshold energy in HHT.'
+            warnings.warn('No superthreshold energy in HHT. '
                           'Returning the inital spectral fit.')
-            return fm, imf, np.zeros(len(pe_mask), dtype=bool)
+            return fm_refit, imf, np.zeros(len(pe_mask), dtype=bool)
 
         limits = (freqs_min, freqs_max)
 
@@ -105,27 +107,27 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
 
     if gauss_params is not None:
 
-        fm.peak_params_ = fm._create_peak_params(gauss_params)
-        fm._peak_fit = gen_periodic(freqs, gauss_params.flatten())
+        fm_refit.peak_params_ = fm_refit._create_peak_params(gauss_params)
+        fm_refit._peak_fit = gen_periodic(freqs, gauss_params.flatten())
 
     else:
-        fm.peak_params_ = None
-        fm._peak_fit = np.zeros_like(freqs)
+        fm_refit.peak_params_ = None
+        fm_refit._peak_fit = np.zeros_like(freqs)
 
     # Refit aperiodic
     if refit_ap:
-        ap_params, ap_fit = refit_aperiodic(freqs, powers, fm._peak_fit)
-        fm._ap_fit = ap_fit
-        fm.aperiodic_params_ = ap_params
+        ap_params, ap_fit = refit_aperiodic(freqs, powers, fm_refit._peak_fit)
+        fm_refit._ap_fit = ap_fit
+        fm_refit.aperiodic_params_ = ap_params
 
     # Update attibutes
-    fm.gaussian_params_ = gauss_params
-    fm.fooofed_spectrum_ = fm._peak_fit + fm._ap_fit
+    fm_refit.gaussian_params_ = gauss_params
+    fm_refit.fooofed_spectrum_ = fm_refit._peak_fit + fm_refit._ap_fit
 
-    fm._calc_r_squared()
-    fm._calc_error()
+    fm_refit._calc_r_squared()
+    fm_refit._calc_error()
 
-    return fm, imf, pe_mask
+    return fm_refit, imf, pe_mask
 
 
 def select_modes(powers_imf, powers_ap, power_thresh=0.2):
