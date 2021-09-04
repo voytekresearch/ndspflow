@@ -12,6 +12,7 @@ from neurodsp.spectral import compute_spectrum
 from ndspflow.core.fit import fit_bycycle
 from ndspflow.motif.burst import motif_burst_detection
 
+from fooof import FOOOFGroup
 from bycycle.group.utils import progress_bar
 
 
@@ -22,8 +23,9 @@ class Motif:
     ----------
     fm : fooof.FOOOF or list of tuple
         A fooof model that has been fit, or a list of (center_freq, bandwidth).
-    sig : 1d array
-        Time series.
+    sig : 1d or 2d array
+        Time series. If 2d, each timeseries is expected to correspond to each peak, in increasing
+        frequency.
     fs : float
         Sampling rate, in Hz.
     sig_pe : 2d array
@@ -99,20 +101,26 @@ class Motif:
         return self.results[index]
 
 
-    def fit(self, fm, sig, fs):
+    def fit(self, fm, sig, fs, ttype='affine'):
         """Robust motif extraction.
 
         Parameters
         ----------
         fm : fooof.FOOOF or list of tuple
             A fooof model that has been fit, or a list of (center_freq, bandwidth).
-        sig : 1d array
-            Time series.
+        sig : 1d or 2d array
+            Time series. If 2d, each timeseries is expected to correspond to each peak,
+            in ascending frequency.
         fs : float
             Sampling rate, in Hz.
+        ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+            Transformation type.
         """
 
         from ndspflow.motif import extract
+
+        if isinstance(fm, FOOOFGroup):
+            raise ValueError('Use motif.fit.MotifGroup for FOOOFGroup objects.')
 
         self.fm = fm
         self.sig = sig
@@ -122,19 +130,33 @@ class Motif:
         # First pass motif extraction
         _motifs, _cycles = extract(self.fm, self.sig, self.fs, use_thresh=False,
                                    center=self.center, min_clusters=self.min_clusters,
-                                   max_clusters=self.max_clusters, random_state=self.random_state)
+                                   max_clusters=self.max_clusters)
 
-        for motif, f_range in zip(_motifs, _cycles['f_ranges']):
+        # Vertically stack
+        f_ranges = _cycles['f_ranges']
+
+        if sig.ndim == 1:
+
+            sig = sig.reshape(1, len(sig))
+
+            sig = np.repeat(sig, len(f_ranges), axis=0)
+
+        for ind, (motif, f_range) in enumerate(zip(_motifs, f_ranges)):
 
             # Skip null motifs (np.nan)
             if isinstance(f_range, float):
                 self.results.append(MotifResult(f_range))
                 continue
 
+            # Floor the lower frequency range to one
+            if f_range[0] < 1:
+                f_range = (1, f_range[1])
+
             # Motif correlation burst detection
-            bm = fit_bycycle(sig, fs, f_range)
-            is_burst = motif_burst_detection(motif, bm, sig, corr_thresh=self.corr_thresh,
-                                             var_thresh=self.var_thresh)
+            bm = fit_bycycle(sig[ind], fs, f_range)
+
+            is_burst = motif_burst_detection(motif, bm, sig[ind], corr_thresh=self.corr_thresh,
+                                             var_thresh=self.var_thresh, ttype=ttype)
             bm['is_burst'] = is_burst
 
             # Re-extract motifs from bursts
@@ -145,7 +167,8 @@ class Motif:
                 random_state=self.random_state
             )
 
-            motifs_burst, cycles_burst = extract(fm, sig, fs, df_features=bm, **extract_kwargs)
+            motifs_burst, cycles_burst = extract(fm, sig[ind], fs, df_features=bm,
+                                                 index=ind, **extract_kwargs)
 
             # Match re-extraction results to frequency range of interest
             motif_idx = [idx for idx, cyc_range in enumerate(cycles_burst['f_ranges']) \
@@ -167,7 +190,7 @@ class Motif:
             self.results.append(result)
 
 
-    def decompose(self, center='peak', mean_center=True, transform=True):
+    def decompose(self, center='peak', mean_center=True, transform=True, ttype='affine'):
         """Decompose a signal into its periodic/aperioidic components.
 
         Parameters
@@ -178,6 +201,8 @@ class Motif:
             Global detrending (mean centering of the original signal).
         transfrom : bool, optional, default: True
             Applies an affine transfrom from motif to cycle if True.
+        ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+            Transformation type. Only applied if transform is True.
         """
 
         if len(self.results) == 0:
@@ -191,7 +216,7 @@ class Motif:
 
         if transform:
             sigs_pe, sigs_ap, tforms = decompose(self.sig, motifs, dfs_features, center, labels,
-                                                 mean_center, transform)
+                                                 mean_center, transform, ttype)
         else:
             sigs_pe, sigs_ap = decompose(self.sig, motifs, dfs_features, center, labels,
                                          mean_center, transform)
@@ -463,7 +488,7 @@ class MotifGroup:
         return self.results[index]
 
 
-    def fit(self, fg, sigs, fs, n_jobs=-1, progress=None):
+    def fit(self, fg, sigs, fs, ttype='affine', n_jobs=-1, progress=None):
         """Robust motif extraction.
 
         Parameters
@@ -474,6 +499,8 @@ class MotifGroup:
             Voltage timeseries.
         fs : float
             Sampling rate, in Hz.
+        ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+            Transformation type.
         n_jobs : int, optional, default: -1
             The number of jobs to compute features in parallel.
         progress : {None, 'tqdm', 'tqdm.notebook'}
@@ -501,14 +528,14 @@ class MotifGroup:
 
         with Pool(processes=n_jobs) as pool:
 
-            mapping = pool.imap(partial(_motif_proxy, fs=fs, init_kwargs=init_kwargs),
+            mapping = pool.imap(partial(_motif_proxy, fs=fs, init_kwargs=init_kwargs, ttype=ttype),
                                 zip(sigs, fms))
 
             self.results = list(progress_bar(mapping, progress, len(sigs),
                                              pbar_desc='Computing Motifs'))
 
 
-def _motif_proxy(args, fs, init_kwargs):
+def _motif_proxy(args, fs, init_kwargs, ttype):
     """Proxy function for the multiprocessing pool."""
 
     # Unpack zipped args
@@ -516,6 +543,6 @@ def _motif_proxy(args, fs, init_kwargs):
     fm = args[1]
 
     mtf = Motif(**init_kwargs)
-    mtf.fit(fm, sig, fs)
+    mtf.fit(fm, sig, fs, ttype=ttype)
 
     return mtf

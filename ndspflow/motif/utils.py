@@ -6,23 +6,26 @@ from scipy.signal import resample
 
 from neurodsp.utils.norm import normalize_sig
 
-from skimage.transform import estimate_transform, AffineTransform
+from skimage.transform import (estimate_transform, AffineTransform, EuclideanTransform,
+    SimilarityTransform, ProjectiveTransform, PolynomialTransform)
 
 
-def split_signal(df_osc, sig, normalize=True, center='peak'):
+def split_signal(df_osc, sig, normalize=True, center='peak', n_samples=None):
     """Split the signal using a bycycle dataframe.
 
     Parameters
     ----------
     df_osc : pandas.DataFrame
-        A dataframe containing bycycle features, that has been limited to an oscillation frequency
+        Dataframe containing bycycle features, that has been limited to an oscillation frequency
         range of interest.
     sig : 1d array
         Time series.
     normalize : bool, optional, default: True
         Normalizes each cycle (mean centers with variance of one) when True.
     center : {'peak', 'trough'}, optional
-        The center definition of cycles.
+        Center definition of cycles.
+    n_samples : int, optional
+        Number of samples to resample cycles to. If None, the mean of cycles is used.
 
     Returns
     -------
@@ -36,7 +39,9 @@ def split_signal(df_osc, sig, normalize=True, center='peak'):
     cyc_end = df_osc['sample_next_' + side].values
 
     # Get the average number of samples
-    n_samples = np.mean(df_osc['period'].values, dtype=int)
+    if n_samples is None:
+        n_samples = np.mean(df_osc['period'].values, dtype=int)
+
     sigs = np.zeros((len(df_osc), n_samples))
 
     # Slice cycles and resample to center frequency
@@ -56,7 +61,7 @@ def split_signal(df_osc, sig, normalize=True, center='peak'):
     return sigs
 
 
-def motif_to_cycle(motif, cycle):
+def motif_to_cycle(motif, cycle, ttype='affine'):
     """Affine transform motif to cycle.
 
     Parameters
@@ -65,6 +70,8 @@ def motif_to_cycle(motif, cycle):
         Mean waveform.
     cycle : 1d array
         Individual cycle waveform.
+    ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
+        Transformation type.
 
     Returns
     -------
@@ -79,7 +86,20 @@ def motif_to_cycle(motif, cycle):
     src = np.vstack((_times, motif)).T
     dst = np.vstack((_times, cycle)).T
 
-    tform = estimate_transform('affine', src, dst)
-    motif_trans = AffineTransform(tform.params)(src).T[1]
+    tform = estimate_transform(ttype, src, dst)
+
+    # Select requested transformation type
+    if ttype == 'affine':
+        tfunc = AffineTransform
+    elif ttype == 'similarity':
+        tfunc = SimilarityTransform
+    elif ttype == 'euclidean':
+        tfunc = EuclideanTransform
+    elif ttype == 'projective':
+        tfunc = ProjectiveTransform
+    elif ttype == 'polynomial':
+        tfunc = PolynomialTransform
+
+    motif_trans = tfunc(tform.params)(src).T[1]
 
     return motif_trans, tform

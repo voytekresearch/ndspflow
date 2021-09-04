@@ -1,5 +1,7 @@
 """FOOOF and Bycycle model fitting."""
 
+import warnings
+
 from fooof import FOOOF, FOOOFGroup, fit_fooof_3d
 from bycycle.features import compute_features
 from bycycle.group import compute_features_2d, compute_features_3d
@@ -51,7 +53,7 @@ def fit_fooof(freqs, powers, freq_range, init_kwargs, n_jobs):
 
 
 def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
-                threshold_kwargs=None, find_extrema_kwargs=None, axis=0,  n_jobs=1):
+                threshold_kwargs=None, find_extrema_kwargs=None, axis=0, verbose=False, n_jobs=-1):
     """A generalized Bycycle compute_features function to handle 1d, 2d, or 3d arrays.
 
     Parameters
@@ -74,6 +76,8 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
         cycles of the low cutoff frequency (``f_range[0]``).
     n_jobs : int, optional, default: -1
         The number of jobs, one per cpu, to compute features in parallel.
+    verbose : bool, optional, default: False
+        Suppress warnings when False.
 
     Returns
     -------
@@ -84,6 +88,9 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
     -----
     See bycycle documentation for more details.
     """
+
+    if not verbose:
+        warnings.simplefilter("ignore")
 
     threshold_kwargs = {} if not threshold_kwargs else threshold_kwargs
     find_extrema_kwargs = {} if not find_extrema_kwargs else find_extrema_kwargs
@@ -113,5 +120,7 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
 
     else:
         raise ValueError('The sig argument must specify a 1d, 2d, or 3d array.')
+
+    warnings.simplefilter("always")
 
     return df_features

@@ -100,8 +100,15 @@ def plot_motifs(motif, n_bursts=5, center='peak', normalize=True,
     fig.update_xaxes(title_text=xaxis_title, row=1, col=1)
     fig.update_yaxes(title_text=yaxis_title, row=1, col=1)
 
+    # Vertically stack
+    if sig.ndim == 1:
+
+        sig = sig.reshape(1, len(sig))
+
+        sig = np.repeat(sig, len(results), axis=0)
+
     # Plot motifs and example bursting segments
-    times = np.arange(0, len(sig)/fs, 1/fs)
+    times = np.arange(0, len(sig[0])/fs, 1/fs)
 
     # Iterate over each center freq
     row_idx = 1
@@ -142,9 +149,9 @@ def plot_motifs(motif, n_bursts=5, center='peak', normalize=True,
 
             (start, end) = _find_short_burst(df, n_bursts, center)
 
-            fig.add_trace(go.Scatter(x=times[start:end], y=sig[start:end],
-                                    line={'color': color}, showlegend=False),
-                        row=2+row_idx, col=1)
+            fig.add_trace(go.Scatter(x=times[start:end], y=sig[result_idx][start:end],
+                                     line={'color': color}, showlegend=False),
+                          row=2+row_idx, col=1)
 
             row_idx += 1
 

@@ -1,7 +1,5 @@
 """Extract motifs from frequency ranges."""
 
-import warnings
-
 import numpy as np
 import pandas as pd
 
@@ -16,15 +14,16 @@ from ndspflow.motif.utils import split_signal
 
 def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='peak',
             min_clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10,
-            random_state=None):
+            index=None, random_state=None):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
 
     Parameters
     ----------
     fm : fooof.FOOOF or list of tuple
         A fooof model that has been fit, or a list of (center_freq, bandwidth).
-    sig : 1d array
-        Time series.
+    sig : 1d or 2d array
+        Time series. If 2d, each timeseries is expected to correspond to each peak,
+        in ascending frequency.
     fs : float
         Sampling rate, in Hz.
     df_features : pandas.DataFrame, optional, default: None
@@ -45,6 +44,8 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
         The maximum number of clusters to evaluate.
     min_n_cycles : int, optional, default: 10
         The minimum number of cycles required to be considered at motif.
+    index : int, optional, default: None
+        Sub-selects a single frequency range to extract.
     random_state : int, optional, default: None
         Determines random number generation for centroid initialization.
         Use an int to make the randomness deterministic for reproducible results.
@@ -61,42 +62,54 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
     """
 
     # Extract center freqs and bandwidths from fooof fit
-    if not isinstance(fm, list):
+    if not isinstance(fm, (list, np.ndarray)):
 
         cfs = fm.get_params('peak_params', 'CF')
         bws = fm.get_params('peak_params', 'BW')
         cfs = cfs if isinstance(cfs, (list, np.ndarray)) else [cfs]
         bws = bws if isinstance(bws, (list, np.ndarray)) else [bws]
 
-    else:
+    elif isinstance(fm, list):
 
         cfs = np.array(fm)[:, 0]
         bws = np.array(fm)[:, 1]
 
+    elif isinstance(fm, np.ndarray) and fm.ndim == 2:
+
+        cfs = fm[:, 0]
+        bws = fm[:, 1]
+
+    elif isinstance(fm, np.ndarray) and fm.ndim == 1:
+
+        cfs = [fm[0]]
+        bws = [fm[1]]
+
     f_ranges = [(round(cf-(scaling * bws[idx]), 1), round(cf+(scaling * bws[idx]), 1))
                 for idx, cf in enumerate(cfs)]
+
+    # Sub-select index if requested
+    if index is not None:
+        f_ranges = [f_ranges[index]]
+        cfs = [cfs[index]]
 
     # Get cycles within freq ranges
     motifs = []
     cycles = {'sigs': [], 'dfs_features': [], 'labels': [], 'f_ranges': []}
 
-    for f_range in f_ranges:
+    # Vertically stack
+    if sig.ndim == 1:
+
+        sig = sig.reshape(1, len(sig))
+
+        sig = np.repeat(sig, len(f_ranges), axis=0)
+
+    for ind, (f_range, cf) in enumerate(zip(f_ranges, cfs)):
+
+        # Floor lower frequency bound at one
+        f_range = (1, f_range[1]) if f_range[0] < 1 else f_range
 
         if df_features is None:
-
-            # Floor lower frequency bound at zero
-            f_range = (0, f_range[1]) if f_range[0] < 0 else f_range
-
-            # Step lower frequency bound if needed
-            for _ in range(11):
-
-                try:
-                    df_features = fit_bycycle(sig, fs, f_range, center)
-                    break
-                except ValueError:
-                    # Lower frequency is too small
-                    #   increment by 0.1 hz, up to + 1 hz, and try again
-                    f_range = (f_range[0] + .1, f_range[1])
+            df_features = fit_bycycle(sig[ind], fs, f_range, center)
 
         if df_features is None:
             motifs, cycles = _nan_append(motifs, cycles)
@@ -111,7 +124,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
             continue
 
         # Split signal into 2d array of cycles
-        sig_cyc = split_signal(df_osc, sig, True, center)
+        sig_cyc = split_signal(df_osc, sig[ind], True, center, int(fs / cf))
 
         # Cluster cycles
         labels = cluster_cycles(sig_cyc, min_clust_score=min_clust_score, min_clusters=min_clusters,
