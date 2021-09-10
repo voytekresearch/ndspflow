@@ -89,6 +89,7 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
     if energy_thresh > 0:
 
         # Limit frequency ranges to fit using HHT
+
         freqs_min, freqs_max = limit_freqs_hht(imf[pe_mask], freqs, fs,
                                                energy_thresh=energy_thresh)
 
@@ -186,6 +187,7 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
     bounds : list of tuple
         Lower and upper parameter bounds.
     """
+
     # Remove aperiodic fit from imf (i.e. flatten)
     power_imf = power_imf - ap_fit
 
@@ -283,7 +285,6 @@ def fit_gaussians(freqs, powers, powers_imf, powers_ap, pe_mask, limits=None):
     # Remove frequencies out of HHT bounds to account for asym harmonics
     if limits is not None:
 
-        _freqs = np.array([], dtype=int)
         for lower, upper in zip(*limits):
 
             inds = np.arange(lower, upper, dtype='int')

@@ -10,7 +10,7 @@ from ndspflow.motif.utils import motif_to_cycle
 
 
 def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center=True,
-              transform=True, ttype='affine'):
+              transform=True, ttype='affine', fixed=True):
     """Decompose a signal into its periodic/aperioidic components.
 
     Parameters
@@ -31,6 +31,8 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
         Applies an affine transfrom from motif to cycle if True.
     ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
         Transformation type. Only applied if transform is True.
+    fixed : bool, optional, default: True
+        Fixes the last and first points to ensure continuity between cycles if True.
 
     Returns
     -------
@@ -70,7 +72,6 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
 
         for idx_cyc, (_, cyc) in enumerate(df_osc.iterrows()):
 
-
             # Isolate each cycle
             start = int(cyc['sample_last_' + side])
             end = int(cyc['sample_next_' + side]) + 1
@@ -90,7 +91,7 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
 
             # Affine transform
             if transform:
-                sig_motif, tform = motif_to_cycle(sig_motif, sig_cyc, ttype)
+                sig_motif, tform = motif_to_cycle(sig_motif, sig_cyc, ttype, fixed)
                 motif_tforms.append(tform)
 
             # Mean center

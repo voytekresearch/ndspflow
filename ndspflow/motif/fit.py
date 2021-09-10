@@ -49,6 +49,8 @@ class Motif:
         The minimum number of cycles required to be considered at motif.
     center : str, {'peak', 'trough'}
         Center extrema definition.
+    bycycle_kwargs : dict, optional, default: None
+        Keyword arguments to pass to fit_bycycle.
     random_state : int, optional, default: None
         Determines random number generation for centroid initialization.
         Use an int to make the randomness deterministic for reproducible results.
@@ -56,7 +58,8 @@ class Motif:
 
 
     def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=1,
-                 max_clusters=10, min_n_cycles=10, center='peak', random_state=None):
+                 max_clusters=10, min_n_cycles=10, center='peak', bycycle_kwargs=None,
+                 random_state=None,):
 
         """Initialize the object."""
 
@@ -69,6 +72,11 @@ class Motif:
         self.min_n_cycles = min_n_cycles
         self.center = center
         self.random_state = random_state
+
+        if bycycle_kwargs is None:
+            self.bycycle_kwargs =  {}
+        else:
+            self.bycycle_kwargs =  bycycle_kwargs
 
         # Fit args
         self.fm = None
@@ -153,7 +161,7 @@ class Motif:
                 f_range = (1, f_range[1])
 
             # Motif correlation burst detection
-            bm = fit_bycycle(sig[ind], fs, f_range)
+            bm = fit_bycycle(sig[ind], fs, f_range, **self.bycycle_kwargs)
 
             is_burst = motif_burst_detection(motif, bm, sig[ind], corr_thresh=self.corr_thresh,
                                              var_thresh=self.var_thresh, ttype=ttype)
@@ -187,10 +195,12 @@ class Motif:
             result = MotifResult(f_range, motifs_burst[motif_idx], cycles_burst['sigs'][motif_idx],
                                  cycles_burst['dfs_features'][motif_idx],
                                  cycles_burst['labels'][motif_idx])
+
             self.results.append(result)
 
 
-    def decompose(self, center='peak', mean_center=True, transform=True, ttype='affine'):
+    def decompose(self, center='peak', mean_center=True, transform=True,
+                  ttype='affine', fixed=True):
         """Decompose a signal into its periodic/aperioidic components.
 
         Parameters
@@ -203,12 +213,15 @@ class Motif:
             Applies an affine transfrom from motif to cycle if True.
         ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
             Transformation type. Only applied if transform is True.
+        fixed : bool, optional, default: True
+            Fixes the last and first points to ensure continuity between cycles if True.
+            Only applied if transform is True.
         """
 
         if len(self.results) == 0:
             raise ValueError("Object must be fit prior to decomposing.")
 
-        from ndspflow.motif import extract, decompose
+        from ndspflow.motif import decompose
 
         motifs = [result.motif for result in self.results]
         dfs_features = [result.df_features for result in self.results]
@@ -429,9 +442,9 @@ class MotifGroup:
         Height threshold in variance.
     min_clust_score : float, default: 1
         The minimum silhouette score to accept k clusters. The default skips clustering.
-    min_clusters : int, default: 2
+    min_clusters : int, default: 1
         The minimum number of clusters to evaluate.
-    max_clusters : int, default: 10
+    max_clusters : int, default: 1
         The maximum number of clusters to evaluate.
     min_n_cycles : int, odefault: 10
         The minimum number of cycles required to be considered at motif.
@@ -443,7 +456,7 @@ class MotifGroup:
     """
 
     def __init__(self, corr_thresh=0.5, var_thresh=0.05, min_clust_score=0.5, min_clusters=1,
-                 max_clusters=10, min_n_cycles=10, center='peak', random_state=None):
+                 max_clusters=1, min_n_cycles=10, center='peak', random_state=None):
 
         """Initialize the object."""
 

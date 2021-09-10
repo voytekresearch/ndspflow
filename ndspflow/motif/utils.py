@@ -61,7 +61,7 @@ def split_signal(df_osc, sig, normalize=True, center='peak', n_samples=None):
     return sigs
 
 
-def motif_to_cycle(motif, cycle, ttype='affine'):
+def motif_to_cycle(motif, cycle, ttype='affine', fixed=True):
     """Affine transform motif to cycle.
 
     Parameters
@@ -72,6 +72,8 @@ def motif_to_cycle(motif, cycle, ttype='affine'):
         Individual cycle waveform.
     ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
         Transformation type.
+    fixed : bool, optional, default: True
+        Fixes the last and first points to ensure continuity between cycles if True.
 
     Returns
     -------
@@ -101,5 +103,23 @@ def motif_to_cycle(motif, cycle, ttype='affine'):
         tfunc = PolynomialTransform
 
     motif_trans = tfunc(tform.params)(src).T[1]
+
+    # Re-transform with fixed start/end points
+    if False:
+
+        # Determine rotation
+        ba = np.array([len(cycle), motif_trans[-1] - cycle[0]])
+        bc = np.array([len(cycle), cycle[-1] - cycle[0]])
+
+        angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+        rot = -np.arccos(angle) if cycle[-1] > motif_trans[-1] else np.arccos(angle)
+
+        # Determine translation
+        trans_y = cycle[0] - motif[0]
+
+        tform.params[1, 2] = trans_y
+        tform.params[1, 0] = rot
+
+        motif_trans = tfunc(tform.params)(src).T[1]
 
     return motif_trans, tform
