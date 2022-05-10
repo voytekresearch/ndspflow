@@ -14,7 +14,7 @@ from ndspflow.motif.utils import split_signal
 
 def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='peak',
             min_clust_score=1, var_thresh=0.05, min_clusters=2, max_clusters=10, min_n_cycles=10,
-            index=None, random_state=None):
+            index=None, round_samples=None, random_state=None):
     """Get the average cycle from a bycycle dataframe for all fooof peaks.
 
     Parameters
@@ -46,6 +46,8 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
         The minimum number of cycles required to be considered at motif.
     index : int, optional, default: None
         Sub-selects a single frequency range to extract.
+    round_samples : int, optional, default: None
+            Round samples of cyclepoints.
     random_state : int, optional, default: None
         Determines random number generation for centroid initialization.
         Use an int to make the randomness deterministic for reproducible results.
@@ -109,7 +111,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
         f_range = (1, f_range[1]) if f_range[0] < 1 else f_range
 
         if df_features is None:
-            df_features = fit_bycycle(sig[ind], fs, f_range, center)
+            df_features = fit_bycycle(sig[ind], fs, f_range, center,  round_samples=round_samples)
 
         if df_features is None:
             motifs, cycles = _nan_append(motifs, cycles)
@@ -124,7 +126,7 @@ def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='p
             continue
 
         # Split signal into 2d array of cycles
-        sig_cyc = split_signal(df_osc, sig[ind], True, center, int(fs / cf))
+        sig_cyc = split_signal(df_osc, sig[ind], True, center, int(df_osc['period'].values.mean()))
 
         # Cluster cycles
         labels = cluster_cycles(sig_cyc, min_clust_score=min_clust_score, min_clusters=min_clusters,

@@ -95,7 +95,7 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
 
             # Mean center
             if mean_center:
-                sig_motif = normalize_sig(sig_motif, mean=np.mean(sig))
+                sig_motif = normalize_sig(sig_motif, mean=0)
 
             # Remove motif to get aperiodic signal
             sig_motif_rm[start:end] = (sig_cyc - sig_motif)
@@ -107,8 +107,8 @@ def decompose(sig, motifs, dfs_features, center='peak', labels=None, mean_center
 
         # Fill non-burst cycles
         idxs = np.where(np.isnan(sig_motif_rm))[0]
-        sig_ap[idx_motif][idxs] = sig[idxs]
-        sig_pe[idx_motif] = sig - sig_ap[idx_motif]
+        sig_ap[idx_motif][idxs] = sig[idxs]#[:-1]
+        sig_pe[idx_motif] = sig - sig_ap[idx_motif]#[:-1]
 
     if transform:
         return sig_pe, sig_ap, tforms
