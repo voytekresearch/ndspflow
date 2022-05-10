@@ -72,7 +72,7 @@ def compute_it_emd(sig, fs, sift_kwargs=None):
     """
     sift_kwargs = {} if sift_kwargs is None else sift_kwargs
 
-    imf = emd.sift.it_emd_sift(sig, fs, **sift_kwargs).T[::-1]
+    imf = emd.sift.iterated_mask_sift(sig, sample_rate=fs, **sift_kwargs).T[::-1]
 
     return imf
 
@@ -102,7 +102,7 @@ def limit_freqs_hht(imfs, freqs, fs, energy_thresh=2.):
     _, IF, IA = emd.spectra.frequency_transform(imfs.sum(axis=0).T, fs, 'nht')
 
     # Amplitude weighted HHT
-    spec_weighted = emd.spectra.hilberthuang_1d(IF, IA, freqs).T[0]
+    _, spec_weighted = emd.spectra.hilberthuang(IF, IA, freqs)
 
     spec_weighted = normalize_variance(spec_weighted)
 
