@@ -12,10 +12,11 @@ from fooof.core.funcs import gaussian_function
 from fooof.utils.params import compute_gauss_std
 from fooof.sim.gen import gen_periodic, gen_aperiodic
 
-from .emd import compute_emd, limit_freqs_hht
+from .emd import compute_emd, limit_freqs_hht, compute_it_emd
 
 
-def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=0., refit_ap=False):
+def refit(fm, sig, fs, f_range, emd_method='original', emd_kwargs=None,
+          power_thresh=.2, energy_thresh=0., refit_ap=False):
     """Refit a power spectrum using EMD based parameter estimation.
 
     Parameters
@@ -28,7 +29,9 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
         Sampling rate, in Hz.
     f_range : tuple of [float, float]
         Frequency range to restrict power spectrum to.
-    imf_kwargs : optional, default: None
+    emd_method : {'original', 'iterative'}
+        EMD method type.
+    emd_kwargs : optional, default: None
         Optional keyword arguments for compute_emd. Includes:
 
         - max_imfs
@@ -61,11 +64,16 @@ def refit(fm, sig, fs, f_range, imf_kwargs=None, power_thresh=.2, energy_thresh=
 
     fm_refit = fm.copy()
 
-    if imf_kwargs is None:
-        imf_kwargs = {'sd_thresh': .1}
+    if emd_kwargs is None and emd_method == 'original':
+        emd_kwargs = {'sd_thresh': .1}
+    elif emd_kwargs is None:
+        emd_kwargs = {}
 
     # Compute modes
-    imf = compute_emd(sig, **imf_kwargs)
+    if emd_method == 'original':
+        imf = compute_emd(sig, **emd_kwargs)
+    else:
+        imf = compute_it_emd(sig, fs, **emd_kwargs)
 
     # Convert spectra of mode timeseries
     _, powers_imf = compute_spectrum(imf, fs, f_range=f_range)

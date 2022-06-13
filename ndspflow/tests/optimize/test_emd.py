@@ -4,7 +4,7 @@ import numpy as np
 
 import pytest
 
-from ndspflow.optimize.emd import compute_emd, limit_freqs_hht
+from ndspflow.optimize.emd import compute_emd, compute_it_emd, limit_freqs_hht
 
 
 def test_compute_emd(sim_sig):
@@ -12,6 +12,18 @@ def test_compute_emd(sim_sig):
     sig = sim_sig['sig']
 
     imfs = compute_emd(sig)
+
+    assert isinstance(imfs, np.ndarray)
+    assert len(imfs) > 0
+    assert imfs.shape[1] == len(sig)
+
+
+def test_compute_it_emd(sim_sig):
+
+    sig = sim_sig['sig']
+    fs = sim_sig['fs']
+
+    imfs = compute_it_emd(sig, fs)
 
     assert isinstance(imfs, np.ndarray)
     assert len(imfs) > 0

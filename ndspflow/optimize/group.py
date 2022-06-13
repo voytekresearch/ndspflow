@@ -9,7 +9,7 @@ from fooof.objs.utils import combine_fooofs
 from .refit import refit
 
 
-def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2,
+def refit_group(fg, sigs, fs, f_range, emd_method='original', emd_kwargs=None, power_thresh=.2,
                 energy_thresh=0., refit_ap=False, n_jobs=-1, progress=None):
     """Refit a group of spectral fits.
 
@@ -23,8 +23,10 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2,
         Sampling rate, in Hz.
     f_range : tuple of [float, float]
         Frequency range to restrict power spectrum to.
-    imf_kwargs : optional, default: None
-        Optional keyword arguments for compute_emd. Includes:
+    emd_method : {'original', 'iterative'}
+        EMD method type.
+    emd_kwargs : optional, default: None
+        Optional keyword arguments for compute_emd. When emd_method is 'original':
 
         - max_imfs
         - sift_thresh
@@ -56,17 +58,19 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2,
 
     n_jobs = cpu_count() if n_jobs == -1 else n_jobs
 
-    if imf_kwargs is None:
-        imf_kwargs = {'sd_thresh': .1}
+    if emd_kwargs is None and emd_method == 'original':
+        emd_kwargs = {'sd_thresh': .1}
+    elif emd_kwargs is None:
+        emd_kwargs = {}
 
     # Convert FOOOFGroup to list of FOOOF
     fms = [fg.get_fooof(ind) for ind in range(len(fg))]
 
     with Pool(processes=n_jobs) as pool:
 
-        mapping = pool.imap(partial(_proxy, fs=fs, f_range=f_range, imf_kwargs=imf_kwargs,
-                                    power_thresh=power_thresh, energy_thresh=energy_thresh,
-                                    refit_ap=refit_ap),
+        mapping = pool.imap(partial(_proxy, fs=fs, f_range=f_range, emd_method=emd_method,
+                                    emd_kwargs=emd_kwargs, power_thresh=power_thresh,
+                                    energy_thresh=energy_thresh, refit_ap=refit_ap),
                             zip(fms, sigs))
 
         results = list(progress_bar(mapping, progress, len(sigs), pbar_desc='Refitting Spectra'))
@@ -81,9 +85,10 @@ def refit_group(fg, sigs, fs, f_range, imf_kwargs=None, power_thresh=.2,
     return fg_refit, imfs, pe_masks
 
 
-def _proxy(args, fs=None, f_range=None, imf_kwargs=None,
+def _proxy(args, fs=None, f_range=None, emd_method=None, emd_kwargs=None,
            power_thresh=None, energy_thresh=None, refit_ap=None):
 
     fm, sig = args[0], args[1]
 
-    return refit(fm, sig, fs, f_range, imf_kwargs, power_thresh, energy_thresh, refit_ap)
+    return refit(fm, sig, fs, f_range, emd_method=emd_method, emd_kwargs=emd_kwargs,
+                 power_thresh=power_thresh, energy_thresh=energy_thresh, refit_ap=refit_ap)
