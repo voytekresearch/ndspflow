@@ -101,7 +101,7 @@ class Motif:
         return self.results[index]
 
 
-    def fit(self, fm, sig, fs, ttype='affine'):
+    def fit(self, fm, sig, fs, ttype='affine', round_samples=None):
         """Robust motif extraction.
 
         Parameters
@@ -115,6 +115,8 @@ class Motif:
             Sampling rate, in Hz.
         ttype : {'euclidean', 'similarity', 'affine', 'projective', 'polynomial'}
             Transformation type.
+        round_samples : int, optional, default: None
+            Round samples of cyclepoints.
         """
 
         from ndspflow.motif import extract
@@ -130,7 +132,7 @@ class Motif:
         # First pass motif extraction
         _motifs, _cycles = extract(self.fm, self.sig, self.fs, use_thresh=False,
                                    center=self.center, min_clusters=self.min_clusters,
-                                   max_clusters=self.max_clusters)
+                                   max_clusters=self.max_clusters, round_samples=round_samples)
 
         # Vertically stack
         f_ranges = _cycles['f_ranges']
@@ -153,7 +155,7 @@ class Motif:
                 f_range = (1, f_range[1])
 
             # Motif correlation burst detection
-            bm = fit_bycycle(sig[ind], fs, f_range)
+            bm = fit_bycycle(sig[ind], fs, f_range, round_samples=round_samples)
 
             is_burst = motif_burst_detection(motif, bm, sig[ind], corr_thresh=self.corr_thresh,
                                              var_thresh=self.var_thresh, ttype=ttype)
@@ -164,7 +166,7 @@ class Motif:
                 center=self.center, use_thresh=True, var_thresh=self.var_thresh,
                 min_clust_score=self.min_clust_score, min_clusters=self.min_clusters,
                 max_clusters=self.max_clusters, min_n_cycles=self.min_n_cycles,
-                random_state=self.random_state
+                random_state=self.random_state, round_samples=round_samples
             )
 
             motifs_burst, cycles_burst = extract(fm, sig[ind], fs, df_features=bm,

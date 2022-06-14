@@ -53,7 +53,8 @@ def fit_fooof(freqs, powers, freq_range, init_kwargs, n_jobs):
 
 
 def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
-                threshold_kwargs=None, find_extrema_kwargs=None, axis=0, verbose=False, n_jobs=-1):
+                threshold_kwargs=None, find_extrema_kwargs=None, round_samples=None,
+                axis=0, verbose=False, n_jobs=-1):
     """A generalized Bycycle compute_features function to handle 1d, 2d, or 3d arrays.
 
     Parameters
@@ -74,6 +75,8 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
         Keyword arguments for function to find peaks an troughs (``find_extrema``)
         to change filter Parameters or boundary. By default, it sets the filter length to three
         cycles of the low cutoff frequency (``f_range[0]``).
+    round_samples : int, optional, default: None
+        Round samples of cyclepoints.
     n_jobs : int, optional, default: -1
         The number of jobs, one per cpu, to compute features in parallel.
     verbose : bool, optional, default: False
@@ -104,6 +107,19 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
 
         df_features = compute_features(sig, fs, f_range, **compute_kwargs)
 
+        if round_samples is not None:
+            df_features['sample_last_trough'] = \
+                df_features['sample_last_trough'].round(round_samples)
+
+            df_features['sample_next_trough'] = \
+                df_features['sample_next_trough'].round(round_samples)
+
+            df_features['period'] = (
+                (df_features['sample_next_trough'] -  df_features['sample_last_trough'])
+            )
+
+            df_features['freqs'] = fs/df_features['period']
+
     elif sig.ndim == 2:
 
         df_features = compute_features_2d(
@@ -121,6 +137,6 @@ def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
     else:
         raise ValueError('The sig argument must specify a 1d, 2d, or 3d array.')
 
-    warnings.simplefilter("always")
+
 
     return df_features
