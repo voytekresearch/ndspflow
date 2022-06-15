@@ -20,7 +20,7 @@ class Simulate:
     y_arr : ndarray
         Voltage time series.
     """
-    def __init__(self, n_seconds, fs, seeds=None):
+    def __init__(self, n_seconds=None, fs=None, seeds=None):
         """Initalize object."""
 
         self.n_seconds = n_seconds
@@ -30,7 +30,7 @@ class Simulate:
         self.nodes = []
 
 
-    def simulate(self, func, operator='add', *args, **kwargs):
+    def simulate(self, func, *args, operator='add', **kwargs):
         """Add a simulation node.
 
         Parameters
@@ -44,10 +44,11 @@ class Simulate:
         **kwargs
             Addional keyword arguments to func.
         """
-        self.nodes.append(['simulate', func, operator, args, kwargs])
+        self.nodes.append(['simulate', func, args,
+                           {'operator': operator}, kwargs])
 
 
-    def run_simulate(self, sim_func, operator='add', *sim_args, **sim_kwargs):
+    def run_simulate(self, func, *args, operator='add', **kwargs):
         """Simulate aperiodic signal.
 
         Parameters
@@ -73,9 +74,12 @@ class Simulate:
             operator = op.truediv
 
         # Simulate
+        self_args = [self_arg for self_arg in [self.n_seconds, self.fs]
+                     if self_arg is not None]
+
         if self.y_arr is None:
-            self.y_arr = sim_func(self.n_seconds, self.fs, *sim_args, **sim_kwargs)
+            self.y_arr = func(*self_args, *args, **kwargs)
         else:
             self.y_arr = operator(
-                self.y_arr, sim_func(self.n_seconds, self.fs, *sim_args, **sim_kwargs)
+                self.y_arr, func(*self_args, *args, **kwargs)
             )

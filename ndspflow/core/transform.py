@@ -23,42 +23,43 @@ class Transform:
     - If func returns two parameters, they are set as (x_arr, y_arr).
     """
 
-    def __init__(self, y_arr, x_arr=None):
+    def __init__(self, y_arr=None, x_arr=None):
         """Initalize object."""
 
         self.y_arr = y_arr
-        self.x_arr = None
+        self.x_arr = x_arr
         self.nodes = []
 
 
-    def transform(self, func, axis=None, *args, **kwargs):
+    def transform(self, func, *args, axis=None, **kwargs):
         """Add a node to be excuted with run method.
 
         Parameters
         ----------
         func : function
             Preprocessing function (e.g. filter).
-        axis : int or tuple of int, optional, default: None
-            Axis to apply the function along. Only used for 2d and greater.
         *args
             Additonal positional arguments to func.
+        axis : int or tuple of int, optional, default: None
+            Axis to apply the function along. Only used for 2d and greater.
         **kwargs
             Addional keyword arguements to func.
         """
-        self.nodes.append(['transform', func, axis, args, kwargs])
+        self.nodes.append(['transform', func, args,
+                           {'axis': axis}, kwargs])
 
 
-    def run_transform(self, func, axis=None, *args, **kwargs):
+    def run_transform(self, func, *args, axis=None, **kwargs):
         """Apply a preprocessing function along axis.
 
         Parameters
         ----------
         func : function
             Preprocessing function (e.g. filter).
-        axis : int or tuple of int, optional, default: None
-            Axis to apply the function along. Only used for 2d and greater.
         *args
             Additonal positional arguments to func.
+        axis : int or tuple of int, optional, default: None
+            Axis to apply the function along. Only used for 2d and greater.
         **kwargs
             Addional keyword arguements to func.
         """
@@ -142,7 +143,7 @@ class Transform:
 
         if not in_place:
             self.y_arr = np.squeeze(y_arr_reshape)
-
+        
 
 def func_wrapper(func, x_arr, y_arr, *args, **kwargs):
     """Wrap function to handle variable IO.

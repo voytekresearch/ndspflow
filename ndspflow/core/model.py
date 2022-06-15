@@ -4,27 +4,35 @@
 class Model:
     """Model wrapper."""
 
-    def __init__(self, model, nodes=None, *args, **kwargs):
+    def __init__(self, model=None, nodes=None):
         """Initialize model."""
-        self.model = model(*args, **kwargs)
+        self.model = model
         self.nodes = nodes
+
+        self.model_self = None
         self.return_attrs = None
 
 
-    def fit(self, *args, **kwargs):
+    def fit(self, model, *args, **kwargs):
         """Queue fit."""
-        self.nodes.append(['fit', args, kwargs])
+        self.model = model
+        self.nodes.append(['fit', model, args, kwargs])
 
 
-    def run_fit(self, x_arr, y_arr, return_attrs, *args, **kwargs):
+    def run_fit(self, x_arr, y_arr, *args, **kwargs):
         """Execute fit."""
-        self.return_attrs = [return_attrs] if isinstance(return_attrs, str) else return_attrs
+        if isinstance(self.return_attrs, str):
+            self.return_attrs = [self.return_attrs]
 
         if x_arr is not None:
-            self.model.model.fit(x_arr, y_arr, *args, *kwargs)
+            self.model.fit(x_arr, y_arr, *args, **kwargs)
         else:
-            self._model.model.fit(y_arr, *args, **kwargs)
+            self.model.fit(y_arr, *args, **kwargs)
 
         # Transfer attribute from model to self
         for attr in self.return_attrs:
-            setattr(self, getattr(self.model.model, attr))
+            if attr in ['self', 'model_self']:
+                setattr(self, 'model_self', self.model)
+
+            if hasattr(self.model, attr):
+                setattr(self, attr, getattr(self.model, attr))
