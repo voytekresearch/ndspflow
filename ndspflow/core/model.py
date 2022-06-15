@@ -21,18 +21,25 @@ class Model:
 
     def run_fit(self, x_arr, y_arr, *args, **kwargs):
         """Execute fit."""
+
+        self.model = self.node[1]
+
         if isinstance(self.return_attrs, str):
             self.return_attrs = [self.return_attrs]
-
+        
         if x_arr is not None:
             self.model.fit(x_arr, y_arr, *args, **kwargs)
         else:
             self.model.fit(y_arr, *args, **kwargs)
+        
+        self.models.append(self.model)
+   
+        # FIX: for single models and specific attribute returns
+        # # Transfer attribute from model to self
+        # for attr in self.return_attrs:
+            
+        #     if attr in ['self', 'model_self']:
+        #         setattr(self, 'model_self', self.model)
 
-        # Transfer attribute from model to self
-        for attr in self.return_attrs:
-            if attr in ['self', 'model_self']:
-                setattr(self, 'model_self', self.model)
-
-            if hasattr(self.model, attr):
-                setattr(self, attr, getattr(self.model, attr))
+        #     if hasattr(self.model, attr):
+        #         setattr(self, attr, getattr(self.model, attr))
