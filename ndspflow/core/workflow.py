@@ -33,19 +33,24 @@ class WorkFlow(Simulate, Transform, Model):
             need access to.
         """
         self.models = []
+        
         # Initialize sub-classes
         Simulate.__init__(self)
         Model.__init__(self)
 
         # Initialize self
         self.nodes = []
+        self.models = []
+
         self.node = None
+        self.mdoel = None
 
         self.y_arr = y_arr
         self.x_arr = x_arr
-        self.y_arr_fork = None
-        self.x_arr_fork = None
 
+        self.y_arr_stash = None
+        self.x_arr_stash = None
+        self.fork_inds = []
         
         self.results = None
         self.return_attrs = None
@@ -57,20 +62,16 @@ class WorkFlow(Simulate, Transform, Model):
 
     def run(self, return_attrs=None, n_jobs=-1, progress=None):
         """Run workflow."""
-        
+     
+        if self.fork_inds is not None:
+            self.y_arr_stash = [None] * len(self.fork_inds)
+            self.x_arr_stash = [None] * len(self.fork_inds)
+
         self.return_attrs = return_attrs
 
         if self.seeds is None:
-            for node in self.nodes:
-                self.node = node
-                if node[0] in ['simulate', 'transform']:
-                    getattr(self, 'run_' + node[0])(node[1], *node[2],
-                                                    **node[3], **node[4])
-                elif node[0] == 'fit':
-                    getattr(self, 'run_' + node[0])(self.x_arr, self.y_arr,
-                                                    *node[2], **node[3])
-                else:
-                    getattr(self, 'run_' + node[0])(*node[1], **node[2])
+            # FIX this for non-seeded simulations
+            pass
         else:
             n_jobs = cpu_count() if n_jobs == -1 else n_jobs
             with Pool(processes=n_jobs) as pool:
@@ -87,6 +88,9 @@ class WorkFlow(Simulate, Transform, Model):
             else:
                 self.results = _results
 
+        # Reset temporary attributes
+        self.model = None
+        self.node = None
 
     def _run(self, seed):
         """Sub-function to allow imap parallelziation.
@@ -108,43 +112,51 @@ class WorkFlow(Simulate, Transform, Model):
                 getattr(self, 'run_' + node[0])(self.x_arr, self.y_arr,
                                                 *node[2], **node[3])
             elif node[0] == 'fork':
-                getattr(self, 'run_' + node[0])()
+                getattr(self, 'run_' + node[0])(node[1])
             else:
                 getattr(self, 'run_' + node[0])(*node[1], **node[2])
-
-        if isinstance(self.return_attrs, str):
-            return getattr(self, self.return_attrs)
-        elif self.return_attrs is None:
-            return None
-        else:
+        
+        # if isinstance(self.return_attrs, str):
+        #     return getattr(self, self.return_attrs)
+        # elif self.return_attrs is None:
+        #     return None
+        # else:
             
-            if self.models is not None:
-                return self.models
-                
+        if self.models is not None:
+            return self.models
+
             # FIX: for single models and specific attribute returns
             # return [getattr(self, i) if i not in ['self', 'model_self'] 
             #         else getattr(self, 'model_self') for i in self.return_attrs]
     
-    def fork(self):
-        """Queue fork."""
-        self.nodes.append(['fork'])
+    def fork(self, ind=0):
+        """Queue fork.
+        
+        Parameters
+        ----------
+        ind : int
+            Reference to fork to rewind to.
+        """
+        if ind not in self.fork_inds:
+            self.fork_inds.append(ind)
 
-    def run_fork(self):
-        """Execute fork."""
+        self.nodes.append(['fork', ind])
 
-        if self.y_arr_fork is None:
-            # Save the current state of arrays for future access
-            self.y_arr_fork = self.y_arr.copy()
-        else:
-            # A fork has already occured, rewind to last fork
-            self.y_arr = self.y_arr_fork
-            self.y_arr_fork = None
+    def run_fork(self, ind=0):
+        """Execute fork.
+        
+        Parameters
+        ----------
+        ind : int
+            Reference to fork to rewind to.
+        """
 
-        # Same for x-axis array if defined
-        if self.x_arr is not None and self.x_arr_fork is None:
-            self.x_arr = None
-        elif self.x_arr is not None and self.x_arr_fork is None:
-            self.x_arr_fork = self.x_arr.copy()
-        elif self.x_arr is not None and self.x_arr_fork is not None:
-            self.x_arr = self.x_arr_fork
-            self.x_arr_fork = None
+        if self.y_arr_stash[ind] is None:
+            # Stash
+            self.y_arr_stash[ind] = self.y_arr.copy()
+            if self.x_arr is not None:
+                self.x_arr_stash[ind] = self.x_arr.copy()
+        elif self.y_arr_stash[ind] is not None:
+            # Pop
+            self.y_arr = self.y_arr_stash[ind]
+            self.x_arr = self.x_arr_stash[ind]
