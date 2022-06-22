@@ -1,13 +1,14 @@
 """Workflows."""
 
 from multiprocessing import Pool, cpu_count
-from functools import partial
-
+import matplotlib.pyplot as plt
 import numpy as np
+import networkx as nx
 
 from .sim import Simulate
 from .transform import Transform
 from .model import Model
+from .graph import create_graph
 
 
 class WorkFlow(Simulate, Transform, Model):
@@ -15,25 +16,31 @@ class WorkFlow(Simulate, Transform, Model):
 
     Attributes
     ----------
-    y_arr : ndarray
-        Y-axis values. Usually voltage or power.
-    x_arr : 1d array, optional, default: None
-        X-axis values. Usually time or frequency.
+    models : list
+        Fit model objects.
+    results : list, optional
+        Attributes from model classes.
+    graph : networkx.DiGraph
+        Directed workflow graph.
     nodes : list of list
         Contains order of operations as:
         [[node_type, function, *args, **kwargs], ...]
     """
     def __init__(self, y_arr=None, x_arr=None, **kwargs):
         """Initalize object.
-        
+
         Parameters
         ----------
+        y_arr : ndarray, optional, default: None
+            Y-axis values. Usually voltage or power.
+        x_arr : 1d array, optional, default: None
+            X-axis values. Usually time or frequency.
         **kwargs
             Additional keyword arguments that sub-classes
             need access to.
         """
         self.models = []
-        
+
         # Initialize sub-classes
         Simulate.__init__(self)
         Model.__init__(self)
@@ -43,7 +50,8 @@ class WorkFlow(Simulate, Transform, Model):
         self.models = []
 
         self.node = None
-        self.mdoel = None
+        self.model = None
+        self.graph = None
 
         self.y_arr = y_arr
         self.x_arr = x_arr
@@ -51,7 +59,7 @@ class WorkFlow(Simulate, Transform, Model):
         self.y_arr_stash = None
         self.x_arr_stash = None
         self.fork_inds = []
-        
+
         self.results = None
         self.return_attrs = None
 
@@ -61,8 +69,18 @@ class WorkFlow(Simulate, Transform, Model):
 
 
     def run(self, return_attrs=None, n_jobs=-1, progress=None):
-        """Run workflow."""
-     
+        """Run workflow.
+
+        Parameters
+        ----------
+        return_attrs : list of str
+            Model attributes to return
+        n_jobs : int, optional, default: -1
+            Number of jobs to run in parallel.
+        progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
+            Progress bar.
+        """
+
         if self.fork_inds is not None:
             self.y_arr_stash = [None] * len(self.fork_inds)
             self.x_arr_stash = [None] * len(self.fork_inds)
@@ -115,23 +133,23 @@ class WorkFlow(Simulate, Transform, Model):
                 getattr(self, 'run_' + node[0])(node[1])
             else:
                 getattr(self, 'run_' + node[0])(*node[1], **node[2])
-        
+
         # if isinstance(self.return_attrs, str):
         #     return getattr(self, self.return_attrs)
         # elif self.return_attrs is None:
         #     return None
         # else:
-            
+
         if self.models is not None:
             return self.models
 
             # FIX: for single models and specific attribute returns
-            # return [getattr(self, i) if i not in ['self', 'model_self'] 
+            # return [getattr(self, i) if i not in ['self', 'model_self']
             #         else getattr(self, 'model_self') for i in self.return_attrs]
-    
+
     def fork(self, ind=0):
         """Queue fork.
-        
+
         Parameters
         ----------
         ind : int
@@ -144,7 +162,7 @@ class WorkFlow(Simulate, Transform, Model):
 
     def run_fork(self, ind=0):
         """Execute fork.
-        
+
         Parameters
         ----------
         ind : int
@@ -160,3 +178,25 @@ class WorkFlow(Simulate, Transform, Model):
             # Pop
             self.y_arr = self.y_arr_stash[ind]
             self.x_arr = self.x_arr_stash[ind]
+
+    def plot(self, npad=2, ax=None, draw_kwargs=None):
+        """Plot workflow as a directed graph."""
+
+        if self.graph is None:
+            self.create_graph(npad)
+
+        if draw_kwargs is None:
+            draw_kwargs = {}
+            node_size = draw_kwargs.pop('node_size', 3000)
+            font_size = draw_kwargs.pop('font_size', 14)
+
+        if ax is None:
+            _, ax = plt.subplots(figsize=(12, 6))
+
+        pos = nx.get_node_attributes(self.graph, 'pos')
+
+        nx.draw(self.graph, pos=pos, with_labels=True,
+                node_size=node_size, font_size=font_size, **draw_kwargs)
+
+    def create_graph(self, npad=2):
+        self.graph = create_graph(self, npad)
