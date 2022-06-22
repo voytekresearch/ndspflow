@@ -142,6 +142,9 @@ def inspect_workflow(wf, npad=2):
             break
 
         # Determine nodes before forks
+        if 'sim' in name:
+            name = 'sim'
+
         if 'fork' in node_names[ind+1] and node_names[ind+1] not in node_forks.keys():
             node_forks[node_names[ind+1]] = {}
             node_forks[node_names[ind+1]]['base'] = name
