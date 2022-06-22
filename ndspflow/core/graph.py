@@ -59,8 +59,6 @@ def create_graph(wf, npad=2):
             # Fork logic is dealt with below
             break
         elif 'sim' not in name:
-
-
             graph.add_node(name, pos=(xpos, ypos))
             graph.add_edge(last_node, name)
             xpos += 1
@@ -72,28 +70,34 @@ def create_graph(wf, npad=2):
 
     # Withforking
     forks = sorted(list(node_forks.keys()))
+    base_shifts = {node_forks[i]['base']: len(node_forks[i]['branch_inds']) for i in node_forks}
+
     for fork in forks:
 
         if node_forks[fork]['base'] in list(graph.nodes):
             xpos, ypos = graph.nodes[node_forks[fork]['base']]['pos']
             xpos += 1
 
-        _ypos = ypos
         for i, ind in enumerate(node_forks[fork]['branch_inds']):
-
             base_node = node_forks[fork]['base']
             _xpos = xpos
 
             for j, lin_ind in enumerate(node_forks[fork]['range'][i]):
-                graph.add_node(node_names[lin_ind], pos=(_xpos, _ypos))
+
+                graph.add_node(node_names[lin_ind], pos=(_xpos, ypos))
                 if j == 0:
                     graph.add_edge(base_node, node_names[lin_ind])
                     last_node = node_names[lin_ind]
                 else:
                     graph.add_edge(last_node, node_names[lin_ind])
+
+                if node_names[lin_ind] in base_shifts.keys():
+                    ypos -= base_shifts[node_names[lin_ind]] - 1
+                    xpos += 1
+
                 _xpos += 1
 
-            _ypos -= 1 + node_forks[fork]['n_nodes'][i]
+            ypos -= 1
 
     return graph
 
@@ -162,16 +166,6 @@ def inspect_workflow(wf, npad=2):
                 branch_inds.append(ind+1)
 
         node_forks[fork_name]['branch_inds'] = branch_inds
-        node_forks[fork_name]['n_nodes'] = [0] * len(branch_inds)
-
-    # Get number of nodes per fork
-    base_names = {node_forks[i]['base']:i for i in node_forks}
-    for fork_name in node_forks.keys():
-        n_desc = [0] * len(node_forks[fork_name]['branch_inds'])
-        for i, ind in enumerate(node_forks[fork_name]['branch_inds']):
-            if node_names[ind] in base_names.keys():
-                n_branches = len(node_forks[base_names[node_names[ind]]]['branch_inds'])
-                node_forks[fork_name]['n_nodes'][i] = n_branches
 
     # Get number of additional linear nodes
     node_inds = {}
