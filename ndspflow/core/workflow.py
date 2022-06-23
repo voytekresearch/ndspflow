@@ -39,8 +39,6 @@ class WorkFlow(Simulate, Transform, Model):
             Additional keyword arguments that sub-classes
             need access to.
         """
-        self.models = []
-
         # Initialize sub-classes
         Simulate.__init__(self)
         Model.__init__(self)
@@ -51,6 +49,7 @@ class WorkFlow(Simulate, Transform, Model):
 
         self.node = None
         self.model = None
+
         self.graph = None
 
         self.y_arr = y_arr
@@ -80,6 +79,9 @@ class WorkFlow(Simulate, Transform, Model):
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
             Progress bar.
         """
+        # Reset pre-existing results
+        if self.results is not None:
+            self.results = None
 
         if self.fork_inds is not None:
             self.y_arr_stash = [None] * len(self.fork_inds)
@@ -134,18 +136,21 @@ class WorkFlow(Simulate, Transform, Model):
             else:
                 getattr(self, 'run_' + node[0])(*node[1], **node[2])
 
-        # if isinstance(self.return_attrs, str):
-        #     return getattr(self, self.return_attrs)
-        # elif self.return_attrs is None:
-        #     return None
-        # else:
-
-        if self.models is not None:
+        if isinstance(self.return_attrs, str):
+            # Single and same attribute extracted from all models
+            return [getattr(model,self.return_attrs) for model in self.models]
+        elif isinstance(self.return_attrs, list) and isinstance(self.return_attrs[0], str):
+            # 1d attributes, same for each model
+            return [[getattr(model, r) for r in self.return_attrs] for model in self.models]
+        elif isinstance(self.return_attrs, list) and isinstance(self.return_attrs[0], list):
+            # 2d attributes, unique for each model
+            return [{r: getattr(model, r) for r in self.return_attrs[i]}
+                     for i, model in enumerate(self.models)]
+        elif self.return_attrs is None and self.models is not None:
             return self.models
+        else:
+            return None
 
-            # FIX: for single models and specific attribute returns
-            # return [getattr(self, i) if i not in ['self', 'model_self']
-            #         else getattr(self, 'model_self') for i in self.return_attrs]
 
     def fork(self, ind=0):
         """Queue fork.

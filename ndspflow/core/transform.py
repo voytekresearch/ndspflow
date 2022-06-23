@@ -32,7 +32,7 @@ class Transform:
 
 
     def transform(self, func, *args, axis=None, **kwargs):
-        """Add a node to be excuted with run method.
+        """Queue transformation.
 
         Parameters
         ----------
@@ -50,7 +50,7 @@ class Transform:
 
 
     def run_transform(self, func, *args, axis=None, **kwargs):
-        """Apply a preprocessing function along axis.
+        """Execute transformation.
 
         Parameters
         ----------
@@ -143,7 +143,7 @@ class Transform:
 
         if not in_place:
             self.y_arr = np.squeeze(y_arr_reshape)
-        
+
 
 def func_wrapper(func, x_arr, y_arr, *args, **kwargs):
     """Wrap function to handle variable IO.
