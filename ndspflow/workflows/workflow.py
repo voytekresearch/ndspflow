@@ -7,11 +7,10 @@ import networkx as nx
 
 from .sim import Simulate
 from .transform import Transform
-from .model import Model
 from .graph import create_graph
 
 
-class WorkFlow(Simulate, Transform, Model):
+class WorkFlow(Simulate, Transform):
     """Workflow definition.
 
     Attributes
@@ -41,7 +40,6 @@ class WorkFlow(Simulate, Transform, Model):
         """
         # Initialize sub-classes
         Simulate.__init__(self)
-        Model.__init__(self)
 
         # Initialize self
         self.nodes = []
@@ -165,6 +163,7 @@ class WorkFlow(Simulate, Transform, Model):
 
         self.nodes.append(['fork', ind])
 
+
     def run_fork(self, ind=0):
         """Execute fork.
 
@@ -184,6 +183,7 @@ class WorkFlow(Simulate, Transform, Model):
             self.y_arr = self.y_arr_stash[ind]
             self.x_arr = self.x_arr_stash[ind]
 
+
     def plot(self, npad=2, ax=None, draw_kwargs=None):
         """Plot workflow as a directed graph."""
 
@@ -202,6 +202,7 @@ class WorkFlow(Simulate, Transform, Model):
 
         nx.draw(self.graph, pos=pos, with_labels=True,
                 node_size=node_size, font_size=font_size, **draw_kwargs)
+
 
     def create_graph(self, npad=2):
         self.graph = create_graph(self, npad)

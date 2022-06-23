@@ -3,13 +3,11 @@
 import numpy as np
 import pandas as pd
 
-from ndspflow.core.utils import limit_df
-from ndspflow.core.fit import fit_bycycle
-
 from ndspflow.motif.cluster import cluster_cycles
-
 from ndspflow.motif.utils import split_signal
 
+from .fit import fit_bycycle
+from .utils import limit_df
 
 
 def extract(fm, sig, fs, df_features=None, scaling=1, use_thresh=True, center='peak',

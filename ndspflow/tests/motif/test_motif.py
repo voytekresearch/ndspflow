@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from ndspflow.core.fit import fit_bycycle
+from ndspflow.motif.fit import fit_bycycle
 from ndspflow.motif import extract
 
 
