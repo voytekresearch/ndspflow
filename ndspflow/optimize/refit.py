@@ -245,6 +245,7 @@ def guess_params(freqs, powers, power_imf, ap_fit, inds):
     # Negative bounds to zero
     lower_bounds = [0 if bound < 0 else bound for bound in lower_bounds]
     upper_bounds = [0 if bound < 0 else bound for bound in upper_bounds]
+    guess = [0 if g < 0 else g for g in guess]
 
     bounds = [lower_bounds, upper_bounds]
 
