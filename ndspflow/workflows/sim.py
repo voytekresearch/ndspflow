@@ -17,7 +17,7 @@ class Simulate:
     nodes : list of list
         Contains order of operations as:
         [['simulate', function, axis, *args, **kwargs], ...]
-    y_arr : ndarray
+    y_array : ndarray
         Voltage time series.
     """
     def __init__(self, n_seconds=None, fs=None, seeds=None):
@@ -26,7 +26,7 @@ class Simulate:
         self.n_seconds = n_seconds
         self.fs = fs
         self.seeds = seeds
-        self.y_arr = None
+        self.y_array = None
         self.nodes = []
 
 
@@ -77,9 +77,9 @@ class Simulate:
         self_args = [self_arg for self_arg in [self.n_seconds, self.fs]
                      if self_arg is not None]
 
-        if self.y_arr is None:
-            self.y_arr = func(*self_args, *args, **kwargs)
+        if self.y_array is None:
+            self.y_array = func(*self_args, *args, **kwargs)
         else:
-            self.y_arr = operator(
-                self.y_arr, func(*self_args, *args, **kwargs)
+            self.y_array = operator(
+                self.y_array, func(*self_args, *args, **kwargs)
             )
