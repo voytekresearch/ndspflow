@@ -1,8 +1,10 @@
 """Workflows."""
 
+from functools import partial
+from itertools import product
+
 from multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
-from functools import partial
 
 import numpy as np
 import networkx as nx
@@ -67,12 +69,16 @@ class WorkFlow(Simulate, Transform):
             setattr(self, k, v)
 
 
-    def run(self, return_attrs=None, n_jobs=-1, progress=None):
+    def run(self, axis=None, return_attrs=None, n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
         ----------
-        return_attrs : list of str
+        axis : int or tuple of int, optional, default: None
+            Axis to pass to multiprocessing pools. Only used for 2d and greater.
+            Identical to numpy axis arguments. Defaults to -1 for independent
+            processing.
+        return_attrs : list of str, optional, default: None
             Model attributes to return
         n_jobs : int, optional, default: -1
             Number of jobs to run in parallel.
@@ -96,10 +102,23 @@ class WorkFlow(Simulate, Transform):
             self.y_array = None
             x_array = self.x_array
             self.x_array = None
-            # Track original shape
-            shape = y_array.shape[-1]
-            # Ensure 2d
-            y_array = y_array.reshape(-1, shape[-1])
+
+            # Track original shape to later reshape results
+            y_array_shape = y_array.shape
+
+            # Invert axis indices
+            axis = [axis] if isinstance(axis, int) else axis
+            axes = list(range(len(y_array_shape)))
+            axis = [axes[ax] for ax in axis]
+            axis = tuple([ax for ax in axes if ax not in axis])
+
+            # Reshape to 2d based on axis argument
+            #   this allows passing slices to mp pools
+            n_axes = len(axis)
+            y_array = np.moveaxis(y_array, axis, list(range(n_axes)))
+            newshape = [-1, *y_array.shape[n_axes:]]
+            y_array = y_array.reshape(newshape)
+
         elif self.seeds is not None:
             # Simulation workflow
             y_array = self.seeds

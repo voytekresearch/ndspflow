@@ -60,8 +60,14 @@ class Transform:
             Additonal positional arguments to func.
         axis : int or tuple of int, optional, default: None
             Axis to apply the function along. Only used for 2d and greater.
+            Identical to numpy axis arguments.
         **kwargs
             Addional keyword arguments to func.
+
+        Notes
+        -----
+        This is a slightly more flexible/faster version of np.apply_along_axis that
+        also handles tuples of axes and can be applied to any series of array operations.
         """
         # 1d case
         if self.y_array.ndim == 1:
@@ -74,12 +80,17 @@ class Transform:
         # Initialize slice indices using numpy-like axis argument
         axis = [axis] if isinstance(axis, int) else axis
 
-        # Invert the axis list to be numpy-like
-        axis = tuple([ax for ax in list(range(len(self.y_array.shape)))
-                      if ax not in axis])
+        # All axes
+        axes = list(range(len(self.y_array.shape)))
 
-        inds = [slice(None) if i not in axis else 0
-                for i in list(range(len(self.y_array.shape)))]
+        # Account for negative indices
+        axis = [axes[ax] for ax in axis]
+
+        # Invert the axis list to be numpy-like
+        axis = tuple([ax for ax in axes if ax not in axis])
+
+        inds = [slice(None) if ax not in axis else 0
+                for ax in list(range(len(self.y_array.shape)))]
 
         # Iterate over axis indices
         mod_shape = None
