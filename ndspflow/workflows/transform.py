@@ -74,6 +74,10 @@ class Transform:
         # Initialize slice indices using numpy-like axis argument
         axis = [axis] if isinstance(axis, int) else axis
 
+        # Invert the axis list to be numpy-like
+        axis = tuple([ax for ax in list(range(len(self.y_array.shape)))
+                      if ax not in axis])
+
         inds = [slice(None) if i not in axis else 0
                 for i in list(range(len(self.y_array.shape)))]
 
