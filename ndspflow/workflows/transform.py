@@ -41,7 +41,8 @@ class Transform:
         *args
             Additonal positional arguments to func.
         axis : int or tuple of int, optional, default: None
-            Axis to apply the function along. Only used for 2d and greater.
+           Axis to apply the function along 1d-slices. Only used for 2d and greater.
+            Identical to numpy axis arguments. None assumes transform requires 2d input.
         **kwargs
             Addional keyword arguements to func.
         """
@@ -49,7 +50,7 @@ class Transform:
                            {'axis': axis}, kwargs])
 
 
-    def run_transform(self, func, *args, axis=0, **kwargs):
+    def run_transform(self, func, *args, axis=None, **kwargs):
         """Execute transformation.
 
         Parameters
@@ -59,8 +60,8 @@ class Transform:
         *args
             Additonal positional arguments to func.
         axis : int or tuple of int, optional, default: None
-            Axis to apply the function along. Only used for 2d and greater.
-            Identical to numpy axis arguments.
+            Axis to apply the function along 1d-slices. Only used for 2d and greater.
+            Identical to numpy axis arguments. None assumes transform requires 2d input.
         **kwargs
             Addional keyword arguments to func.
 
@@ -69,8 +70,20 @@ class Transform:
         This is a slightly more flexible/faster version of np.apply_along_axis that
         also handles tuples of axes and can be applied to any series of array operations.
         """
+
+        # Get args and kwargs stored in attributes
+        args = list(args)
+
+        for ind in range(len(args)):
+            if isinstance(args[ind], str) and 'self' in args[ind]:
+                args[ind] = getattr(self, args[ind].split('.')[-1])
+
+        for k, v in kwargs.items():
+            if isinstance(v, str) and 'self' in v:
+                kwargs[k] = getattr(self, v.split('.')[-1])
+
         # 1d case
-        if self.y_array.ndim == 1:
+        if self.y_array.ndim == 1 or axis is None:
             self.x_array, self.y_array = func_wrapper(
                 func, self.x_array, self.y_array,
                 *args, **kwargs
@@ -128,6 +141,7 @@ class Transform:
                     for ind, iax in enumerate(self.y_array.shape):
 
                         if ind in axis:
+
                             new_shape.append(iax)
                             continue
 
@@ -140,6 +154,7 @@ class Transform:
                         else:
                             new_shape.append(1)
                             get_next = False
+
                     y_array_reshape = np.zeros(new_shape)
 
             if not in_place and y_array_mod is not None:

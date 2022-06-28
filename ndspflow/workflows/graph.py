@@ -33,28 +33,23 @@ def create_graph(wf, npad=2):
             nsplit = node_names[ind].split('form')
             node_names[ind] = nsplit[0] + nsplit[1]
 
-    for k in node_forks:
-        if 'simulate' in node_forks[k]['base']:
-            nsplit = node_forks[k]['base'].split('ulate')
-            node_forks[k]['base'] = nsplit[0] + nsplit[1]
-        elif 'transform' in node_forks[k]['base']:
-            nsplit = node_forks[k]['base'].split('form')
-            node_forks[k]['base'] = nsplit[0] + nsplit[1]
-
     # Linear nodes
     xpos = 0
     ypos = 0
-    has_sim_node = False
+    has_input_node = False
 
     for ind, name in enumerate(node_names):
 
-        if 'sim' in name and not has_sim_node:
+        if 'read' in name and not has_input_node:
+            graph.add_node('read', pos=(xpos, ypos))
+            xpos += 1
+            last_node = 'read'
+            has_input_node = True
+        elif 'sim' in name and not has_input_node:
             graph.add_node('sim', pos=(xpos, ypos))
             xpos += 1
-
             last_node = 'sim'
-            has_sim_node = True
-        ## Add conditional here for non-simulation based workflows
+            has_input_node = True
         elif 'fork' in name:
             # Fork logic is dealt with below
             break
@@ -69,6 +64,17 @@ def create_graph(wf, npad=2):
         return graph
 
     # Withforking
+    for k in node_forks:
+        if 'read' in node_forks[k]['base']:
+            nsplit = node_forks[k]['base'].split('_')
+            node_forks[k]['base'] = nsplit[0]
+        elif 'simulate' in node_forks[k]['base']:
+            nsplit = node_forks[k]['base'].split('ulate')
+            node_forks[k]['base'] = nsplit[0] + nsplit[1]
+        elif 'transform' in node_forks[k]['base']:
+            nsplit = node_forks[k]['base'].split('form')
+            node_forks[k]['base'] = nsplit[0] + nsplit[1]
+
     forks = sorted(list(node_forks.keys()))
     base_shifts = {node_forks[i]['base']: len(node_forks[i]['branch_inds']) for i in node_forks}
 
@@ -101,7 +107,6 @@ def create_graph(wf, npad=2):
 
     return graph
 
-
 def inspect_workflow(wf, npad=2):
     """Infers nodes and edges from a workflow.
 
@@ -130,7 +135,9 @@ def inspect_workflow(wf, npad=2):
         else:
             inds[name] += 1
 
-        if name != 'fork':
+        if 'read' in name:
+            node_names.append('read')
+        elif name != 'fork':
             node_names.append(name + str(inds[name]).zfill(npad))
         else:
             node_names.append(name + str(node[1]).zfill(npad))
@@ -146,9 +153,10 @@ def inspect_workflow(wf, npad=2):
             break
 
         # Determine nodes before forks
-        if 'sim' in name:
+        if 'read' in name:
+            name = 'read'
+        elif 'sim' in name:
             name = 'sim'
-
         if 'fork' in node_names[ind+1] and node_names[ind+1] not in node_forks.keys():
             node_forks[node_names[ind+1]] = {}
             node_forks[node_names[ind+1]]['base'] = name
@@ -156,7 +164,7 @@ def inspect_workflow(wf, npad=2):
 
     # No forking to figure out
     if len(node_forks.keys()) == 0:
-        return node_forks, None
+        return node_names, None
 
     # Get indices of branched nodes per fork
     for fork_name in node_forks.keys():

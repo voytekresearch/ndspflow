@@ -2,6 +2,7 @@
 
 from functools import partial
 from itertools import product
+from inspect import signature
 
 from multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
@@ -9,12 +10,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import networkx as nx
 
+from mne_bids import BIDSPath
+
+from .bids import BIDS
 from .sim import Simulate
 from .transform import Transform
+from .model import Model
 from .graph import create_graph
 
 
-class WorkFlow(Simulate, Transform):
+class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
 
     Attributes
@@ -29,6 +34,7 @@ class WorkFlow(Simulate, Transform):
         Contains order of operations as:
         [[node_type, function, *args, **kwargs], ...]
     """
+
     def __init__(self, y_array=None, x_array=None, **kwargs):
         """Initalize object.
 
@@ -39,11 +45,27 @@ class WorkFlow(Simulate, Transform):
         x_array : 1d array, optional, default: None
             X-axis values. Usually time or frequency.
         **kwargs
-            Additional keyword arguments that sub-classes
-            need access to.
+            Additional keyword arguments that sub-classes need access to.
+            See: {ndspflow.workflow.bids.BIDS, ndspflow.workflow.sim.Simulate}
         """
+
+        # Parse sub-class initalization kwargs
+        bids_kwargs = {}
+        bids_kwargs_names = list(signature(BIDS).parameters.keys())[:-1]
+        bids_kwargs_names.extend(list(signature(BIDSPath).parameters.keys()))
+
+        sim_kwargs = {}
+        sim_kwargs_names = list(signature(Simulate).parameters.keys())
+
+        for k, v in kwargs.items():
+            if k in bids_kwargs_names :
+               bids_kwargs[k] = v
+            elif k in sim_kwargs_names:
+                sim_kwargs[k] = v
+
         # Initialize sub-classes
-        Simulate.__init__(self)
+        Simulate.__init__(self, **sim_kwargs)
+        BIDS.__init__(self, **bids_kwargs)
 
         # Initialize self
         self.nodes = []
@@ -63,10 +85,6 @@ class WorkFlow(Simulate, Transform):
 
         self.results = None
         self.return_attrs = None
-
-        # Set sub-class attributes
-        for k, v in kwargs.items():
-            setattr(self, k, v)
 
 
     def run(self, axis=None, return_attrs=None, n_jobs=-1, progress=None):
@@ -123,17 +141,26 @@ class WorkFlow(Simulate, Transform):
             # Simulation workflow
             y_array = self.seeds
             x_array = None
+            node_type = 'sim'
+        elif self.bids_path is not None and self.y_array is None:
+            y_array = self.subjects
+            x_array = None
+            node_type = 'bids'
         else:
             raise ValueError('Undefined input.')
 
+        # Parallel execution
         n_jobs = cpu_count() if n_jobs == -1 else n_jobs
 
         with Pool(processes=n_jobs) as pool:
 
-            mapping = pool.imap(partial(self._run, x_array=x_array), y_array)
+            mapping = pool.imap(
+                partial(self._run, x_array=x_array, node_type=node_type),
+                y_array
+            )
 
             if progress is not None:
-                _results = list(progress(mapping, total=len(self.seeds),
+                _results = list(progress(mapping, total=len(y_array),
                                          desc='Running Workflow'))
             else:
                 _results = list(mapping)
@@ -147,7 +174,8 @@ class WorkFlow(Simulate, Transform):
         self.model = None
         self.node = None
 
-    def _run(self, input, x_array=None):
+
+    def _run(self, input, x_array=None, node_type=None):
         """Sub-function to allow imap parallelziation.
 
         Parameters
@@ -155,19 +183,25 @@ class WorkFlow(Simulate, Transform):
         input : int or 1d array
             Random seed to set if int.
             Signal to process if 1d array.
+        x_array : 1d array optional, default: None
+            X-axis values.
+        node_type : {None, 'bids', 'sim'}
         """
+
         # Reset de-instanced arrays
         self.x_array = x_array
 
-        if isinstance(input, int):
+        if node_type == 'sim':
             np.random.seed(input)
-        elif isinstance(input, np.ndarray):
+        else:
             self.y_array = input
 
         # Run nodes
         for node in self.nodes:
             self.node = node
-            if node[0] in ['simulate', 'transform']:
+            if node[0] == 'read_bids':
+                getattr(self, node[0])(self.y_array, node[1], node[2])
+            elif node[0] in ['simulate', 'transform']:
                 getattr(self, 'run_' + node[0])(node[1], *node[2],
                                                 **node[3], **node[4])
             elif node[0] == 'fit':
@@ -177,10 +211,9 @@ class WorkFlow(Simulate, Transform):
                 getattr(self, 'run_' + node[0])(node[1])
             else:
                 getattr(self, 'run_' + node[0])(*node[1], **node[2])
-
         if isinstance(self.return_attrs, str):
             # Single and same attribute extracted from all models
-            return [getattr(model,self.return_attrs) for model in self.models]
+            return [getattr(model, self.return_attrs) for model in self.models]
         elif isinstance(self.return_attrs, list) and isinstance(self.return_attrs[0], str):
             # 1d attributes, same for each model
             return [[getattr(model, r) for r in self.return_attrs] for model in self.models]
