@@ -1,6 +1,7 @@
 """Workflows."""
 
 from functools import partial
+from itertools import product
 from inspect import signature
 
 from multiprocessing import Pool, cpu_count
@@ -178,6 +179,23 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         else:
             self.results = _results
 
+        try:
+
+            # Squeeze extraneous dimensions
+            self.results = np.squeeze(np.array(self.results, dtype='object'))
+
+            # Pull models out of dummy result class
+            for inds in product(*[range(i) for i in self.results.shape]):
+                self.results[inds] = self.results[inds].result
+
+            # Convert results to list
+            self.results = self.results.tolist()
+
+        except AttributeError:
+            # Multiple models with unique return shapes  are ragged
+            #  and are output as dicts. Don't attempt to reshape.
+            pass
+
         # Reset temporary attributes
         self.model = None
         self.node = None
@@ -219,20 +237,22 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                                                 **node[3], **node[4])
             elif node[0] == 'fit':
                 getattr(self, 'run_' + node[0])(self.x_array, self.y_array,
-                                                *node[2], **node[3])
+                                                *node[2], axis=node[3], **node[4])
             elif node[0] == 'fork':
                 getattr(self, 'run_' + node[0])(node[1])
             else:
                 getattr(self, 'run_' + node[0])(*node[1], **node[2])
+
+        # Sort results
         if isinstance(self.return_attrs, str):
             # Single and same attribute extracted from all models
-            return [getattr(model, self.return_attrs) for model in self.models]
+            return [getattr(model.result, self.return_attrs) for model in self.models]
         elif isinstance(self.return_attrs, list) and isinstance(self.return_attrs[0], str):
             # 1d attributes, same for each model
-            return [[getattr(model, r) for r in self.return_attrs] for model in self.models]
+            return [[getattr(model.result, r) for r in self.return_attrs] for model in self.models]
         elif isinstance(self.return_attrs, list) and isinstance(self.return_attrs[0], list):
             # 2d attributes, unique for each model
-            return [{r: getattr(model, r) for r in self.return_attrs[i]}
+            return [{r: getattr(model.result, r) for r in self.return_attrs[i]}
                      for i, model in enumerate(self.models)]
         elif self.return_attrs is None and self.models is not None:
             return self.models

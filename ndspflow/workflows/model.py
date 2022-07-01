@@ -2,7 +2,7 @@
 
 from copy import copy
 from inspect import signature
-
+import numpy as np
 
 class Model:
     """Model wrapper.
@@ -25,13 +25,13 @@ class Model:
         self.return_attrs = None
 
 
-    def fit(self, model, *args, **kwargs):
+    def fit(self, model, *args, axis=None, **kwargs):
         """Queue fit."""
         self.model = model
-        self.nodes.append(['fit', model, args, kwargs])
+        self.nodes.append(['fit', model, args, axis, kwargs])
 
 
-    def run_fit(self, x_array, y_array, *args, **kwargs):
+    def run_fit(self, x_array, y_array, *args, axis=None, **kwargs):
         """Execute fit.
 
         Parameters
@@ -42,6 +42,8 @@ class Model:
             X-axis values. Usually time or frequency.
         *args
             Passed to the .fit method of the model class.
+        axis : int, optional, default: None
+            Axis to fit model over.
         **kwargs
             Passed to the .fit method of the model class.
 
@@ -73,21 +75,40 @@ class Model:
             self.model = None
             return
 
-        # Models expect 1d array inputs
-        if y_array.ndim >= 2:
-            y_array = y_array.reshape(-1, y_array.shape[-1])
+        # Apply model to specific axis of y-array
+        if axis is not None:
+
+            # Invert axis indices
+            axis = [axis] if isinstance(axis, int) else axis
+            axes = list(range(len(y_array.shape)))
+            axis = [axes[ax] for ax in axis]
+            axis = tuple([ax for ax in axes if ax not in axis])
+
+            # Reshape to 2d based on axis argument
+            #   this allows passing slices to mp pools
+            n_axes = len(axis)
+            y_array = np.moveaxis(y_array, axis, list(range(n_axes)))
+            newshape = [-1, *y_array.shape[n_axes:]]
+            y_array = y_array.reshape(newshape)
+
+            model = []
+            for y in y_array:
+                _model = copy(self.model)
+                if x_array is not None:
+                    _model.fit(x_array, y, *args, **kwargs)
+                else:
+                    _model.fit(y, *args, **kwargs)
+                model.append(_model)
+
+            self.model = model
         else:
-            y_array = y_array.reshape(1, y_array.shape[0])
-
-        for y in y_array:
-            _model = copy(self.model)
             if x_array is not None:
-                _model.fit(x_array, y, *args, **kwargs)
+                self.model.fit(x_array, y_array, *args, **kwargs)
             else:
-                _model.fit(y, *args, **kwargs)
+                self.model.fit(y_array, *args, **kwargs)
 
-            self.models.append(_model)
-
+        self.models.append(Result(self.model))
+        self.model = None
 
 class Merge:
     """Dummy model used to merge arrays.
@@ -109,3 +130,15 @@ class Merge:
         elif len(args) == 2:
              self._x_array = args[0]
              self._y_array = args[1]
+
+class Result:
+    """Class to allow numpy reshaping.
+
+    Notes
+    -----
+    Numpy sometimes does not like mixed class types in
+    object arrays. This prevent invalid __array_struct__
+    and allows for easy reshaping of results.
+    """
+    def __init__(self, result):
+        self.result = result
