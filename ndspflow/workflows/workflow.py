@@ -14,7 +14,7 @@ from mne_bids import BIDSPath
 from .bids import BIDS
 from .sim import Simulate
 from .transform import Transform
-from .model import Model
+from .model import Model, Merge
 from .graph import create_graph
 
 
@@ -263,6 +263,39 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             # Pop
             self.y_array = self.y_array_stash[ind]
             self.x_array = self.x_array_stash[ind]
+
+
+    def merge(self, n_jobs=-1, progress=None):
+        """Execute the workflow and extract arrays.
+
+        Parameters
+        ----------
+        n_jobs : int, optional, default: -1
+            Number of jobs to run in parallel.
+        progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
+            Progress bar.
+
+        Notes
+        -----
+        There should be not .fit methods defined when .merge is called, this method
+        merges the array output form BIDS, simulations, and transformations together.
+        """
+        self.fit(Merge())
+        self.run(n_jobs=n_jobs, progress=progress)
+
+        # Extract y_arrays from dummy models
+        dmodels = np.squeeze(np.array(self.results, dtype='object'))
+        orig_shape = dmodels.shape
+
+        dmodels = dmodels.reshape(-1)
+
+        y_array = np.array([m._y_array for m in dmodels])
+        self.y_array = y_array.reshape(*orig_shape, y_array.shape[-1])
+
+        self.x_array = dmodels[0]._x_array
+
+        # Clear results
+        self.results = None
 
 
     def plot(self, npad=2, ax=None, draw_kwargs=None):

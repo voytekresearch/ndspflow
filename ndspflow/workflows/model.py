@@ -49,7 +49,6 @@ class Model:
         -----
         Pass 'self' to any arg or kwarg to infer its value from a instance variable.
         """
-
         self.model = self.node[1]
 
         if isinstance(self.return_attrs, str):
@@ -80,3 +79,25 @@ class Model:
                 _model.fit(y, *args, **kwargs)
 
             self.models.append(_model)
+
+
+class Merge:
+    """Dummy model used to merge arrays.
+
+    Notes
+    -----
+    The .fit method is a pass-through that collects
+    the y-array into a temporary attribute.
+    """
+
+    def __init__(self):
+        self._x_array = None
+        self._y_array = None
+
+    def fit(self, *args):
+
+        if len(args) == 1:
+            self._y_array = args[0]
+        elif len(args) == 2:
+             self._x_array = args[0]
+             self._y_array = args[1]
