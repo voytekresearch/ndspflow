@@ -1,7 +1,6 @@
 """Workflows."""
 
 from functools import partial
-from itertools import product
 from inspect import signature
 
 from multiprocessing import Pool, cpu_count
@@ -156,7 +155,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
             mapping = pool.imap(
                 partial(self._run, x_array=x_array, node_type=node_type),
-                y_array
+                zip(y_array, np.arange(len(y_array)))
             )
 
             if progress is not None:
@@ -183,13 +182,18 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         input : int or 1d array
             Random seed to set if int.
             Signal to process if 1d array.
-        x_array : 1d array optional, default: None
+        x_array : 1d array, optional, default: None
             X-axis values.
         node_type : {None, 'bids', 'sim'}
+            Type of node.
         """
 
         # Reset de-instanced arrays
         self.x_array = x_array
+
+        # Unpack process index
+        self._pind = input[1]
+        input = input[0]
 
         if node_type == 'sim':
             np.random.seed(input)
