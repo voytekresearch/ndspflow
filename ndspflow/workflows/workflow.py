@@ -99,7 +99,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Identical to numpy axis arguments. Defaults to -1 for independent
             processing.
         return_attrs : list of str, optional, default: None
-            Model attributes to return
+            Model attributes to return.
         n_jobs : int, optional, default: -1
             Number of jobs to run in parallel.
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
@@ -294,11 +294,13 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.x_array = self.x_array_stash[ind]
 
 
-    def merge(self, n_jobs=-1, progress=None):
+    def merge(self, return_attrs=None, n_jobs=-1, progress=None):
         """Execute the workflow and extract arrays.
 
         Parameters
         ----------
+        return_attrs : list of str, optional, default: None
+            Model attributes to return.
         n_jobs : int, optional, default: -1
             Number of jobs to run in parallel.
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
@@ -309,19 +311,27 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         There should be not .fit methods defined when .merge is called, this method
         merges the array output form BIDS, simulations, and transformations together.
         """
-        self.fit(Merge())
-        self.run(n_jobs=n_jobs, progress=progress)
+        if self.nodes[-1][0] == 'fit':
+            # Merge all node, including fit nodes
+            self.run(return_attrs=return_attrs, n_jobs=n_jobs, progress=progress)
+            self.x_array = None
+            self.y_array = self.results.astype(float)
+        else:
+            # Merge input & transform nodes
 
-        # Extract y_arrays from dummy models
-        dmodels = np.squeeze(np.array(self.results, dtype='object'))
-        orig_shape = dmodels.shape
+            self.fit(Merge())
+            self.run(n_jobs=n_jobs, progress=progress)
 
-        dmodels = dmodels.reshape(-1)
+             # Extract y_arrays from dummy models
+            dmodels = np.squeeze(np.array(self.results, dtype='object'))
+            orig_shape = dmodels.shape
 
-        y_array = np.array([m._y_array for m in dmodels])
-        self.y_array = y_array.reshape(*orig_shape, y_array.shape[-1])
+            dmodels = dmodels.reshape(-1)
 
-        self.x_array = dmodels[0]._x_array
+            y_array = np.array([m.results for m in dmodels])
+            self.y_array = y_array.reshape(*orig_shape, y_array.shape[-1])
+
+            self.x_array = dmodels[0]._x_array
 
         # Clear results
         self.results = None
