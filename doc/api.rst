@@ -15,118 +15,81 @@ Table of Contents
 
 .. currentmodule::ndspflow
 
-Workflows
-~~~~~~~~~
+Workflow
+~~~~~~~~
 
-Create a nipype workflow connecting input, FOOOF and Bycycle nodes.
+Core object for defining and executing analysis workflows.
+This class sub-classes :class:`~workflow.BIDS`, :class:`~workflow.Simulation`,
+:class:`~workflow.Transform`, and :class:`~workflow.Model` classes.
 
-.. currentmodule:: ndspflow.core.workflows
+.. currentmodule:: ndspflow.workflows
 
 .. autosummary::
     :toctree: generated/
 
-    create_workflow
-    wf_fooof
-    wf_bycycle
+    WorkFlow
 
-Interfaces
+BIDS
+~~~~
+
+An interface for reading BIDS organized signals into a :class:`~workflow.WorkFlow`.
+
+.. autosummary::
+    :toctree: generated/
+
+    BIDS
+
+Simulation
 ~~~~~~~~~~
 
-Input, output, and runtime definitions for the FOOOF and Bycycle nodes.
-
-.. currentmodule:: ndspflow.core.interfaces
+An interface allowing simulated signal inputs into a :class:`~workflow.WorkFlow`.
 
 .. autosummary::
     :toctree: generated/
 
-    FOOOFNodeInputSpec
-    FOOOFNodeOutputSpec
-    FOOOFNode
-    BycycleNodeInputSpec
-    BycycleNodeOutputSpec
-    BycycleNode
+    Simulate
 
-Model Fitting
-~~~~~~~~~~~~~
+
+Transformations
+~~~~~~~~~~~~~~~
+
+An interface for defining any (series of) array transform of the input data within a :class:`~workflow.WorkFlow`.
+
+.. autosummary::
+    :toctree: generated/
+
+    Transform
+
+Models
+~~~~~~
+
+An wrapper for any model class with a fit method.
+
+.. autosummary::
+    :toctree: generated/
+
+    Model
+
+
+Graphs
+~~~~~~
+
+Functions to generate workflow graphs using networkx.
+
+.. autosummary::
+    :toctree: generated/
+
+    create_graph
+    inspect_workflow
+
+
+Models
+~~~~~~
 
 Fits FOOOF and Bycycle models for 1D, 2D or 3D arrays.
-
-.. currentmodule:: ndspflow.core.fit
 
 .. autosummary::
     :toctree: generated/
 
     fit_fooof
     fit_bycycle
-
-Plotting
-~~~~~~~~
-
-Create FOOOF and Bycycle plots that will be embedded in html reports.
-
-.. currentmodule:: ndspflow.plts.fooof
-
-.. autosummary::
-    :toctree: generated/
-
-    plot_fm
-    plot_fg
-    plot_fgs
-
-.. currentmodule:: ndspflow.plts.bycycle
-
-.. autosummary::
-    :toctree: generated/
-
-    plot_bm
-    plot_bg
-    plot_bgs
-
-Reports
-~~~~~~~
-
-Generate analysis html reports.
-
-.. currentmodule:: ndspflow.reports.html
-
-.. autosummary::
-    :toctree: generated/
-
-    generate_report
-    generate_header
-    generate_fooof_report
-    generate_bycycle_report
-
-
-Input/Output
-~~~~~~~~~~~~
-
-Check input and output directories and model saving.
-
-.. currentmodule:: ndspflow.io.paths
-
-.. autosummary::
-    :toctree: generated/
-
-    check_dirs
-    clean_mkdir
-
-.. currentmodule:: ndspflow.io.save
-
-.. autosummary::
-    :toctree: generated/
-
-    save_fooof
-    save_bycycle
-
-Command-Line Interface
-~~~~~~~~~~~~~~~~~~~~~~
-
-Parses analysis arguments/settings from command-line calls.
-
-.. currentmodule:: ndspflow.cli.ndspflow_run
-
-.. autosummary::
-    :toctree: generated/
-
-    get_parser

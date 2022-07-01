@@ -5,7 +5,6 @@
     :name: rst-gallery
     :glob:
 
-    plot_1_quickstart
-    plot_2_fooof
-    plot_3_bycycle
-    plot_4_motifs
+    plot_1_workflows
+    plot_2_bids
+    plot_3_sklearn

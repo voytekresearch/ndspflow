@@ -32,7 +32,7 @@ class Simulate:
 
 
     def simulate(self, func, *args, operator='add', **kwargs):
-        """Add a simulation node.
+        """Queue simulation.
 
         Parameters
         ----------
@@ -70,7 +70,7 @@ class Simulate:
 
 
     def run_simulate(self, func, *args, operator='add', **kwargs):
-        """Simulate aperiodic signal.
+        """Queue simulation.
 
         Parameters
         ----------

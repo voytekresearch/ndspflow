@@ -318,19 +318,16 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.y_array = self.results.astype(float)
         else:
             # Merge input & transform nodes
-
             self.fit(Merge())
             self.run(n_jobs=n_jobs, progress=progress)
 
-             # Extract y_arrays from dummy models
+            # Extract y_arrays from dummy models
             dmodels = np.squeeze(np.array(self.results, dtype='object'))
             orig_shape = dmodels.shape
 
             dmodels = dmodels.reshape(-1)
 
-            y_array = np.array([m.results for m in dmodels])
-            self.y_array = y_array.reshape(*orig_shape, y_array.shape[-1])
-
+            self.y_array = np.array([m._y_array for m in dmodels])
             self.x_array = dmodels[0]._x_array
 
         # Clear results
