@@ -85,6 +85,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.results = None
         self.return_attrs = None
 
+        self._merged_fit = False
+
 
     def run(self, axis=None, return_attrs=None, n_jobs=-1, progress=None):
         """Run workflow.
@@ -105,6 +107,13 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         # Reset pre-existing results
         if self.results is not None:
             self.results = None
+
+        if self._merged_fit:
+            # Workflow has been ran, now fit resulting y_array
+            x_array = self.x_array
+            self.x_array = None
+            self._run((self.y_array, 0), x_array=x_array)
+            return
 
         if self.fork_inds is not None:
             self.y_array_stash = [None] * len(self.fork_inds)
@@ -296,6 +305,24 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         # Clear results
         self.results = None
+
+        # This is a hack to prevent nodes from double executing
+        #   this should be changed to tracking which nodes have
+        #   been previously ran.
+        self.nodes = []
+
+        # Prevents passing to another mp pool
+        self._merged_fit = True
+
+
+    def drop_x(self):
+        """Clear x-array values."""
+        self.x_array = None
+
+
+    def drop_y(self):
+        """Clear y-array values."""
+        self.y_array = None
 
 
     def plot(self, npad=2, ax=None, draw_kwargs=None):

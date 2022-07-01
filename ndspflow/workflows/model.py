@@ -49,6 +49,7 @@ class Model:
         -----
         Pass 'self' to any arg or kwarg to infer its value from a instance variable.
         """
+
         self.model = self.node[1]
 
         if isinstance(self.return_attrs, str):
@@ -64,6 +65,13 @@ class Model:
         for k, v in kwargs.items():
             if isinstance(v, str) and 'self' in v:
                 kwargs[k] = getattr(self, v.split('.')[-1])
+
+        # Fit follwoing merge assumes current state of y-array is required
+        if hasattr(self, '_merged_fit') and self._merged_fit:
+            self.model.fit(y_array, *args, **kwargs)
+            self.results = self.model
+            self.model = None
+            return
 
         # Models expect 1d array inputs
         if y_array.ndim >= 2:
