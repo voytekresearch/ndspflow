@@ -12,6 +12,7 @@ jobs:
       - python/load-cache
       - python/install-deps
       - python/save-cache
+      - run: pip install pytest pytest-cov
       - run:
           command: python -m pytest --cov=ndspflow --cov-report=xml:ndspflow/tests/results.xml ndspflow/tests
           name: Tests

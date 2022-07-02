@@ -1,5 +1,6 @@
 """Motif class object."""
 
+import warnings
 from functools import partial
 from multiprocessing import Pool, cpu_count
 
@@ -9,11 +10,13 @@ import numpy as np
 from neurodsp.plts import plot_time_series, plot_power_spectra
 from neurodsp.spectral import compute_spectrum
 
-from ndspflow.core.fit import fit_bycycle
-from ndspflow.motif.burst import motif_burst_detection
-
 from fooof import FOOOFGroup
+
+from bycycle.features import compute_features
+from bycycle.group.features import compute_features_2d, compute_features_3d
 from bycycle.group.utils import progress_bar
+
+from ndspflow.motif.burst import motif_burst_detection
 
 
 class Motif:
@@ -546,3 +549,77 @@ def _motif_proxy(args, fs, init_kwargs, ttype):
     mtf.fit(fm, sig, fs, ttype=ttype)
 
     return mtf
+
+
+def fit_bycycle(sig, fs, f_range, center_extrema='peak', burst_method='cycles',
+                threshold_kwargs=None, find_extrema_kwargs=None, axis=0, verbose=False, n_jobs=-1):
+    """A generalized Bycycle compute_features function to handle 1d, 2d, or 3d arrays.
+
+    Parameters
+    ----------
+    sig : 1d array
+        Time series.
+    fs : float
+        Sampling rate, in Hz.
+    f_range : tuple of (float, float)
+        Frequency range for narrowband signal of interest (Hz).
+    center_extrema : {'peak', 'trough'}
+        The center extrema in the cycle.
+    burst_method : string, optional, default: 'cycles'
+        Method for detecting bursts.
+    threshold_kwargs : dict, optional, default: None
+        Feature thresholds for cycles to be considered bursts.
+    find_extrema_kwargs : dict, optional, default: None
+        Keyword arguments for function to find peaks an troughs (``find_extrema``)
+        to change filter Parameters or boundary. By default, it sets the filter length to three
+        cycles of the low cutoff frequency (``f_range[0]``).
+    n_jobs : int, optional, default: -1
+        The number of jobs, one per cpu, to compute features in parallel.
+    verbose : bool, optional, default: False
+        Suppress warnings when False.
+
+    Returns
+    -------
+    df_features : pandas.DataFrame
+        A dataframe containing cycle features.
+
+    Notes
+    -----
+    See bycycle documentation for more details.
+    """
+
+    if not verbose:
+        warnings.simplefilter("ignore")
+
+    threshold_kwargs = {} if not threshold_kwargs else threshold_kwargs
+    find_extrema_kwargs = {} if not find_extrema_kwargs else find_extrema_kwargs
+
+    compute_kwargs = dict(
+        center_extrema=center_extrema, burst_method=burst_method,
+        threshold_kwargs=threshold_kwargs, find_extrema_kwargs=find_extrema_kwargs
+    )
+
+    if sig.ndim == 1:
+
+        df_features = compute_features(sig, fs, f_range, **compute_kwargs)
+
+    elif sig.ndim == 2:
+
+        df_features = compute_features_2d(
+            sig, fs, f_range, compute_features_kwargs=compute_kwargs,
+            axis=axis, n_jobs=n_jobs
+        )
+
+    elif sig.ndim == 3:
+
+        df_features = compute_features_3d(
+            sig, fs, f_range, compute_features_kwargs=compute_kwargs,
+            axis=axis, n_jobs=n_jobs
+        )
+
+    else:
+        raise ValueError('The sig argument must specify a 1d, 2d, or 3d array.')
+
+    warnings.simplefilter("always")
+
+    return df_features

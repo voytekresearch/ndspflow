@@ -1,11 +1,12 @@
 """Tests for the Motif class."""
 
-from pytest import raises
+from pytest import raises, mark, param
 
 import numpy as np
+import pandas as pd
 
 from ndspflow.motif import Motif, MotifGroup
-from ndspflow.motif.fit import MotifResult, _motif_proxy
+from ndspflow.motif.fit import MotifResult, fit_bycycle, _motif_proxy
 
 
 def test_motif():
@@ -102,17 +103,6 @@ def test_motif_decompose(sim_sig, fooof_outs):
         motif.decompose()
 
 
-
-def test_motif_plot(sim_sig, fooof_outs):
-
-    sig = sim_sig['sig']
-    fs = sim_sig['fs']
-    fm = fooof_outs['fm']
-
-    motif = Motif()
-    motif.fit(fm, sig, fs)
-    motif.plot(show=False)
-
 def test_motif_plot_decompose(sim_sig, fooof_outs):
 
     sig = sim_sig['sig']
@@ -173,3 +163,31 @@ def test_motif_proxy(sim_sig, fooof_outs):
     motif = _motif_proxy([sig, fm], fs, {}, 'affine')
 
     assert isinstance(motif, Motif)
+
+
+@mark.parametrize("ndim", [1, 2, 3, param(4, marks=mark.xfail)])
+def test_fit_bycycle(ndim, test_data):
+
+    # Get signals from fixture
+    if ndim == 1:
+        sig = test_data['sig_1d']
+    elif ndim == 2:
+        sig = test_data['sig_2d']
+    elif ndim == 3:
+        sig = test_data['sig_3d']
+    elif ndim == 4:
+        sig = test_data['sig_4d']
+
+    # Fit
+    fs = test_data['fs']
+    f_range = test_data['f_range']
+    df = fit_bycycle(sig, fs, f_range)
+
+    if ndim == 1:
+        assert isinstance(df, pd.DataFrame)
+
+    elif ndim == 2:
+        assert isinstance(df[0], pd.DataFrame)
+
+    elif ndim == 3:
+        assert isinstance(df[0][0], pd.DataFrame)

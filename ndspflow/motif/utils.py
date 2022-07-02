@@ -103,3 +103,47 @@ def motif_to_cycle(motif, cycle, ttype='affine'):
     motif_trans = tfunc(tform.params)(src).T[1]
 
     return motif_trans, tform
+
+
+def limit_df(df_features, fs, f_range, only_bursts=True):
+    """Limit a bycycle dataframe to a frequency range.
+    Parameters
+    ----------
+    df_features : pandas.DataFrame
+        A dataframe containing cycle features.
+    fs : float
+        Sampling rate, in Hz.
+    f_range : tuple of (float, float)
+        The frequency range of interest.
+    only_bursts : bool, optional, default: True
+        Limits the dataframe to bursting cycles when True.
+    Returns
+    -------
+    df_filt : pandas.DataFrame
+        A dataframe containing cycle features within ``f_range``.
+    """
+
+    # Filter by bursting cycles if requested
+    if only_bursts:
+        df_filt = df_features.iloc[np.where(df_features['is_burst'] == True)[0]].copy()
+    else:
+        df_filt = df_features.copy()
+
+    # Get periods
+    periods = df_filt['period'].values / fs
+
+    # Convert periods to freqs
+    freqs = 1 / periods
+    df_filt['freqs'] = freqs
+
+    # Get cycles within range
+    cycles = np.where((freqs >= f_range[0]) & (freqs < f_range[1]))[0]
+    df_filt = df_filt.iloc[cycles]
+
+    # Return nan if no cycles are found within freq range
+    if len(df_filt) == 0:
+
+        return np.nan
+
+    return df_filt
+

@@ -7,10 +7,9 @@ from neurodsp.sim import sim_combined
 from neurodsp.spectral import compute_spectrum
 
 from ndspflow.tests.settings import (N_SECONDS, FS, EXP, FREQ, F_RANGE)
-from ndspflow.core.fit import fit_fooof, fit_bycycle
-from ndspflow.plts.fooof import plot_fm, plot_fg, plot_fgs
-from ndspflow.plts.bycycle import plot_bm
+from ndspflow.motif.fit import fit_bycycle
 
+from fooof import FOOOF, FOOOFGroup
 
 @pytest.fixture(scope='module')
 def sim_sig():
@@ -59,21 +58,18 @@ def fooof_outs(test_data):
     # Load data
     powers_1d = test_data['powers_1d']
     powers_2d = test_data['powers_2d']
-    powers_3d = test_data['powers_3d']
+
     freqs = test_data['freqs']
     f_range = test_data['f_range']
 
     # Fit
-    fm = fit_fooof(freqs, powers_1d, f_range, {'verbose': False}, 1)
-    fg = fit_fooof(freqs, powers_2d, f_range, {'verbose': False}, 1)
-    fgs = fit_fooof(freqs, powers_3d, f_range, {'verbose': False}, 1)
+    fm = FOOOF(verbose=False)
+    fm.fit(freqs, powers_1d, f_range)
 
-    # Plot
-    fm_graph = plot_fm(fm).to_html(full_html=False, include_plotlyjs=False)
-    fg_graph = plot_fg(fg, ['' for i in range(len(fg))])
-    fgs_graph = plot_fgs(fgs, ['' for i in range(int(len(fgs)*len(fgs[0])))])
+    fg = FOOOFGroup(verbose=False)
+    fg.fit(freqs, powers_2d, f_range)
 
-    yield dict(fm=fm, fm_graph=fm_graph, fg=fg, fg_graph=fg_graph, fgs=fgs, fgs_graph=fgs_graph)
+    yield dict(fm=fm, fg=fg)
 
 
 @pytest.fixture(scope='module')
@@ -95,10 +91,7 @@ def bycycle_outs(test_data):
     bg = fit_bycycle(sig_2d, fs, f_range, threshold_kwargs=threshold_kwargs)
     bgs = fit_bycycle(sig_3d, fs, f_range, threshold_kwargs=threshold_kwargs)
 
-    # Plot
-    bm_graph = plot_bm(bm, sig_1d, fs, threshold_kwargs, 0)
-
-    yield dict(bm=bm, bm_graph=bm_graph, bg=bg, bgs=bgs, threshold_kwargs=threshold_kwargs)
+    yield dict(bm=bm, bg=bg, bgs=bgs)
 
 
 @pytest.fixture(scope='module')
