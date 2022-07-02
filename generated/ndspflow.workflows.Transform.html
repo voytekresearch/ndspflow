@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>ndspflow.workflows.Transform &#8212; ndspflow 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css" />
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+<meta charset='utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1'>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script type="text/javascript" src="../_static/js/jquery-1.12.4.min.js"></script>
+<script type="text/javascript" src="../_static/js/jquery-fix.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="../_static/bootstrap-sphinx.js"></script>
+
+  </head><body>
+
+  <div id="navbar" class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="../index.html">
+          ndspflow</a>
+        <span class="navbar-text navbar-version pull-left"><b></b></span>
+      </div>
+
+        <div class="collapse navbar-collapse nav-collapse">
+          <ul class="nav navbar-nav">
+            
+                <li><a href="../api.html">API</a></li>
+                <li><a href="../tutorials/index.html">Tutorials</a></li>
+                <li><a href="https://github.com/voytekresearch/ndspflow">GitHub</a></li>
+            
+            
+              <li class="dropdown globaltoc-container">
+  <a role="button"
+     id="dLabelGlobalToc"
+     data-toggle="dropdown"
+     data-target="#"
+     href="../index.html">Site <b class="caret"></b></a>
+  <ul class="dropdown-menu globaltoc"
+      role="menu"
+      aria-labelledby="dLabelGlobalToc"></ul>
+</li>
+              
+            
+            
+            
+            
+            
+              <li class="hidden-sm"></li>
+            
+          </ul>
+
+          
+            
+<form class="navbar-form navbar-right" action="../search.html" method="get">
+ <div class="form-group">
+  <input type="text" name="q" class="form-control" placeholder="Search" />
+ </div>
+  <input type="hidden" name="check_keywords" value="yes" />
+  <input type="hidden" name="area" value="default" />
+</form>
+          
+        </div>
+    </div>
+  </div>
+
+<div class="container">
+  <div class="row">
+    <div class="body col-md-12 content" role="main">
+      
+  <section id="ndspflow-workflows-transform">
+<h1>ndspflow.workflows.Transform<a class="headerlink" href="#ndspflow-workflows-transform" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="ndspflow.workflows.Transform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ndspflow.workflows.</span></span><span class="sig-name descname"><span class="pre">Transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_array</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_array</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/transform.html#Transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.Transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transformation class.</p>
+<p class="rubric">Notes</p>
+<ul class="simple">
+<li><p>If x_array is explicitly defined, func is called as func(x_array, y_array).</p></li>
+<li><p>If func returns two parameters, they are set as (x_array, y_array).</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Attributes</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y_array</strong><span class="classifier">ndarray</span></dt><dd><p>Y-axis values. Usually voltage or power.</p>
+</dd>
+<dt><strong>x_array</strong><span class="classifier">1d array, optional, default: None</span></dt><dd><p>X-axis values. Usually time or frequency.</p>
+</dd>
+<dt><strong>nodes</strong><span class="classifier">list of list</span></dt><dd><p>Contains order of operations as:
+[[function, axis, <a href="#id1"><span class="problematic" id="id2">*</span></a>args, <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs], …]</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="ndspflow.workflows.Transform.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_array</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_array</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/transform.html#Transform.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.Transform.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initalize object.</p>
+</dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="autosummary longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.Transform.__init__" title="ndspflow.workflows.Transform.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>([y_array, x_array])</p></td>
+<td><p>Initalize object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.Transform.run_transform" title="ndspflow.workflows.Transform.run_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_transform</span></code></a>(func, *args[, axis])</p></td>
+<td><p>Execute transformation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.Transform.transform" title="ndspflow.workflows.Transform.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(func, *args[, axis])</p></td>
+<td><p>Queue transformation.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="ndspflow.workflows.Transform.run_transform">
+<span class="sig-name descname"><span class="pre">run_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/transform.html#Transform.run_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.Transform.run_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute transformation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>func</strong><span class="classifier">function</span></dt><dd><p>Preprocessing function (e.g. filter).</p>
+</dd>
+<dt><strong>*args</strong></dt><dd><p>Additonal positional arguments to func.</p>
+</dd>
+<dt><strong>axis</strong><span class="classifier">int or tuple of int, optional, default: None</span></dt><dd><p>Axis to apply the function along 1d-slices. Only used for 2d and greater.
+Identical to numpy axis arguments. None assumes transform requires 2d input.</p>
+</dd>
+<dt><strong>**kwargs</strong></dt><dd><p>Addional keyword arguments to func.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This is a slightly more flexible/faster version of np.apply_along_axis that
+also handles tuples of axes and can be applied to any series of array operations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ndspflow.workflows.Transform.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/transform.html#Transform.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.Transform.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queue transformation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>func</strong><span class="classifier">function</span></dt><dd><p>Preprocessing function (e.g. filter).</p>
+</dd>
+<dt><strong>*args</strong></dt><dd><p>Additonal positional arguments to func.</p>
+</dd>
+<dt><strong>axis</strong><span class="classifier">int or tuple of int, optional, default: None</span></dt><dd><dl class="simple">
+<dt>Axis to apply the function along 1d-slices. Only used for 2d and greater.</dt><dd><p>Identical to numpy axis arguments. None assumes transform requires 2d input.</p>
+</dd>
+</dl>
+</dd>
+<dt><strong>**kwargs</strong></dt><dd><p>Addional keyword arguements to func.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+    </div>
+      
+  </div>
+</div>
+<footer class="footer">
+  <div class="container">
+    <p class="pull-right">
+      <a href="#">Back to top</a>
+      
+    </p>
+    <p>
+        &copy; Copyright 2020-2022, VoytekLab.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>
