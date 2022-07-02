@@ -55,10 +55,5 @@ setup(
     tests_require = ['pytest'],
     extras_require = {
         'tests'   : ['pytest']
-    },
-    entry_points={
-        'console_scripts': [
-            'ndspflow=ndspflow.cli.ndspflow_run:main',
-        ]
     }
 )
