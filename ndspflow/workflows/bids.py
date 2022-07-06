@@ -53,8 +53,7 @@ class BIDS:
         self.bids_kwargs = bids_kwargs
 
         # Ensure unpackable
-        if self.bids_kwargs is None:
-            self.bids_kwargs = {}
+        self.bids_kwargs = {} if self.bids_kwargs is None else self.bids_kwargs
 
         # Sampling rate
         self.fs = fs
@@ -64,6 +63,8 @@ class BIDS:
 
         # Output array
         self.y_array = None
+
+        self.nodes = []
 
 
     def read_bids(self, subject=None, allow_ragged=False, queue=True):
