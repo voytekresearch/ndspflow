@@ -17,7 +17,7 @@ from .sim import Simulate
 from .transform import Transform
 from .model import Model, Merge
 from .graph import create_graph
-
+from .utils import reshape
 
 class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
@@ -84,21 +84,20 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.fork_inds = []
 
         self.results = None
-        self.return_attrs = None
+        self.attrs = None
 
         self._merged_fit = False
 
 
-    def run(self, axis=None, return_attrs=None, n_jobs=-1, progress=None):
+    def run(self, axis=None, attrs=None, n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
         ----------
         axis : int or tuple of int, optional, default: None
             Axis to pass to multiprocessing pools. Only used for 2d and greater.
-            Identical to numpy axis arguments. Defaults to -1 for independent
-            processing.
-        return_attrs : list of str, optional, default: None
+            Identical to numpy axis arguments.
+        attrs : list of str, optional, default: None
             Model attributes to return.
         n_jobs : int, optional, default: -1
             Number of jobs to run in parallel.
@@ -120,32 +119,27 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.y_array_stash = [None] * len(self.fork_inds)
             self.x_array_stash = [None] * len(self.fork_inds)
 
-        self.return_attrs = return_attrs
+        self.attrs = attrs
 
         # Infer input array type
-        if self.y_array is not None:
+        origshape = None
+        if self.y_array is not None and axis is not None:
             # Drop instance arrays to prevent passing copies to mp pools
             y_array = self.y_array
             self.y_array = None
             x_array = self.x_array
             self.x_array = None
 
-            # Track original shape to later reshape results
-            y_array_shape = y_array.shape
+            y_array, origshape = reshape(y_array, axis)
 
-            # Invert axis indices
-            axis = [axis] if isinstance(axis, int) else axis
-            axes = list(range(len(y_array_shape)))
-            axis = [axes[ax] for ax in axis]
-            axis = tuple([ax for ax in axes if ax not in axis])
-
-            # Reshape to 2d based on axis argument
-            #   this allows passing slices to mp pools
-            n_axes = len(axis)
-            y_array = np.moveaxis(y_array, axis, list(range(n_axes)))
-            newshape = [-1, *y_array.shape[n_axes:]]
-            y_array = y_array.reshape(newshape)
-
+            node_type = 'preload'
+        elif self.y_array is not None:
+            # Drop instance arrays to prevent passing copies to mp pools
+            y_array = self.y_array
+            self.y_array = None
+            x_array = self.x_array
+            self.x_array = None
+            node_type = 'preload'
         elif self.seeds is not None:
             # Simulation workflow
             y_array = self.seeds
@@ -184,12 +178,21 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             # Squeeze extraneous dimensions
             self.results = np.squeeze(np.array(self.results, dtype='object'))
 
-            # Pull models out of dummy result class
-            for inds in product(*[range(i) for i in self.results.shape]):
-                self.results[inds] = self.results[inds].result
+            if origshape is not None:
 
-            # Convert results to list
-            self.results = self.results.tolist()
+                self.results = np.squeeze(self.results.reshape(*origshape, -1))
+
+                # Pull models out of dummy result class
+                for inds in product(*[range(i) for i in origshape]):
+                    self.results[inds] = self.results[inds].result
+
+            else:
+                # Squeeze extraneous dimensions
+                self.results = np.squeeze(np.array(self.results, dtype='object'))
+
+                # Pull models out of dummy result class
+                for inds in product(*[range(i) for i in self.results.shape]):
+                    self.results[inds] = self.results[inds].result
 
         except AttributeError:
             # Multiple models with unique return shapes  are ragged
@@ -244,17 +247,17 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                 getattr(self, 'run_' + node[0])(*node[1], **node[2])
 
         # Sort results
-        if isinstance(self.return_attrs, str):
+        if isinstance(self.attrs, str):
             # Single and same attribute extracted from all models
-            return [getattr(model.result, self.return_attrs) for model in self.models]
-        elif isinstance(self.return_attrs, list) and isinstance(self.return_attrs[0], str):
+            return [getattr(model.result, self.attrs) for model in self.models]
+        elif isinstance(self.attrs, list) and isinstance(self.attrs[0], str):
             # 1d attributes, same for each model
-            return [[getattr(model.result, r) for r in self.return_attrs] for model in self.models]
-        elif isinstance(self.return_attrs, list) and isinstance(self.return_attrs[0], list):
+            return [[getattr(model.result, r) for r in self.attrs] for model in self.models]
+        elif isinstance(self.attrs, list) and isinstance(self.attrs[0], list):
             # 2d attributes, unique for each model
-            return [{r: getattr(model.result, r) for r in self.return_attrs[i]}
+            return [{r: getattr(model.result, r) for r in self.attrs[i]}
                      for i, model in enumerate(self.models)]
-        elif self.return_attrs is None and self.models is not None:
+        elif self.attrs is None and self.models is not None:
             return self.models
         else:
             return None
@@ -294,12 +297,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.x_array = self.x_array_stash[ind]
 
 
-    def merge(self, return_attrs=None, n_jobs=-1, progress=None):
+    def merge(self, attrs=None, n_jobs=-1, progress=None):
         """Execute the workflow and extract arrays.
 
         Parameters
         ----------
-        return_attrs : list of str, optional, default: None
+        attrs : list of str, optional, default: None
             Model attributes to return.
         n_jobs : int, optional, default: -1
             Number of jobs to run in parallel.
@@ -313,7 +316,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         """
         if self.nodes[-1][0] == 'fit':
             # Merge all node, including fit nodes
-            self.run(return_attrs=return_attrs, n_jobs=n_jobs, progress=progress)
+            self.run(attrs=attrs, n_jobs=n_jobs, progress=progress)
             self.x_array = None
             self.y_array = self.results.astype(float)
         else:

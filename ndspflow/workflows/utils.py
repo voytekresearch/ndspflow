@@ -45,3 +45,39 @@ def parse_args(args, kwargs, self=None):
             kwargs[k] = v[1][self.param_ind]
 
     return args, kwargs
+
+
+def reshape(y_array, axis):
+    """Numpy axis-like reshape to 2D.
+
+    Parameters
+    ----------
+    y_array : ndarray
+        Array to reshape.
+    axis : int or tuple of int
+        Axis to take 1d slices along.
+
+    Returns
+    -------
+    y_array : ndarray
+        Reshaped array.
+    shape : tuple
+        Original shape of y_array.
+    """
+
+    # Invert axis indices
+    axis = [axis] if isinstance(axis, int) else axis
+    axes = list(range(len(y_array.shape)))
+    axis = [axes[ax] for ax in axis]
+    axis = tuple([ax for ax in axes if ax not in axis])
+
+    # Track original shape to later reshape results
+    shape = [s for i, s in enumerate(y_array.shape) if i in axis]
+
+    # Reshape to 2d based on axis argument
+    #   this allows passing slices to mp pools
+    n_axes = len(axis)
+    y_array = np.moveaxis(y_array, axis, list(range(n_axes)))
+    y_array = y_array.reshape(*[-1, *y_array.shape[n_axes:]])
+
+    return y_array, shape

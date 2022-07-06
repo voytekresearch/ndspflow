@@ -1,8 +1,10 @@
 """Models."""
 
 from copy import copy
-from inspect import signature
 import numpy as np
+
+from .utils import reshape
+
 
 class Model:
     """Model wrapper.
@@ -20,9 +22,7 @@ class Model:
         """Initialize model."""
         self.model = model
         self.nodes = nodes
-
-        self.model_self = None
-        self.return_attrs = None
+        self.attrs = None
 
 
     def fit(self, model, *args, axis=None, **kwargs):
@@ -54,8 +54,8 @@ class Model:
 
         self.model = self.node[1]
 
-        if isinstance(self.return_attrs, str):
-            self.return_attrs = [self.return_attrs]
+        if isinstance(self.attrs, str):
+            self.attrs = [self.attrs]
 
         # Get args and kwargs stored in attributes
         args = list(args)
@@ -78,18 +78,7 @@ class Model:
         # Apply model to specific axis of y-array
         if axis is not None:
 
-            # Invert axis indices
-            axis = [axis] if isinstance(axis, int) else axis
-            axes = list(range(len(y_array.shape)))
-            axis = [axes[ax] for ax in axis]
-            axis = tuple([ax for ax in axes if ax not in axis])
-
-            # Reshape to 2d based on axis argument
-            #   this allows passing slices to mp pools
-            n_axes = len(axis)
-            y_array = np.moveaxis(y_array, axis, list(range(n_axes)))
-            newshape = [-1, *y_array.shape[n_axes:]]
-            y_array = y_array.reshape(newshape)
+            y_array, _ = reshape(y_array, axis)
 
             model = []
             for y in y_array:
@@ -99,7 +88,6 @@ class Model:
                 else:
                     _model.fit(y, *args, **kwargs)
                 model.append(_model)
-
             self.model = model
         else:
             if x_array is not None:
