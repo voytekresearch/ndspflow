@@ -1,5 +1,9 @@
 """Configuration file for pytest for ndspflow."""
 
+import os
+import json
+from shutil import rmtree
+
 import numpy as np
 import pytest
 
@@ -10,6 +14,14 @@ from ndspflow.tests.settings import (N_SECONDS, FS, EXP, FREQ, F_RANGE)
 from ndspflow.motif.fit import fit_bycycle
 
 from fooof import FOOOF, FOOOFGroup
+
+import numpy as np
+
+from mne_bids import BIDSPath
+from mne import create_info
+from mne.io import RawArray
+from mne_bids.write import write_raw_bids
+
 
 @pytest.fixture(scope='module')
 def sim_sig():
@@ -104,3 +116,38 @@ def motif_outs():
     motif_target = sim_combined(1, 100, comps_target)
 
     yield dict(motif_ref=motif_ref, motif_target=motif_target)
+
+
+@pytest.fixture(scope='module')
+def bids_path():
+
+    if os.path.isdir('_bids'):
+        rmtree('_bids')
+
+    os.mkdir('_bids')
+
+    desc = {
+        "Name": "Testing",
+        "License": "CC0",
+        "Authors": ["Some, Author"],
+        "Acknowledgements": "Some, Name",
+        "Funding": ["$"],
+        "DatasetDOI": "xx.xxxx"
+    }
+
+    with open('_bids/dataset_description.json', 'w') as f:
+        json.dump(desc, f)
+
+    raw = RawArray(np.random.rand(2, 2000), create_info(['Oz', 'Pz'], 1000, 'ecog'), copy='both', verbose=False)
+    _ = raw.set_channel_types({'Oz':'ecog', 'Pz':'ecog'})
+
+    bpath = f'{os.getcwd()}/_bids'
+    path = BIDSPath(root=bpath, subject='01', session='01', datatype='ieeg', task='test', extension='.vhdr')
+    _ = write_raw_bids(raw, path, allow_preload=True, format='BrainVision', overwrite=True, verbose=False)
+
+    yield bpath
+
+    # Clean up bids tmp directory
+    rmtree('_bids')
+
+
