@@ -3,7 +3,7 @@
 from copy import copy
 import numpy as np
 
-from .utils import reshape
+from .utils import parse_args, reshape
 
 
 class Model:
@@ -20,9 +20,14 @@ class Model:
 
     def __init__(self, model=None, nodes=None):
         """Initialize model."""
+        self.models = []
         self.model = model
         self.nodes = nodes
-        self.attrs = None
+
+        if self.nodes is None:
+            self.nodes = []
+
+        self.node = None
 
 
     def fit(self, model, *args, axis=None, **kwargs):
@@ -36,9 +41,9 @@ class Model:
 
         Parameters
         ----------
-        y_array : ndarray, optional, default: None
+        y_array : ndarray
             Y-axis values. Usually voltage or power.
-        x_array : 1d array, optional, default: None
+        x_array : 1d array
             X-axis values. Usually time or frequency.
         *args
             Passed to the .fit method of the model class.
@@ -51,24 +56,15 @@ class Model:
         -----
         Pass 'self' to any arg or kwarg to infer its value from a instance variable.
         """
+        if self.node is not None:
+            self.model = self.node[1]
+        else:
+            self.model = self.nodes[0][1]
 
-        self.model = self.node[1]
+        # Get args and kwargs stored in attribute
+        args, kwargs = parse_args(list(args), kwargs)
 
-        if isinstance(self.attrs, str):
-            self.attrs = [self.attrs]
-
-        # Get args and kwargs stored in attributes
-        args = list(args)
-
-        for ind in range(len(args)):
-            if isinstance(args[ind], str) and 'self' in args[ind]:
-                args[ind] = getattr(self, args[ind].split('.')[-1])
-
-        for k, v in kwargs.items():
-            if isinstance(v, str) and 'self' in v:
-                kwargs[k] = getattr(self, v.split('.')[-1])
-
-        # Fit follwoing merge assumes current state of y-array is required
+        # Fit following merge assumes current state of y-array is required
         if hasattr(self, '_merged_fit') and self._merged_fit:
             self.model.fit(y_array, *args, **kwargs)
             self.results = self.model
@@ -77,7 +73,6 @@ class Model:
 
         # Apply model to specific axis of y-array
         if axis is not None:
-
             y_array, _ = reshape(y_array, axis)
 
             model = []
