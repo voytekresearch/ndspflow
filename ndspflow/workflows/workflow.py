@@ -102,9 +102,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
             Progress bar.
         """
-        # Reset pre-existing results
-        if self.results is not None:
-            self.results = None
 
         if self.fork_inds is not None:
             self.y_array_stash = [None] * len(self.fork_inds)
@@ -175,10 +172,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.y_array = np.squeeze(np.array(_results))
             return
 
-        if self.results is not None:
-            self.results.append(_results)
-        else:
-            self.results = _results
+        self.results = _results
 
         try:
 
