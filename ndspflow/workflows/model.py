@@ -29,9 +29,25 @@ class Model:
 
         self.node = None
 
+        if not hasattr(self, 'seeds'):
+            self.seeds = None
+
 
     def fit(self, model, *args, axis=None, **kwargs):
-        """Queue fit."""
+        """Queue fit.
+
+        Parameters
+        ----------
+        model : class
+            Model class with a .fit method that accepts
+            {(x_array, y_array), y_array}.
+        args
+            Passed to the .fit method of the model class.
+        axis : int, optional, default: None
+            Axis to fit model over.
+        **kwargs
+            Passed to the .fit method of the model class.
+        """
         self.model = model
         self.nodes.append(['fit', model, args, axis, kwargs])
 
@@ -62,14 +78,7 @@ class Model:
             self.model = self.nodes[0][1]
 
         # Get args and kwargs stored in attribute
-        args, kwargs = parse_args(list(args), kwargs)
-
-        # Fit following merge assumes current state of y-array is required
-        if hasattr(self, '_merged_fit') and self._merged_fit:
-            self.model.fit(y_array, *args, **kwargs)
-            self.results = self.model
-            self.model = None
-            return
+        args, kwargs = parse_args(list(args), kwargs, self)
 
         # Apply model to specific axis of y-array
         if axis is not None:
@@ -92,27 +101,6 @@ class Model:
 
         self.models.append(Result(self.model))
         self.model = None
-
-class Merge:
-    """Dummy model used to merge arrays.
-
-    Notes
-    -----
-    The .fit method is a pass-through that collects
-    the y-array into a temporary attribute.
-    """
-
-    def __init__(self):
-        self._x_array = None
-        self._y_array = None
-
-    def fit(self, *args):
-
-        if len(args) == 1:
-            self._y_array = args[0]
-        elif len(args) == 2:
-             self._x_array = args[0]
-             self._y_array = args[1]
 
 class Result:
     """Class to allow numpy reshaping.

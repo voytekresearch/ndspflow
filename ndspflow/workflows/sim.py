@@ -81,19 +81,7 @@ class Simulate:
             operator = op.truediv
 
         # Special args/kwargs parsing
-        args = list(args)
-
-        for k, v in kwargs.items():
-            if isinstance(v, str) and 'self' in v:
-                kwargs[k] = getattr(self, v.split('.')[-1])
-            if isinstance(v, tuple) and v[0] == '_iter':
-                kwargs[k] = v[1][self.param_ind]
-
-        for ind in range(len(args)):
-            if isinstance(args[ind], str) and 'self' in args[ind]:
-                args[ind] = getattr(self, args[ind].split('.')[-1])
-            if isinstance(args[ind], tuple) and args[ind][0] == '_iter':
-                args[ind] = args[ind][1][self.param_ind]
+        args, kwargs = parse_args(list(args), kwargs, self)
 
         # Simulate
         if self.y_array is None:

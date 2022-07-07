@@ -29,7 +29,8 @@ def parse_args(args, kwargs, self=None):
             args[ind] = getattr(self, args[ind].split('.')[-1])
         elif isinstance(args[ind], (types.FunctionType)):
             args[ind] = ('_iter', [args[ind]() for _ in self.seeds])
-        elif isinstance(args[ind], (types.GeneratorType)) or hasattr(args[ind], '__next__'):
+        elif self.seeds is not None and \
+            (isinstance(args[ind], (types.GeneratorType)) or hasattr(args[ind], '__next__')):
             args[ind] = ('_iter', [next(args[ind]) for _ in self.seeds])
         elif isinstance(args[ind], tuple) and args[ind][0] == '_iter':
             args[ind] = args[ind][1][self.param_ind]
@@ -37,9 +38,9 @@ def parse_args(args, kwargs, self=None):
     for k, v in kwargs.items():
         if isinstance(v, str) and 'self' in v:
             kwargs[k] = getattr(self, v.split('.')[-1])
-        elif isinstance(v, types.FunctionType):
+        elif self.seeds is not None and isinstance(v, types.FunctionType):
             kwargs[k] = ('_iter', [v() for _ in self.seeds])
-        elif isinstance(v, types.GeneratorType) or hasattr(v, '__next__'):
+        elif self.seeds is not None and isinstance(v, types.GeneratorType) or hasattr(v, '__next__'):
             kwargs[k] = ('_iter', [next(v) for _ in self.seeds])
         elif isinstance(v, tuple) and v[0] == '_iter':
             kwargs[k] = v[1][self.param_ind]

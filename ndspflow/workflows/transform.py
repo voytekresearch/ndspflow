@@ -74,7 +74,7 @@ class Transform:
         """
 
         # Get args and kwargs stored in attributes
-        args, kwargs = parse_args(list(args), kwargs, self=None)
+        args, kwargs = parse_args(list(args), kwargs, self)
 
         if axis is not None:
 

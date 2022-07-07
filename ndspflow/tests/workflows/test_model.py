@@ -1,7 +1,7 @@
 """Test model wrapper."""
 
 from ndspflow.workflows import  Model
-from ndspflow.workflows.model import Merge, Result
+from ndspflow.workflows.model import Result
 from fooof import FOOOF
 from bycycle import Bycycle
 
@@ -45,17 +45,6 @@ def test_Model(test_data):
     model.run_fit(None, sig, fs, (5, 50))
     assert isinstance(model.models[0].result, Bycycle)
 
-def test_Merge():
-
-    merge = Merge()
-    merge.fit([0, 1, 2], [0, 1, 2])
-    assert merge._x_array is not None
-    assert merge._y_array is not None
-
-    merge = Merge()
-    merge.fit([0, 1, 2])
-    assert merge._x_array is None
-    assert merge._y_array is not None
 
 def test_Result():
 
