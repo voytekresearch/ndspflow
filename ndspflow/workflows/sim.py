@@ -90,4 +90,3 @@ class Simulate:
             self.y_array = operator(
                 self.y_array, func( *args, **kwargs)
             )
-

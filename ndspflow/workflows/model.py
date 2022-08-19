@@ -72,6 +72,7 @@ class Model:
         -----
         Pass 'self' to any arg or kwarg to infer its value from a instance variable.
         """
+
         if self.node is not None:
             self.model = self.node[1]
         else:

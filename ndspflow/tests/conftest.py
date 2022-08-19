@@ -4,8 +4,14 @@ import os
 import json
 from shutil import rmtree
 
-import numpy as np
 import pytest
+
+import numpy as np
+
+from mne_bids import BIDSPath
+from mne import create_info
+from mne.io import RawArray
+from mne_bids.write import write_raw_bids
 
 from neurodsp.sim import sim_combined
 from neurodsp.spectral import compute_spectrum
@@ -15,12 +21,6 @@ from ndspflow.motif.fit import fit_bycycle
 
 from fooof import FOOOF, FOOOFGroup
 
-import numpy as np
-
-from mne_bids import BIDSPath
-from mne import create_info
-from mne.io import RawArray
-from mne_bids.write import write_raw_bids
 
 
 @pytest.fixture(scope='module')
@@ -149,5 +149,3 @@ def bids_path():
 
     # Clean up bids tmp directory
     rmtree('_bids')
-
-
