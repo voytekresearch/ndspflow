@@ -103,6 +103,25 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Progress bar.
         """
 
+        # Handle merges
+        _merges = [ind for ind in range(len(self.nodes)) if self.nodes[ind][0] == 'merge']
+
+        if len(_merges) > 0:
+            _forks = [self.nodes[ind] for ind in range(len(self.nodes)) if self.nodes[ind][0] == 'fork']
+            common_nodes = self.nodes[_merges[-1]+1:]
+            i_off = 0
+            for i in range(len(_merges)):
+
+                del self.nodes[_merges[i]+i_off]
+                i_off -= 1
+
+                for j in range(len(common_nodes)):
+                    i_off += 1
+                    self.nodes.insert(_merges[i]+i_off, common_nodes[j])
+
+                if i == len(_merges)-1:
+                    self.nodes.insert(_merges[i]+i_off+1, _forks[i])
+
         if self.fork_inds is not None:
             self.y_array_stash = [None] * len(self.fork_inds)
             self.x_array_stash = [None] * len(self.fork_inds)
@@ -167,6 +186,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                 else:
                     _results = list(mapping)
 
+                # Ensure pools exits (needed for pytest cov)
+                pool.close()
+                pool.join()
+
         # Workflow ends on transform or sim node
         if self.nodes[-1][0] in ['transform', 'simulate']:
             self.y_array = np.squeeze(np.array(_results))
@@ -188,8 +211,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                     self.results[inds] = self.results[inds].result
 
             else:
-                # Squeeze extraneous dimensions
-                self.results = np.squeeze(np.array(self.results, dtype='object'))
 
                 # Pull models out of dummy result class
                 for inds in product(*[range(i) for i in self.results.shape]):
@@ -301,6 +322,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             # Pop
             self.y_array = self.y_array_stash[ind]
             self.x_array = self.x_array_stash[ind]
+
+
+    def merge(self):
+        """Queue a merge."""
+
+        self.nodes.append(['merge'])
 
 
     def fit_transform(self, model, *args, axis=None, attrs=None,
