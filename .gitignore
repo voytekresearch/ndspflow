@@ -17,7 +17,7 @@
 *DS_Store*
 
 # Ignore coverage file
-.coverage
+.coverage.*
 
 # Ignore testing related files
 .pytest_cache/*
@@ -27,3 +27,6 @@ _lint.txt
 
 # Ignore all files generated during testing
 */tests/test_files/*
+
+# Ignore venv
+.env

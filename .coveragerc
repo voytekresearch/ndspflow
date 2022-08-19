@@ -1,5 +1,5 @@
 [run]
-
 omit =
     *__init__*
-    *tests*
+    ndspflow/tests/*
+    */version.py
