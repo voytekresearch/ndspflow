@@ -1,5 +1,6 @@
 """Workflows."""
 
+from copy import deepcopy
 from functools import partial
 from itertools import product
 from inspect import signature
@@ -112,13 +113,15 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             i_off = 0
             for i in range(len(_merges)):
 
+                # Replace merges with common nodes
                 del self.nodes[_merges[i]+i_off]
                 i_off -= 1
 
                 for j in range(len(common_nodes)):
                     i_off += 1
-                    self.nodes.insert(_merges[i]+i_off, common_nodes[j])
+                    self.nodes.insert(_merges[i]+i_off, deepcopy(common_nodes[j]))
 
+                # Link prefork to postfork nodes
                 if i == len(_merges)-1:
                     self.nodes.insert(_merges[i]+i_off+1, _forks[i])
 
