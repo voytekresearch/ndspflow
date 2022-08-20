@@ -19,6 +19,8 @@ from .transform import Transform
 from .model import Model
 from .graph import create_graph
 from .utils import reshape, extract_results
+from .parameterize import parameterize_workflow
+
 
 class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
@@ -88,7 +90,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.attrs = None
 
 
-    def run(self, axis=None, attrs=None, flatten=False, n_jobs=-1, progress=None):
+    def run(self, axis=None, attrs=None, parameterize=False, flatten=False, n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
@@ -98,6 +100,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Identical to numpy axis arguments.
         attrs : list of str, optional, default: None
             Model attributes to return.
+        parameterize : bool, optional, default: False
+            Attempt to parameterize the workflow if True.
         flatten : bool, optional, default: False
             Flattens all models and attributes into a 1d array, per y_array.
         n_jobs : int, optional, default: -1
@@ -133,6 +137,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.x_array_stash = [None] * len(self.fork_inds)
 
         self.attrs = attrs
+
+        # Handle parameterization
+        if parameterize:
+            self = parameterize_workflow(self)
 
         # Infer input array type
         origshape = None
