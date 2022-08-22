@@ -108,9 +108,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         _merges = [ind for ind in range(len(self.nodes)) if self.nodes[ind][0] == 'merge']
 
         if len(_merges) > 0:
-            _forks = [self.nodes[ind] for ind in range(len(self.nodes)) if self.nodes[ind][0] == 'fork']
+
             common_nodes = self.nodes[_merges[-1]+1:]
             i_off = 0
+
             for i in range(len(_merges)):
 
                 # Replace merges with common nodes
@@ -121,9 +122,9 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                     i_off += 1
                     self.nodes.insert(_merges[i]+i_off, deepcopy(common_nodes[j]))
 
-                # Link prefork to postfork nodes
+                # Remove trailing fork node
                 if i == len(_merges)-1:
-                    self.nodes.insert(_merges[i]+i_off+1, _forks[i])
+                    self.nodes = self.nodes[:_merges[i]+i_off+1]
 
         if self.fork_inds is not None:
             self.y_array_stash = [None] * len(self.fork_inds)
