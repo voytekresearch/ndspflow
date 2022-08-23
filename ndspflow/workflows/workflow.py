@@ -19,7 +19,7 @@ from .transform import Transform
 from .model import Model
 from .graph import create_graph
 from .utils import reshape, extract_results
-from .parameterize import parameterize_workflow
+from .param import parameterize_workflow
 
 
 class WorkFlow(BIDS, Simulate, Transform, Model):
@@ -36,6 +36,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
     nodes : list of list
         Contains order of operations as:
         [[node_type, function, *args, **kwargs], ...]
+    params : 3d array
+        Parameterized arguments with shape: (n_combs_per_fit, n_fits, n_parameters).
+    param_keys : 2d list of str
+        Parameterized argument names with shape: (n_fits, n_parameters).
     """
 
     def __init__(self, y_array=None, x_array=None, **kwargs):
@@ -88,6 +92,9 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         self.results = None
         self.attrs = None
+
+        self.params = None
+        self.param_keys = None
 
 
     def run(self, axis=None, attrs=None, parameterize=False, flatten=False, n_jobs=-1, progress=None):
@@ -242,6 +249,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             # Multiple models with unique return shapes are ragged
             #  and resultes are returned as dicts. Don't attempt to reshape.
             pass
+
+        # Reshape based on parameterized (kw)args
+        if self.params is not None:
+            self.results = self.results.reshape(self.results.shape[0], *self.params.shape[:-1])
 
         # Reset temporary attributes
         self.model = None
