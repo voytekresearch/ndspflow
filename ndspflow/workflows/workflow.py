@@ -14,6 +14,7 @@ import networkx as nx
 from mne_bids import BIDSPath
 
 from .bids import BIDS
+from .raw import Raw
 from .sim import Simulate
 from .transform import Transform
 from .model import Model
@@ -22,7 +23,7 @@ from .utils import reshape, extract_results
 from .param import parameterize_workflow
 
 
-class WorkFlow(BIDS, Simulate, Transform, Model):
+class WorkFlow(BIDS, Raw, Simulate, Transform, Model):
     """Workflow definition.
 
     Attributes
@@ -151,7 +152,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         # Infer input array type
         origshape = None
-        if self.y_array is not None and axis is not None:
+        if self.nodes[0][0] == 'read_raw':
+            y_array = self.y_array
+            self.y_array = None
+            x_array = None
+            node_type = 'raw'
+        elif self.y_array is not None and axis is not None:
             # Drop instance arrays to prevent passing copies to mp pools
             y_array = self.y_array
             self.y_array = None
@@ -182,7 +188,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         # Infer if mp is needed
         use_pool = True
-        if node_type != 'sim':
+
+        if node_type not in ['sim', 'raw']:
             use_pool = not (
                 (isinstance(y_array, np.ndarray) and y_array.ndim == 1) |
                 (isinstance(y_array, np.ndarray) and axis is None)
@@ -302,6 +309,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                 getattr(self, 'run_' + node[0])(*node[2:])
             elif node[0] == 'fork':
                 getattr(self, 'run_' + node[0])(node[1])
+            elif node[0] == 'read_raw':
+                getattr(self, 'run_' + node[0])(node[1], self.y_array, *node[3:])
 
         # Sort results
         if node[0] in ['simulate', 'transform']:
