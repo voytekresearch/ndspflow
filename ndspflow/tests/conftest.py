@@ -138,12 +138,15 @@ def bids_path():
     with open('_bids/dataset_description.json', 'w') as f:
         json.dump(desc, f)
 
-    raw = RawArray(np.random.rand(2, 2000), create_info(['Oz', 'Pz'], 1000, 'ecog'), copy='both', verbose=False)
+    raw = RawArray(np.random.rand(2, 2000), create_info(['Oz', 'Pz'], 1000, 'ecog'),
+                   copy='both', verbose=False)
     _ = raw.set_channel_types({'Oz':'ecog', 'Pz':'ecog'})
 
     bpath = f'{os.getcwd()}/_bids'
-    path = BIDSPath(root=bpath, subject='01', session='01', datatype='ieeg', task='test', extension='.vhdr')
-    _ = write_raw_bids(raw, path, allow_preload=True, format='BrainVision', overwrite=True, verbose=False)
+    path = BIDSPath(root=bpath, subject='01', session='01', datatype='ieeg',
+                    task='test', extension='.vhdr')
+    _ = write_raw_bids(raw, path, allow_preload=True, format='BrainVision',
+                       overwrite=True, verbose=False)
 
     yield bpath
 

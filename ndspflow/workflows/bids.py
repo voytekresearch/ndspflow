@@ -120,7 +120,7 @@ class BIDS:
                 if self.fs is None:
                     self.fs = fs
                 elif self.fs != fs:
-                    raise ValueError('Resample subject data to the same sampling rate.')
+                    raise ValueError('Resample subjects data to the same sampling rates.')
 
                 # Channel names
                 self.ch_names = raw.ch_names
@@ -143,7 +143,6 @@ class BIDS:
 
                     if len(arr) < y_len:
                         self.y_array = self.y_array[:, :len(arr)]
-
                     elif len(arr) > y_len:
                         arr = arr[:y_len]
 
