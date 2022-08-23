@@ -18,7 +18,7 @@ from .sim import Simulate
 from .transform import Transform
 from .model import Model
 from .graph import create_graph
-from .utils import reshape
+from .utils import reshape, extract_results
 
 class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
@@ -88,7 +88,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.attrs = None
 
 
-    def run(self, axis=None, attrs=None, n_jobs=-1, progress=None):
+    def run(self, axis=None, attrs=None, flatten=False, n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
@@ -98,6 +98,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Identical to numpy axis arguments.
         attrs : list of str, optional, default: None
             Model attributes to return.
+        flatten : bool, optional, default: False
+            Flattens all models and attributes into a 1d array, per y_array.
         n_jobs : int, optional, default: -1
             Number of jobs to run in parallel.
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
@@ -172,7 +174,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             )
 
         if not use_pool:
-            _results = self._run((y_array, 0), x_array, node_type)
+            _results = self._run((y_array, 0), x_array, node_type, flatten)
         else:
             # Parallel execution
             n_jobs = cpu_count() if n_jobs == -1 else n_jobs
@@ -180,7 +182,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             with Pool(processes=n_jobs) as pool:
 
                 mapping = pool.imap(
-                    partial(self._run, x_array=x_array, node_type=node_type),
+                    partial(self._run, x_array=x_array, node_type=node_type, flatten=flatten),
                     zip(y_array, np.arange(len(y_array)))
                 )
 
@@ -197,6 +199,11 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         # Workflow ends on transform or sim node
         if self.nodes[-1][0] in ['transform', 'simulate']:
             self.y_array = np.squeeze(np.array(_results))
+            return
+
+        # Flatten should return an even array (unless models produce sparse results)
+        if flatten:
+            self.results = np.array(_results)
             return
 
         self.results = _results
@@ -220,20 +227,20 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                 for inds in product(*[range(i) for i in self.results.shape]):
                     self.results[inds] = self.results[inds].result
 
-        except AttributeError:
-            # Multiple models with unique return shapes  are ragged
-            #  and are output as dicts. Don't attempt to reshape.
-            pass
+            if self.results.ndim == 0:
+                self.results = self.results.tolist()
 
-        if self.results.ndim == 0:
-            self.results = self.results.tolist()
+        except (AttributeError, ValueError):
+            # Multiple models with unique return shapes are ragged
+            #  and resultes are returned as dicts. Don't attempt to reshape.
+            pass
 
         # Reset temporary attributes
         self.model = None
         self.node = None
 
 
-    def _run(self, input, x_array=None, node_type=None):
+    def _run(self, input, x_array=None, node_type=None, flatten=False):
         """Sub-function to allow imap parallelziation.
 
         Parameters
@@ -245,6 +252,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             X-axis values.
         node_type : {None, 'bids', 'sim'}
             Type of node.
+        flatten : bool, optional, default: False
+            Flattens all models and attributes into a 1d array, per y_array.
         """
 
         # Reset de-instanced arrays
@@ -270,28 +279,16 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             elif node[0] == 'fit':
                 getattr(self, 'run_' + node[0])(self.x_array, self.y_array,
                                                 *node[2], axis=node[3], **node[4])
+            elif node[0] == 'fit_transform':
+                getattr(self, 'run_' + node[0])(*node[2:])
             elif node[0] == 'fork':
                 getattr(self, 'run_' + node[0])(node[1])
-            else:
-                getattr(self, 'run_' + node[0])(*node[1], **node[2])
 
         # Sort results
         if node[0] in ['simulate', 'transform']:
             return self.y_array
-        if isinstance(self.attrs, str):
-            # Single and same attribute extracted from all models
-            return [getattr(model.result, self.attrs) for model in self.models]
-        elif isinstance(self.attrs, list) and isinstance(self.attrs[0], str):
-            # 1d attributes, same for each model
-            return [[getattr(model.result, r) for r in self.attrs] for model in self.models]
-        elif isinstance(self.attrs, list) and isinstance(self.attrs[0], list):
-            # 2d attributes, unique for each model
-            return [{r: getattr(model.result, r) for r in self.attrs[i]}
-                     for i, model in enumerate(self.models)]
-        elif self.attrs is None and self.models is not None:
-            return self.models
-        else:
-            return None
+
+        return extract_results(self.models, self.attrs, flatten)
 
 
     def fork(self, ind=0):
@@ -334,44 +331,83 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.nodes.append(['merge'])
 
 
-    def fit_transform(self, model, *args, axis=None, attrs=None,
-                      n_jobs=-1, progress=None, **kwargs):
-        """Fit a model and transform to the result.
+    def fit_transform(self, model, y_attrs=None, x_attrs=None, axis=None, queue=False,
+                      n_jobs=-1, progress=None, fit_args=None, fit_kwargs=None):
+        """Queue a model fit and transform y_array to model attributes.
 
         Parameters
         ----------
         model : class
             Model class with a .fit method that accepts
             {(x_array, y_array), y_array}.
-        args
-            Passed to the .fit method of the model class.
+        y_attrs : str or list of str, optional, default: None
+            Model attributes to return as y_array.
+            Required if model does not have fit_transform method.
         axis : int, optional, default: None
             Axis to fit model over.
-        attrs : list of str, optional, default: None
-            Model attributes to return.
+        x_attrs : list of str, optional, default: None
+            Model attributes to return as x_array.
         n_jobs : int, optional, default: -1
             Number of jobs to run in parallel.
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
             Progress bar.
-        **kwargs
+        queue : bool, optional, default: False
+            Add to node queue if True. Otherwise, execute on call.
+        fit_args : dict, optional, default: False
+            Passed to the .fit method of the model class.
+        fit_kwargs : dict, optional, default: False
             Passed to the .fit method of the model class.
         """
+        if queue:
+            self.nodes.append(['fit_transform', model, y_attrs,  x_attrs,
+                               axis, fit_args, fit_kwargs])
+        elif hasattr(model, 'fit_transform'):
+            self.y_array = model.fit_transform(self.y_array)
+        else:
+            fit_args = () if fit_args is None else fit_args
+            fit_kwargs = {} if fit_kwargs is None else fit_kwargs
 
-        # Queue fit
-        self.fit(model, *args, axis=axis, **kwargs)
+            # Fit
+            self.fit(model, *fit_args, axis=None, **fit_kwargs)
+            self.run(axis, y_attrs, True, n_jobs, progress)
 
-        # Run Fit
-        self.run(attrs=attrs, n_jobs=n_jobs, progress=progress)
+            # Transform
+            self.y_array = self.results
+
+            # Clear
+            self.results = None
+            self.nodes = None
+            self.models = []
+
+
+    def run_fit_transform(self, y_attrs, x_attrs=None, axis=None, args=None, kwargs=None):
+        """Execute a fit + transform.
+
+        Parameters
+        ----------
+        y_attrs : str or list of st
+            Model attributes to return as y_array.
+        x_attrs : str or list of str, optional, default: None
+            Model attributes to return as x_array.
+        args : tuple, optional, default: None
+            Passed to the .fit method of the model class.
+        axis : int, optional, default: None
+            Axis to fit model over.
+        kwargs : dict, optional, default: None
+            Passed to the .fit method of the model class.
+        """
+        # Fit
+        args = () if args is None else args
+        kwargs = {} if kwargs is None else kwargs
+
+        self.run_fit(self.x_array, self.y_array, *args, axis=axis, **kwargs)
 
         # Transform
-        if not isinstance(self.results, np.ndarray):
-            raise ValueError('An array must be returned using the attrs argument.')
-        else:
-            self.y_array = self.results.astype(float)
+        self.y_array = extract_results(self.models, y_attrs, True)
+        self.x_array = extract_results(self.models, x_attrs, True) if x_attrs is not None else None
 
         # Clear
         self.results = None
-        self.nodes = []
         self.models = []
 
 

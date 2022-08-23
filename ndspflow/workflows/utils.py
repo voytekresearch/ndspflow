@@ -82,3 +82,61 @@ def reshape(y_array, axis):
     y_array = y_array.reshape(*[-1, *y_array.shape[n_axes:]])
 
     return y_array, shape
+
+
+def extract_results(models, attrs=None, flatten=False):
+    """Extract results from model attributes.
+
+    Parameters
+    ----------
+    models : list of model.Result
+        Contains fit model.
+    attrs : list of str or str
+        Defines attribute(s) to extract from models.
+
+    Notes
+    -----
+    The attrs implicitly extracts attributes based on its shape and the shape of models.
+
+    attrs = ['some_attr'] and attrs = 'some_attr' :
+        Extracts the same attribute per model.
+    attrs = ['attr_0', 'attr_1'] :
+        Each attribute is extracted from each model.
+    attrs = [['attr_0_model0', 'attr_0_model0'], ['attr_0_model1', 'attr_0_model1']]
+        Extracts unique attributes (2) per unique model (2).
+
+    """
+
+    unpack_dict = False
+
+    if isinstance(attrs, str):
+        # Single and same attribute extracted from all models
+        results = [getattr(model.result, attrs) for model in models]
+    elif isinstance(attrs, list) and isinstance(attrs[0], str):
+        # 1d attributes, same for each model
+        results = [[getattr(model.result, r) for r in attrs] for model in models]
+    elif isinstance(attrs, list) and isinstance(attrs[0], list):
+        # 2d attributes, unique for each model
+        results=  [{r: getattr(model.result, r) for r in attrs[i]}
+                   for i, model in enumerate(models)]
+        unpack_dict = True
+    elif attrs is None and models is not None:
+        return models
+    else:
+        return None
+
+    # Unpack
+    if len(models) == 1:
+        results = results[0]
+
+    # Flatten into 2d array
+    if len(models) == 1 and flatten and not unpack_dict:
+        results = np.hstack([j.flatten() for j in results])
+    elif len(models) == 1 and flatten:
+        results = np.array([np.hstack([np.array([*j.values()]).flatten() for j in results])])
+    elif flatten and not unpack_dict:
+        results = np.array([np.hstack([j.flatten() for j in i]) for i in results])
+    elif flatten:
+        results = np.hstack([i[j].flatten() for i in results for j in i])
+
+    return results
