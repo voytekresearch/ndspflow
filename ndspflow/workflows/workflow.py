@@ -376,7 +376,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
             # Clear
             self.results = None
-            self.nodes = None
+            self.nodes = []
             self.models = []
 
 
