@@ -1,8 +1,10 @@
 """Models."""
 
 from copy import copy
-from inspect import signature
 import numpy as np
+
+from .utils import parse_args, reshape
+
 
 class Model:
     """Model wrapper.
@@ -18,15 +20,34 @@ class Model:
 
     def __init__(self, model=None, nodes=None):
         """Initialize model."""
+        self.models = []
         self.model = model
         self.nodes = nodes
 
-        self.model_self = None
-        self.return_attrs = None
+        if self.nodes is None:
+            self.nodes = []
+
+        self.node = None
+
+        if not hasattr(self, 'seeds'):
+            self.seeds = None
 
 
     def fit(self, model, *args, axis=None, **kwargs):
-        """Queue fit."""
+        """Queue fit.
+
+        Parameters
+        ----------
+        model : class
+            Model class with a .fit method that accepts
+            {(x_array, y_array), y_array}.
+        args
+            Passed to the .fit method of the model class.
+        axis : int, optional, default: None
+            Axis to fit model over.
+        **kwargs
+            Passed to the .fit method of the model class.
+        """
         self.model = model
         self.nodes.append(['fit', model, args, axis, kwargs])
 
@@ -36,9 +57,9 @@ class Model:
 
         Parameters
         ----------
-        y_array : ndarray, optional, default: None
+        y_array : ndarray
             Y-axis values. Usually voltage or power.
-        x_array : 1d array, optional, default: None
+        x_array : 1d array
             X-axis values. Usually time or frequency.
         *args
             Passed to the .fit method of the model class.
@@ -52,44 +73,17 @@ class Model:
         Pass 'self' to any arg or kwarg to infer its value from a instance variable.
         """
 
-        self.model = self.node[1]
+        if self.node is not None:
+            self.model = self.node[1]
+        else:
+            self.model = self.nodes[0][1]
 
-        if isinstance(self.return_attrs, str):
-            self.return_attrs = [self.return_attrs]
-
-        # Get args and kwargs stored in attributes
-        args = list(args)
-
-        for ind in range(len(args)):
-            if isinstance(args[ind], str) and 'self' in args[ind]:
-                args[ind] = getattr(self, args[ind].split('.')[-1])
-
-        for k, v in kwargs.items():
-            if isinstance(v, str) and 'self' in v:
-                kwargs[k] = getattr(self, v.split('.')[-1])
-
-        # Fit follwoing merge assumes current state of y-array is required
-        if hasattr(self, '_merged_fit') and self._merged_fit:
-            self.model.fit(y_array, *args, **kwargs)
-            self.results = self.model
-            self.model = None
-            return
+        # Get args and kwargs stored in attribute
+        args, kwargs = parse_args(list(args), kwargs, self)
 
         # Apply model to specific axis of y-array
         if axis is not None:
-
-            # Invert axis indices
-            axis = [axis] if isinstance(axis, int) else axis
-            axes = list(range(len(y_array.shape)))
-            axis = [axes[ax] for ax in axis]
-            axis = tuple([ax for ax in axes if ax not in axis])
-
-            # Reshape to 2d based on axis argument
-            #   this allows passing slices to mp pools
-            n_axes = len(axis)
-            y_array = np.moveaxis(y_array, axis, list(range(n_axes)))
-            newshape = [-1, *y_array.shape[n_axes:]]
-            y_array = y_array.reshape(newshape)
+            y_array, _ = reshape(y_array, axis)
 
             model = []
             for y in y_array:
@@ -99,7 +93,6 @@ class Model:
                 else:
                     _model.fit(y, *args, **kwargs)
                 model.append(_model)
-
             self.model = model
         else:
             if x_array is not None:
@@ -109,27 +102,6 @@ class Model:
 
         self.models.append(Result(self.model))
         self.model = None
-
-class Merge:
-    """Dummy model used to merge arrays.
-
-    Notes
-    -----
-    The .fit method is a pass-through that collects
-    the y-array into a temporary attribute.
-    """
-
-    def __init__(self):
-        self._x_array = None
-        self._y_array = None
-
-    def fit(self, *args):
-
-        if len(args) == 1:
-            self._y_array = args[0]
-        elif len(args) == 2:
-             self._x_array = args[0]
-             self._y_array = args[1]
 
 class Result:
     """Class to allow numpy reshaping.
