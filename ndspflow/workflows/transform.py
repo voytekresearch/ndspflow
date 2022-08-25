@@ -81,12 +81,18 @@ class Transform:
             self.y_array, origshape = reshape(self.y_array, axis)
 
             _y_array = None
+            _y_array_obj = []
 
             # Iterate over first axis
             for ind, y in enumerate(self.y_array):
 
                 # Apply function
                 x_array, y_array = func_wrapper(func, self.x_array, y, *args, **kwargs)
+
+                if self.y_array.dtype == 'object':
+                    # Expects a ragged array
+                    _y_array_obj.append(y_array)
+                    continue
 
                 # Infer shape compatibility
                 if ind == 0 and y_array.shape != y.shape:
@@ -97,8 +103,10 @@ class Transform:
                 elif _y_array is None:
                     self.y_array[ind] = y_array
 
+            if len(_y_array_obj) != 0:
+                self.y_array = np.array(_y_array_obj, dtype='object')
             # Squeeze and reshape
-            if _y_array is None:
+            elif _y_array is None:
                 self.y_array = np.squeeze(self.y_array.reshape(*origshape, -1))
             else:
                 self.y_array = np.squeeze(_y_array.reshape(*origshape, -1))

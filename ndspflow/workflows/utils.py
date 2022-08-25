@@ -66,9 +66,12 @@ def reshape(y_array, axis):
         Original shape of y_array.
     """
 
+
     # Invert axis indices
     axis = [axis] if isinstance(axis, int) else axis
     axes = list(range(len(y_array.shape)))
+    if y_array.dtype == 'object':
+        axes.append(len(axes))
     axis = [axes[ax] for ax in axis]
     axis = tuple([ax for ax in axes if ax not in axis])
 

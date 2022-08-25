@@ -93,7 +93,7 @@ class Model:
                 else:
                     _model.fit(y, *args, **kwargs)
                 model.append(_model)
-            self.model = model
+            self.model = np.array(model)
         else:
             if x_array is not None:
                 self.model.fit(x_array, y_array, *args, **kwargs)
