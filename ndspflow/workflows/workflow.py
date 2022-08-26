@@ -19,8 +19,7 @@ from .transform import Transform
 from .model import Model
 from .graph import create_graph
 from .utils import reshape, extract_results
-from .param import parameterize_workflow
-
+from .param import run_subflows
 
 class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
@@ -97,7 +96,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.param_keys = None
 
 
-    def run(self, axis=None, attrs=None, parameterize=False, flatten=False, n_jobs=-1, progress=None):
+    def run(self, axis=None, attrs=None, parameterize=False, flatten=False,
+            n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
@@ -116,6 +116,9 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
             Progress bar.
         """
+        if parameterize:
+            self.results = run_subflows(self, n_jobs=n_jobs, progress=progress)
+            return
 
         # Handle merges
         _merges = [ind for ind in range(len(self.nodes)) if self.nodes[ind][0] == 'merge']
@@ -144,10 +147,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.x_array_stash = [None] * len(self.fork_inds)
 
         self.attrs = attrs
-
-        # Handle parameterization
-        if parameterize:
-            self = parameterize_workflow(self)
 
         # Infer input array type
         origshape = None
@@ -189,7 +188,11 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             )
 
         if not use_pool:
-            _results = self._run((y_array, 0), x_array, node_type, flatten)
+            _results = self._run((y_array, None), x_array, node_type, flatten)
+        elif n_jobs == 1 and isinstance(y_array[0], (float, int)):
+            # Don't enter pool if n_jobs is 1 and y_array is 1d
+            _results = self._run((y_array, None), x_array=x_array,
+                                 node_type=node_type, flatten=flatten)
         else:
             # Parallel execution
             n_jobs = cpu_count() if n_jobs == -1 else n_jobs
@@ -249,10 +252,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             # Multiple models with unique return shapes are ragged
             #  and resultes are returned as dicts. Don't attempt to reshape.
             pass
-
-        # Reshape based on parameterized (kw)args
-        if self.params is not None:
-            self.results = self.results.reshape(self.results.shape[0], *self.params.shape[:-1])
 
         # Reset temporary attributes
         self.model = None

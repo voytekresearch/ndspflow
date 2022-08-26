@@ -2,154 +2,200 @@
 
 from inspect import signature
 from itertools import product
-from copy import deepcopy
-from re import sub
+from functools import partial
+
+from multiprocessing import Pool, cpu_count
 
 import numpy as np
 
 
-def parameterize_workflow(wf):
-    """Parse a workflows nodes and parameterizes (e.g. grid search).
+
+def run_subflows(wf, n_jobs=-1, progress=None):
+    """Parse a workflows nodes, parameterize (e.g. grid search), and run.
 
     Paramters
     ---------
     wf : ndspflow.workflows.WorkFlow
-        WorkFlow containing Param (kw)args.
+        WorkFlow containing ndspflow.workflows.param.Param as (kw)args.
 
     Returns
     -------
-    wf : ndspflow.workflows.WorkFlow
-        Expanded workflow.
-
-    Notes
-    -----
-    The search for the Param class only goes one level deep on
-    .fit nodes, meaning Model(thresh=Param([.5, .8])) will work,
-    but Model(thresh={'amp': Param([.5, .8])}) will not.
+    results : list of list of results
+        Nested results with shape (n_input_nodes, n_fits, n_params_per_fit).
     """
-    # Parse nodes for Param class
-    grid = []
+
+    seeds = wf.seeds if wf.seeds is not None else None
+
+    # Split shared and forked nodes
+    nodes_common, nodes_unique = parse_nodes(wf.nodes.copy())
+
+    # Compute a param grid and locations to update nodes
+    grid, locs = get_grid(nodes_common.copy())
+
+    # Updates nodes for each combination in grid
+    nodes_common_grid = nodes_from_grid(nodes_common.copy(), grid, locs)
+
+    pfunc = partial(_run_sub_wf, nodes_unique=nodes_unique, seeds=seeds)
+
+    inds = np.arange(len(nodes_common_grid), dtype=int)
+
+    if n_jobs == 1:
+
+        results = []
+
+        iterable = zip(nodes_common_grid, inds)
+        iterable = iterable if progress is None else progress(iterable)
+
+        for (_nodes, _ind) in iterable:
+            results.append(pfunc((_nodes, _ind)))
+
+    else:
+
+        n_jobs = cpu_count() if n_jobs == -1 else n_jobs
+
+        with Pool(processes=n_jobs) as pool:
+
+            mapping = pool.imap(pfunc, zip(nodes_common_grid, inds))
+
+            if progress is None:
+                results = list(mapping)
+            else:
+                results = list(progress(mapping))
+
+            # Ensure pools exits (needed for pytest cov)
+            pool.close()
+            pool.join()
+
+    return results
+
+
+def _run_sub_wf(nodes_common, nodes_unique=None, seeds=None):
+
+    from .workflow import WorkFlow
+
+    # Unpack mp pool iterables
+    nodes_common, ind = nodes_common
+
+    seed = seeds[ind] if seeds is not None else None
+
+    # Pre fork workflow
+    wf_pre = WorkFlow()
+
+    if seed is not None:
+        wf_pre.seeds = [int(seed)]
+
+    wf_pre.nodes = nodes_common
+    wf_pre.run(n_jobs=1)
+
+    # Post fork workflow
+    sig = wf_pre.y_array
+
+    wfs = []
+
+    for nodes_post in nodes_unique:
+
+        _grid, locs = get_grid(nodes_post.copy())
+
+        nodes_post = nodes_from_grid(nodes_post.copy(), _grid, locs)
+
+        wfs_fit = []
+
+        for _nodes in nodes_post:
+
+            wf = WorkFlow()
+
+            wf.y_array = sig
+            wf.nodes = _nodes
+            wf.run(n_jobs=1)
+            wfs_fit.append(wf.results)
+
+        wfs.append(wfs_fit)
+
+    return wfs
+
+
+def parse_nodes(nodes):
+
+    nodes_unique = []
+    nodes_common = []
+    nodes_fork = []
+    has_common = False
+
+    for node in nodes:
+
+        if node[0] != 'fork' and not has_common:
+            nodes_common.append(node)
+        elif node[0] == 'fork' and len(nodes_fork) == 0:
+            has_common = True
+        elif node[0] == 'fork' and len(nodes_fork) != 0:
+            nodes_unique.append(nodes_fork)
+            nodes_fork = []
+        else:
+            nodes_fork.append(node)
+
+    nodes_unique.append(nodes_fork)
+
+    return nodes_common, nodes_unique
+
+
+def get_grid(nodes):
+
     locs = []
+    grid = []
 
-    for i, node in enumerate(wf.nodes):
+    for i_node, node in enumerate(nodes):
 
-        offset = 1
+        if node[0] == 'fit':
 
-        if node[0] in ['simulate', 'transform']:
-            offset += 1
+            p = {attr: getattr(node[1], attr) for attr in
+                 list(signature(node[1].__init__).parameters.keys())}
 
-        for j, p in enumerate(node[offset:]):
+            node = [None, p]
 
-            # Parse model's init for Param
-            if node[0] == 'fit' and j == 0:
-                p = {attr: getattr(node[1], attr) for attr in
-                     list(signature(node[1].__init__).parameters.keys())}
+        for i_step, step in enumerate(node):
 
-            # Ensure mutable
-            if isinstance(p, tuple):
-                p = list(p)
+            if isinstance(step, tuple):
+                step = list(step)
 
-            # Parse args and kwargs for Param
-            if isinstance(p, dict):
-                for k, v in p.items():
+            if isinstance(step, list):
+                for i, arg in enumerate(step):
+                    if isinstance(arg, Param):
+                        locs.append([i_node, i_step, i])
+                        grid.append(arg.iterable)
+            elif isinstance(step, dict):
+                for k, v in step.items():
                     if isinstance(v, Param):
+                        locs.append([i_node, i_step, k])
                         grid.append(v.iterable)
-                        locs.append([i, j+offset, k])
-            elif isinstance(p, (tuple, list, np.ndarray)):
-                for ki, k in enumerate(p):
-                    if isinstance(k, Param):
-                        grid.append(k.iterable)
-                        locs.append([i, j+offset, ki])
 
-    # Create parameter grid
     grid = list(product(*grid, repeat=1))
 
+    return grid, locs
 
-    # Re-create nodes
-    fork_ind = locs[:][0][0]
-    nodes = wf.nodes[:fork_ind]
 
-    for i, params in enumerate(grid):
+def nodes_from_grid(nodes, grid, locs):
 
-        sub_nodes = deepcopy(wf.nodes)
+    nodes_grid = []
 
-        for j, loc in enumerate(locs):
-            if sub_nodes[loc[0]][0] == 'fit' and loc[1] == 1:
-                setattr(sub_nodes[loc[0]][1], loc[2], params[j])
+    for params in grid:
+
+        _nodes = nodes.copy()
+
+        for param, loc in zip(params, locs):
+
+            if isinstance(_nodes[loc[0]][loc[1]], tuple):
+                _nodes[loc[0]][loc[1]] = list(_nodes[loc[0]][loc[1]])
+
+            if isinstance(_nodes[loc[0]][loc[1]], (list, dict)):
+
+                _nodes[loc[0]][loc[1]][loc[2]] = param
+                _nodes[loc[0]][loc[1]][loc[2]] = param
             else:
-                sub_nodes[loc[0]][loc[1]][loc[2]] = params[j]
+                setattr(_nodes[loc[0]][1], loc[2], param)
 
-        nodes.extend(sub_nodes[fork_ind:])
+        nodes_grid.append(_nodes)
 
-        if i != len(grid)-1:
-            nodes.append(['fork', -1])
-
-    # Insert inital work such that all params in the grid
-    #   share common pre-nodes
-    if fork_ind > 0:
-        nodes.insert(fork_ind, ['fork', -1])
-
-    wf.nodes = nodes
-    wf.fork_inds.insert(0, -1)
-
-    # Track & reshape parameters
-    base = []
-    pinds = []
-
-    param_keys = []
-    param_inds = []
-
-    # Get keys of parameters, reshaped with unique/single fits
-    for ind, loc in enumerate(locs):
-
-        if sub_nodes[loc[0]][0] in ['transform', 'simulate']:
-
-            if isinstance(loc[2], str):
-                base.append(loc[2])
-            else:
-                base.append(
-                    list(signature(sub_nodes[loc[0]][1]).parameters.keys())[loc[2]]
-                )
-
-            pinds.append(ind)
-
-        elif sub_nodes[loc[0]][0] in ['fit', 'fit_transform']:
-
-            _base = base.copy()
-            _pinds = pinds.copy()
-
-            if isinstance(loc[2], str):
-                _base.append(loc[2])
-            else:
-                _base.append(list(signature(loc[1].fit).parameters.keys())[loc[2]])
-
-            _pinds.append(ind)
-
-            param_inds.append(_pinds)
-            param_keys.append(_base)
-
-    # Reshape grid and results
-    params = []
-
-    for ps in grid:
-        _params = [[], []]
-        j = 0
-
-        for inds, keys in zip(param_inds, param_keys):
-
-            for i, k in zip(inds, keys):
-                _params[j].append(ps[i])
-
-            j += 1
-
-        params.append(_params)
-
-    params = np.array(params, dtype='object')
-
-    wf.params = params
-    wf.param_keys = param_keys
-
-    return wf
+    return nodes_grid
 
 
 class Param:
