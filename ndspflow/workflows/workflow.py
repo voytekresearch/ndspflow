@@ -19,8 +19,6 @@ from .transform import Transform
 from .model import Model
 from .graph import create_graph
 from .utils import reshape, extract_results
-from .param import run_subflows
-
 class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
 
@@ -117,7 +115,18 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Progress bar.
         """
         if parameterize:
-            self.results = run_subflows(self, self.seeds, n_jobs=n_jobs, progress=progress)
+
+            from .param import run_subflows
+
+            for attr in ['seeds', 'subjects']:
+
+                iterable = getattr(self, attr)
+
+                if iterable is not None:
+                    break
+
+            self.results = run_subflows(self, iterable, attr, n_jobs=n_jobs, progress=progress)
+
             return
 
         # Handle merges
@@ -189,7 +198,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         if not use_pool:
             _results = self._run((y_array, None), x_array, node_type, flatten)
-        elif n_jobs == 1 and isinstance(y_array[0], (float, int)):
+        elif n_jobs == 1:
             # Don't enter pool if n_jobs is 1 and y_array is 1d
             _results = self._run((y_array, None), x_array=x_array,
                                  node_type=node_type, flatten=flatten)

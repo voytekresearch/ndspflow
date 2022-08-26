@@ -7,17 +7,28 @@ from copy import deepcopy
 
 from multiprocessing import Pool, cpu_count
 
-import numpy as np
 
 
 
-def run_subflows(wf, seeds, n_jobs=-1, progress=None):
-    """Parse a workflows nodes, parameterize (e.g. grid search), and run.
+def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
+    """Parse a workflow's nodes, parameterize (e.g. grid search), and run.
 
-    Paramters
+    Parameters
     ---------
     wf : ndspflow.workflows.WorkFlow
         WorkFlow containing ndspflow.workflows.param.Param as (kw)args.
+    iterable : list
+        Values to pass to each jobs in the pool, specifying either:
+
+        - seeds    : for simulations
+        - subjects : for reading BIDS directories
+
+    attr : {'seeds' or 'subjects'}
+        WorkFlow attribue to set iterable to.
+    n_jobs : int, optional, default: -1
+        Number of jobs to run in parallel.
+    progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
+        Progress bar.
 
     Returns
     -------
@@ -26,25 +37,23 @@ def run_subflows(wf, seeds, n_jobs=-1, progress=None):
     """
 
     # Split shared and forked nodes
-    nodes_common, nodes_unique = parse_nodes(deepcopy(wf.nodes))
+    nodes_common, nodes_unique = parse_nodes(wf.nodes)
 
     # Compute a param grid and locations to update nodes
-    grid, locs = get_grid(deepcopy(nodes_common))
+    grid, locs = compute_grid(deepcopy(nodes_common))
 
     # Updates nodes for each combination in grid
     nodes_common_grid = nodes_from_grid(deepcopy(nodes_common), grid, locs)
 
-    pfunc = partial(_run_sub_wf, nodes_common_grid=deepcopy(nodes_common_grid),
-                    nodes_unique=deepcopy(nodes_unique))
+    pfunc = partial(_run_sub_wf, wf=deepcopy(wf), attr=attr,
+                     nodes_common_grid=nodes_common_grid, nodes_unique=nodes_unique)
 
     if n_jobs == 1:
-
+        # Avoid mp pool
         results = []
-
-        iterable = seeds if progress is None else progress(seeds)
-
-        for seed in iterable:
-            results.append(pfunc(seed))
+        iterable = iterable if progress is None else progress(iterable, total=len(iterable))
+        for i in iterable:
+            results.append(pfunc(i))
 
     else:
 
@@ -52,21 +61,22 @@ def run_subflows(wf, seeds, n_jobs=-1, progress=None):
 
         with Pool(processes=n_jobs) as pool:
 
-            mapping = pool.imap(pfunc, seeds)
+            mapping = pool.imap(pfunc, iterable)
 
             if progress is None:
                 results = list(mapping)
             else:
-                results = list(progress(mapping))
+                results = list(progress(mapping, total=len(iterable)))
 
-            # Ensure pools exits (needed for pytest cov)
+            # Ensure pool exits (needed for pytest cov)
             pool.close()
             pool.join()
 
     return results
 
 
-def _run_sub_wf(seed, nodes_common_grid=None, nodes_unique=None):
+def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique=None):
+    """Map-able run function for parallel processing."""
 
     from .workflow import WorkFlow
 
@@ -75,10 +85,12 @@ def _run_sub_wf(seed, nodes_common_grid=None, nodes_unique=None):
     for nodes_common in nodes_common_grid:
 
         # Pre fork workflow
-        wf_pre = WorkFlow()
+        wf_pre = deepcopy(wf)
 
-        if seed is not None:
-            wf_pre.seeds = [int(seed)]
+        if attr == 'seeds':
+            setattr(wf_pre, attr, [index])
+        else:
+            setattr(wf_pre, attr, index)
 
         wf_pre.nodes = nodes_common
         wf_pre.run(n_jobs=1)
@@ -90,7 +102,7 @@ def _run_sub_wf(seed, nodes_common_grid=None, nodes_unique=None):
 
         for nodes_post in nodes_unique:
 
-            _grid, locs = get_grid(deepcopy(nodes_post))
+            _grid, locs = compute_grid(deepcopy(nodes_post))
 
             nodes_post = nodes_from_grid(deepcopy(nodes_post), _grid, locs)
 
@@ -98,12 +110,12 @@ def _run_sub_wf(seed, nodes_common_grid=None, nodes_unique=None):
 
             for _nodes in nodes_post:
 
-                wf = WorkFlow()
+                wf_param = WorkFlow()
 
-                wf.y_array = sig
-                wf.nodes = _nodes
-                wf.run(n_jobs=1)
-                wfs_fit.append(wf.results)
+                wf_param.y_array = sig
+                wf_param.nodes = _nodes
+                wf_param.run(n_jobs=1)
+                wfs_fit.append(wf_param.results)
 
             wfs_sim.append(wfs_fit)
 
@@ -113,19 +125,41 @@ def _run_sub_wf(seed, nodes_common_grid=None, nodes_unique=None):
 
 
 def parse_nodes(nodes):
+    """Split nodes into shared and unique.
 
+    Parameters
+    ----------
+    nodes : list of list
+        Nodes defined in WorkFlow.
+
+    Returns
+    -------
+    nodes_common : list of list
+        Prefixed nodes that are shared among all sub-workflows.
+    nodes_unique : list of list
+        Nodes that are parameterized.
+    """
     nodes_unique = []
     nodes_common = []
     nodes_fork = []
-    has_common = False
 
-    for node in nodes:
+    # Get common (shared) nodes
+    nodes_common = []
 
-        if node[0] != 'fork' and not has_common:
+    for i, node in enumerate(nodes):
+
+        if node[0] in ['fit', 'transform'] and node[-1]:
+            break
+
+        if node[0] != 'fork':
             nodes_common.append(node)
-        elif node[0] == 'fork' and len(nodes_fork) == 0:
-            has_common = True
-        elif node[0] == 'fork' and len(nodes_fork) != 0:
+
+    # Get parameterized nodes
+    nodes_unique = []
+    nodes_fork = []
+
+    for node in nodes[i:]:
+        if node[0] == 'fork' and len(nodes_fork) != 0:
             nodes_unique.append(nodes_fork)
             nodes_fork = []
         else:
@@ -136,7 +170,62 @@ def parse_nodes(nodes):
     return nodes_common, nodes_unique
 
 
-def get_grid(nodes):
+def nodes_from_grid(nodes, grid, locs):
+    """Use a grid to generate nodes.
+
+    Parameters
+    ----------
+    nodes : list of list
+        Nodes defined in WorkFlow.
+    grid : list of list
+        All combinations of parameters.
+    locs : list of list
+        Locations (indices) of nodes that correspond to grid.
+
+    Returns
+    -------
+    nodes_grid : list of list of list
+        Unique sets of nodes from the grid of parameters, with shape
+        (n_param_combinations, n_nodes, n_steps_per_node).
+    """
+    nodes_grid = []
+
+    for params in grid:
+
+        _nodes = deepcopy(nodes)
+
+        for param, loc in zip(params, locs):
+
+            if isinstance(_nodes[loc[0]][loc[1]], tuple):
+                _nodes[loc[0]][loc[1]] = list(_nodes[loc[0]][loc[1]])
+
+            if isinstance(_nodes[loc[0]][loc[1]], (list, dict)):
+
+                _nodes[loc[0]][loc[1]][loc[2]] = param
+                _nodes[loc[0]][loc[1]][loc[2]] = param
+            else:
+                setattr(_nodes[loc[0]][1], loc[2], param)
+
+        nodes_grid.append(_nodes)
+
+    return nodes_grid
+
+
+def compute_grid(nodes):
+    """Compute all combinations of parameterized parameters.
+
+    Parameters
+    ----------
+    nodes : list of list
+        Nodes defined in WorkFlow.
+
+    Returns
+    -------
+    grid : list of list
+        All combinations of parameters.
+    locs : list of list
+        Locations (indices) of nodes that correspond to grid.
+    """
 
     locs = []
     grid = []
@@ -171,31 +260,33 @@ def get_grid(nodes):
     return grid, locs
 
 
-def nodes_from_grid(nodes, grid, locs):
+def check_is_parameterized(args, kwargs):
+    """Determines if function call is parameterized.
 
-    nodes_grid = []
+    Parameters
+    ----------
+    args : tuple
+        Function arguments.
+    kwargs : dict
+        Function keyword arguments.
 
-    for params in grid:
+    Returns
+    -------
+    is_parameterized : bool
+        Whether the call is parameterized.
+    """
+    is_parameterized = False
 
-        _nodes = deepcopy(nodes)
+    for arg in args:
+        if isinstance(arg, Param):
+            is_parameterized = True
+            break
+        for v in kwargs.values():
+            if isinstance(v, Param):
+                is_parameterized = True
+                break
 
-        for param, loc in zip(params, locs):
-
-            if isinstance(_nodes[loc[0]][loc[1]], tuple):
-                _nodes[loc[0]][loc[1]] = list(_nodes[loc[0]][loc[1]])
-
-            if isinstance(_nodes[loc[0]][loc[1]], (list, dict)):
-
-                _nodes[loc[0]][loc[1]][loc[2]] = param
-                _nodes[loc[0]][loc[1]][loc[2]] = param
-            else:
-                setattr(_nodes[loc[0]][1], loc[2], param)
-
-        nodes_grid.append(_nodes)
-
-    return nodes_grid
-
-
+    return is_parameterized
 class Param:
     """Smoke class to allow type checking."""
 

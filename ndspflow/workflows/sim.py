@@ -1,8 +1,9 @@
 """Simulations."""
 
 import operator as op
-from .utils import parse_args
 
+from .utils import parse_args
+from .param import check_is_parameterized
 
 class Simulate:
     """Simulation class.
@@ -51,8 +52,10 @@ class Simulate:
         if self.seeds is not None and not isinstance(self.seeds, int):
             args, kwargs = parse_args(list(args), kwargs, self)
 
+        is_parameterized = check_is_parameterized(args, kwargs)
+
         self.nodes.append(['simulate', func, args,
-                           {'operator': operator}, kwargs])
+                           {'operator': operator}, kwargs, is_parameterized])
 
 
     def run_simulate(self, func, *args, operator='add', **kwargs):

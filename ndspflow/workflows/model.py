@@ -4,7 +4,7 @@ from copy import copy
 import numpy as np
 
 from .utils import parse_args, reshape
-
+from .param import check_is_parameterized
 
 class Model:
     """Model wrapper.
@@ -49,7 +49,9 @@ class Model:
             Passed to the .fit method of the model class.
         """
         self.model = model
-        self.nodes.append(['fit', model, args, axis, kwargs])
+        is_parmeterized = check_is_parameterized(args, kwargs)
+
+        self.nodes.append(['fit', model, args, axis, kwargs, is_parmeterized])
 
 
     def run_fit(self, x_array, y_array, *args, axis=None, **kwargs):

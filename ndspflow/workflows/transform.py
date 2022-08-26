@@ -4,7 +4,7 @@ import numpy as np
 from itertools import product
 
 from .utils import parse_args, reshape
-
+from .param import check_is_parameterized
 
 class Transform:
     """Transformation class.
@@ -48,8 +48,10 @@ class Transform:
         **kwargs
             Addional keyword arguements to func.
         """
+        is_parameterized = check_is_parameterized(args, kwargs)
+
         self.nodes.append(['transform', func, args,
-                           {'axis': axis}, kwargs])
+                           {'axis': axis}, kwargs, is_parameterized])
 
 
     def run_transform(self, func, *args, axis=None, **kwargs):
