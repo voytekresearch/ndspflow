@@ -3,6 +3,7 @@
 from inspect import signature
 from itertools import product
 from functools import partial
+from copy import deepcopy
 
 from multiprocessing import Pool, cpu_count
 
@@ -10,7 +11,7 @@ import numpy as np
 
 
 
-def run_subflows(wf, n_jobs=-1, progress=None):
+def run_subflows(wf, seeds, n_jobs=-1, progress=None):
     """Parse a workflows nodes, parameterize (e.g. grid search), and run.
 
     Paramters
@@ -24,30 +25,26 @@ def run_subflows(wf, n_jobs=-1, progress=None):
         Nested results with shape (n_input_nodes, n_fits, n_params_per_fit).
     """
 
-    seeds = wf.seeds if wf.seeds is not None else None
-
     # Split shared and forked nodes
-    nodes_common, nodes_unique = parse_nodes(wf.nodes.copy())
+    nodes_common, nodes_unique = parse_nodes(deepcopy(wf.nodes))
 
     # Compute a param grid and locations to update nodes
-    grid, locs = get_grid(nodes_common.copy())
+    grid, locs = get_grid(deepcopy(nodes_common))
 
     # Updates nodes for each combination in grid
-    nodes_common_grid = nodes_from_grid(nodes_common.copy(), grid, locs)
+    nodes_common_grid = nodes_from_grid(deepcopy(nodes_common), grid, locs)
 
-    pfunc = partial(_run_sub_wf, nodes_unique=nodes_unique, seeds=seeds)
-
-    inds = np.arange(len(nodes_common_grid), dtype=int)
+    pfunc = partial(_run_sub_wf, nodes_common_grid=deepcopy(nodes_common_grid),
+                    nodes_unique=deepcopy(nodes_unique))
 
     if n_jobs == 1:
 
         results = []
 
-        iterable = zip(nodes_common_grid, inds)
-        iterable = iterable if progress is None else progress(iterable)
+        iterable = seeds if progress is None else progress(seeds)
 
-        for (_nodes, _ind) in iterable:
-            results.append(pfunc((_nodes, _ind)))
+        for seed in iterable:
+            results.append(pfunc(seed))
 
     else:
 
@@ -55,7 +52,7 @@ def run_subflows(wf, n_jobs=-1, progress=None):
 
         with Pool(processes=n_jobs) as pool:
 
-            mapping = pool.imap(pfunc, zip(nodes_common_grid, inds))
+            mapping = pool.imap(pfunc, seeds)
 
             if progress is None:
                 results = list(mapping)
@@ -69,47 +66,48 @@ def run_subflows(wf, n_jobs=-1, progress=None):
     return results
 
 
-def _run_sub_wf(nodes_common, nodes_unique=None, seeds=None):
+def _run_sub_wf(seed, nodes_common_grid=None, nodes_unique=None):
 
     from .workflow import WorkFlow
 
-    # Unpack mp pool iterables
-    nodes_common, ind = nodes_common
-
-    seed = seeds[ind] if seeds is not None else None
-
-    # Pre fork workflow
-    wf_pre = WorkFlow()
-
-    if seed is not None:
-        wf_pre.seeds = [int(seed)]
-
-    wf_pre.nodes = nodes_common
-    wf_pre.run(n_jobs=1)
-
-    # Post fork workflow
-    sig = wf_pre.y_array
-
     wfs = []
 
-    for nodes_post in nodes_unique:
+    for nodes_common in nodes_common_grid:
 
-        _grid, locs = get_grid(nodes_post.copy())
+        # Pre fork workflow
+        wf_pre = WorkFlow()
 
-        nodes_post = nodes_from_grid(nodes_post.copy(), _grid, locs)
+        if seed is not None:
+            wf_pre.seeds = [int(seed)]
 
-        wfs_fit = []
+        wf_pre.nodes = nodes_common
+        wf_pre.run(n_jobs=1)
 
-        for _nodes in nodes_post:
+        # Post fork workflow
+        sig = wf_pre.y_array
 
-            wf = WorkFlow()
+        wfs_sim = []
 
-            wf.y_array = sig
-            wf.nodes = _nodes
-            wf.run(n_jobs=1)
-            wfs_fit.append(wf.results)
+        for nodes_post in nodes_unique:
 
-        wfs.append(wfs_fit)
+            _grid, locs = get_grid(deepcopy(nodes_post))
+
+            nodes_post = nodes_from_grid(deepcopy(nodes_post), _grid, locs)
+
+            wfs_fit = []
+
+            for _nodes in nodes_post:
+
+                wf = WorkFlow()
+
+                wf.y_array = sig
+                wf.nodes = _nodes
+                wf.run(n_jobs=1)
+                wfs_fit.append(wf.results)
+
+            wfs_sim.append(wfs_fit)
+
+        wfs.append(wfs_sim)
 
     return wfs
 
@@ -179,7 +177,7 @@ def nodes_from_grid(nodes, grid, locs):
 
     for params in grid:
 
-        _nodes = nodes.copy()
+        _nodes = deepcopy(nodes)
 
         for param, loc in zip(params, locs):
 

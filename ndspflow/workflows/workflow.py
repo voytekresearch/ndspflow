@@ -117,7 +117,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Progress bar.
         """
         if parameterize:
-            self.results = run_subflows(self, n_jobs=n_jobs, progress=progress)
+            self.results = run_subflows(self, self.seeds, n_jobs=n_jobs, progress=progress)
             return
 
         # Handle merges
