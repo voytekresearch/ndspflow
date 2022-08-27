@@ -94,10 +94,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.param_keys = None
 
         # Param grid
-        wf.grid_common = None
-        wf.grid_unique = None
-        wf.grid_keys_common = None
-        wf.grid_keys_unique = None
+        self.grid_common = None
+        self.grid_unique = None
+        self.grid_keys_common = None
+        self.grid_keys_unique = None
 
 
     def run(self, axis=None, attrs=None, parameterize=False, flatten=False,
