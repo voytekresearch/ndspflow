@@ -40,13 +40,21 @@ def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
     nodes_common, nodes_unique = parse_nodes(wf.nodes)
 
     # Compute a param grid and locations to update nodes
-    grid, locs = compute_grid(deepcopy(nodes_common))
+    grid_common, locs_common, keys_common = compute_grid(deepcopy(nodes_common))
+    nodes_common_grid = nodes_from_grid(deepcopy(nodes_common), grid_common, locs_common)
 
-    # Updates nodes for each combination in grid
-    nodes_common_grid = nodes_from_grid(deepcopy(nodes_common), grid, locs)
+    grid_unique = []
+    keys_unique = []
+    nodes_unique_grid = []
+
+    for n in nodes_unique:
+        _grid, _locs, _keys = compute_grid(deepcopy(n))
+        nodes_unique_grid.append(nodes_from_grid(deepcopy(n), _grid, _locs))
+        grid_unique.append(_grid)
+        keys_unique.append(_keys)
 
     pfunc = partial(_run_sub_wf, wf=deepcopy(wf), attr=attr,
-                     nodes_common_grid=nodes_common_grid, nodes_unique=nodes_unique)
+                    nodes_common_grid=nodes_common_grid, nodes_unique_grid=nodes_unique_grid)
 
     if n_jobs == 1:
         # Avoid mp pool
@@ -72,10 +80,15 @@ def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
             pool.close()
             pool.join()
 
+    wf.grid_common = grid_common
+    wf.grid_unique = grid_unique
+    wf.grid_keys_common = keys_common
+    wf.grid_keys_unique = keys_unique
+
     return results
 
 
-def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique=None):
+def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_grid=None):
     """Map-able run function for parallel processing."""
 
     from .workflow import WorkFlow
@@ -100,11 +113,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique=
 
         wfs_sim = []
 
-        for nodes_post in nodes_unique:
-
-            _grid, locs = compute_grid(deepcopy(nodes_post))
-
-            nodes_post = nodes_from_grid(deepcopy(nodes_post), _grid, locs)
+        for nodes_post in nodes_unique_grid:
 
             wfs_fit = []
 
@@ -225,19 +234,22 @@ def compute_grid(nodes):
         All combinations of parameters.
     locs : list of list
         Locations (indices) of nodes that correspond to grid.
+    keys : list of list
+        Names of (kw)args.
     """
 
     locs = []
     grid = []
+    keys = []
 
     for i_node, node in enumerate(nodes):
 
         if node[0] == 'fit':
 
             p = {attr: getattr(node[1], attr) for attr in
-                 list(signature(node[1].__init__).parameters.keys())}
+                list(signature(node[1].__init__).parameters.keys())}
 
-            node = [None, p]
+            node = [1, p]
 
         for i_step, step in enumerate(node):
 
@@ -249,15 +261,24 @@ def compute_grid(nodes):
                     if isinstance(arg, Param):
                         locs.append([i_node, i_step, i])
                         grid.append(arg.iterable)
+
+                        _params = list(signature(node[1]).parameters.keys())
+
+                        if node[0] != 'simulate':
+                            _params = _params[1:]
+
+                        keys.append(_params[i])
+
             elif isinstance(step, dict):
                 for k, v in step.items():
                     if isinstance(v, Param):
                         locs.append([i_node, i_step, k])
                         grid.append(v.iterable)
+                        keys.append(k)
 
     grid = list(product(*grid, repeat=1))
 
-    return grid, locs
+    return grid, locs, keys
 
 
 def check_is_parameterized(args, kwargs):

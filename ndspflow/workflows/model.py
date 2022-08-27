@@ -1,10 +1,10 @@
 """Models."""
 
 from copy import copy
-import numpy as np
+from inspect import signature
 
 from .utils import parse_args, reshape
-from .param import check_is_parameterized
+from .param import Param
 
 class Model:
     """Model wrapper.
@@ -49,9 +49,17 @@ class Model:
             Passed to the .fit method of the model class.
         """
         self.model = model
-        is_parmeterized = check_is_parameterized(args, kwargs)
 
-        self.nodes.append(['fit', model, args, axis, kwargs, is_parmeterized])
+        self.model.fit
+        is_parameterized = False
+
+        for p in list(signature(model.__init__).parameters):
+            if isinstance(getattr(model, p), Param):
+                is_parameterized = True
+                break
+
+
+        self.nodes.append(['fit', model, args, axis, kwargs, is_parameterized])
 
 
     def run_fit(self, x_array, y_array, *args, axis=None, **kwargs):
