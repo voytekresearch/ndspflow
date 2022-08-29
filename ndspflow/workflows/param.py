@@ -7,7 +7,7 @@ from copy import copy, deepcopy
 
 from multiprocessing import Pool, cpu_count
 
-
+import numpy as np
 
 
 def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
@@ -85,6 +85,8 @@ def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
     wf.grid_keys_common = keys_common
     wf.grid_keys_unique = keys_unique
 
+    results = np.array(results, dtype='object')
+
     return results
 
 
@@ -133,6 +135,8 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
 
         wfs_sim = wfs_sim[0] if len(wfs_sim) == 1 else wfs_sim
         wfs.append(wfs_sim)
+
+    wfs = wfs[0] if len(wfs) == 1 else wfs
 
     return wfs
 
@@ -207,17 +211,22 @@ def nodes_from_grid(nodes, grid, locs):
 
         _nodes = deepcopy(nodes)
 
+        init_kwargs = {}
+
         for param, loc in zip(params, locs):
 
+            # Args from tuple to list
             if isinstance(_nodes[loc[0]][loc[1]], tuple):
                 _nodes[loc[0]][loc[1]] = list(_nodes[loc[0]][loc[1]])
 
             if isinstance(_nodes[loc[0]][loc[1]], (list, dict)):
+                _nodes[loc[0]][loc[1]][loc[2]] = param
+                _nodes[loc[0]][loc[1]][loc[2]] = param
 
-                _nodes[loc[0]][loc[1]][loc[2]] = param
-                _nodes[loc[0]][loc[1]][loc[2]] = param
             else:
-                setattr(_nodes[loc[0]][1], loc[2], param)
+                init_kwargs[loc[2]] = param
+
+        _nodes[loc[0]][1].__init__(**init_kwargs)
 
         nodes_grid.append(_nodes)
 
