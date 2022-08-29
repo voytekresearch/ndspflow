@@ -105,7 +105,10 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
         wf_pre.nodes = nodes_common
         wf_pre.run(n_jobs=1)
 
-        sig = wf_pre.y_array
+        ys = wf_pre.y_array
+        xs = None
+        if wf_pre.x_array is not None:
+            xs = wf_pre.x_array
 
         # Post fork workflow
         wfs_sim = []
@@ -118,7 +121,8 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
 
                 wf_param = WorkFlow()
 
-                wf_param.y_array = sig
+                wf_param.y_array = ys
+                wf_param.x_array = xs
                 wf_param.nodes = _nodes
                 wf_param.run(n_jobs=1)
                 wfs_fit.append(copy(wf_param.results))
