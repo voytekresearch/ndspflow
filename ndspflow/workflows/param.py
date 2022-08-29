@@ -211,11 +211,22 @@ def nodes_from_grid(nodes, grid, locs):
 
         _nodes = deepcopy(nodes)
 
-        init_kwargs = {}
+        kwargs = None
 
         for param, loc in zip(params, locs):
 
-            # Args from tuple to list
+            # Fit nodes
+            if _nodes[loc[0]][0] == 'fit':
+
+                if kwargs is None:
+                    kwargs = {k: getattr(_nodes[loc[0]][1], k)
+                            for k in list(signature(_nodes[loc[0]][1].__init__).parameters)}
+
+                kwargs[loc[2]] = param
+
+                continue
+
+            # Non-fit nodes
             if isinstance(_nodes[loc[0]][loc[1]], tuple):
                 _nodes[loc[0]][loc[1]] = list(_nodes[loc[0]][loc[1]])
 
@@ -223,10 +234,10 @@ def nodes_from_grid(nodes, grid, locs):
                 _nodes[loc[0]][loc[1]][loc[2]] = param
                 _nodes[loc[0]][loc[1]][loc[2]] = param
 
-            else:
-                init_kwargs[loc[2]] = param
-
-        _nodes[loc[0]][1].__init__(**init_kwargs)
+        # Re-iniatlize model
+        if kwargs is not None:
+            _nodes[loc[0]][1].__init__(**kwargs)
+            kwargs = None
 
         nodes_grid.append(_nodes)
 
