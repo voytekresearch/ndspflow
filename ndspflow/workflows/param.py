@@ -3,7 +3,7 @@
 from inspect import signature
 from itertools import product
 from functools import partial
-from copy import deepcopy
+from copy import copy, deepcopy
 
 from multiprocessing import Pool, cpu_count
 
@@ -32,8 +32,8 @@ def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
 
     Returns
     -------
-    results : list of list of results
-        Nested results with shape (n_input_nodes, n_fits, n_params_per_fit).
+    results : 2d, 3d, or 4d list
+        Nested results with shape (n_inputs, (n_grid_common,) (n_grid_unique,) n_params).
     """
 
     # Split shared and forked nodes
@@ -100,17 +100,14 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
         # Pre fork workflow
         wf_pre = deepcopy(wf)
 
-        if attr == 'seeds':
-            setattr(wf_pre, attr, [index])
-        else:
-            setattr(wf_pre, attr, index)
+        setattr(wf_pre, attr, index)
 
         wf_pre.nodes = nodes_common
         wf_pre.run(n_jobs=1)
 
-        # Post fork workflow
         sig = wf_pre.y_array
 
+        # Post fork workflow
         wfs_sim = []
 
         for nodes_post in nodes_unique_grid:
@@ -124,10 +121,13 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
                 wf_param.y_array = sig
                 wf_param.nodes = _nodes
                 wf_param.run(n_jobs=1)
-                wfs_fit.append(wf_param.results)
+                wfs_fit.append(copy(wf_param.results))
+
+            wfs_fit = wfs_fit[0] if len(wfs_fit) == 1 else wfs_fit
 
             wfs_sim.append(wfs_fit)
 
+        wfs_sim = wfs_sim[0] if len(wfs_sim) == 1 else wfs_sim
         wfs.append(wfs_sim)
 
     return wfs
