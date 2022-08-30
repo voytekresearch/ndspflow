@@ -165,7 +165,10 @@ def parse_nodes(nodes):
 
     for i, node in enumerate(nodes):
 
-        if node[0] in ['fit', 'transform'] and node[-1]:
+        if node[0] == 'fork':
+            i += 1
+            break
+        elif node[0] in ['fit', 'transform'] and node[-1]:
             break
 
         if node[0] != 'fork':
