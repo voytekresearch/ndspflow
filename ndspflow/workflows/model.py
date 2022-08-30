@@ -1,8 +1,9 @@
 """Models."""
 
+import os
 from copy import copy
 import numpy as np
-
+import pickle as pkl
 from .utils import parse_args, reshape
 
 
@@ -33,7 +34,7 @@ class Model:
             self.seeds = None
 
 
-    def fit(self, model, *args, axis=None, **kwargs):
+    def fit(self, model, *args, axis=None, pickle=False, pickle_dir=None, **kwargs):
         """Queue fit.
 
         Parameters
@@ -49,10 +50,11 @@ class Model:
             Passed to the .fit method of the model class.
         """
         self.model = model
-        self.nodes.append(['fit', model, args, axis, kwargs])
+        self.nodes.append(['fit', model, args, axis, pickle, pickle_dir, kwargs])
 
 
-    def run_fit(self, x_array, y_array, *args, axis=None, **kwargs):
+    def run_fit(self, x_array, y_array, *args, axis=None,
+                pickle=False, pickle_dir=None, **kwargs):
         """Execute fit.
 
         Parameters
@@ -99,6 +101,19 @@ class Model:
                 self.model.fit(x_array, y_array, *args, **kwargs)
             else:
                 self.model.fit(y_array, *args, **kwargs)
+
+        if pickle:
+
+            if pickle_dir is None:
+                pickle_dir = './'
+            elif not pickle_dir.endswith('/'):
+                pickle_dir = pickle_dir + '/'
+
+            if not os.path.isdir(pickle_dir):
+                os.mkdir(pickle_dir)
+
+            with open(f"{pickle_dir}/model_{str(self.param_ind).zfill(6)}.pkl", "wb") as f:
+                pkl.dump(self.model, f)
 
         self.models.append(Result(self.model))
         self.model = None

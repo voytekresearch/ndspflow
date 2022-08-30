@@ -303,8 +303,9 @@ class WorkFlow(BIDS, Raw, Simulate, Transform, Model):
                 getattr(self, 'run_' + node[0])(node[1], *node[2],
                                                 **node[3], **node[4])
             elif node[0] == 'fit':
-                getattr(self, 'run_' + node[0])(self.x_array, self.y_array,
-                                                *node[2], axis=node[3], **node[4])
+                getattr(self, 'run_' + node[0])(self.x_array, self.y_array, *node[2],
+                                                axis=node[3], pickle=node[4], pickle_dir=node[5],
+                                                **node[6])
             elif node[0] == 'fit_transform':
                 getattr(self, 'run_' + node[0])(*node[2:])
             elif node[0] == 'fork':
