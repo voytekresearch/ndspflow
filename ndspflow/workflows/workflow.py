@@ -27,7 +27,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
     models : list
         Fit model objects.
     results : list, optional
-        Attributes from model classes.
+        Fit model classes or attributes from model classes.
     graph : networkx.DiGraph
         Directed workflow graph.
     nodes : list of list
@@ -204,7 +204,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         if not use_pool:
             _results = self._run((y_array, None), x_array, node_type, flatten)
-        elif n_jobs == 1:
+        elif n_jobs == 1 and self.seeds is None:
             # Don't enter pool if n_jobs is 1 and y_array is 1d
             _results = self._run((y_array, None), x_array=x_array,
                                  node_type=node_type, flatten=flatten)
@@ -402,7 +402,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
             # Fit
             self.fit(model, *fit_args, axis=None, **fit_kwargs)
-            self.run(axis, y_attrs, True, n_jobs, progress)
+            self.run(axis, y_attrs, False, True, n_jobs, progress)
 
             # Transform
             self.y_array = self.results

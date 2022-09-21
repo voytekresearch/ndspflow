@@ -1,7 +1,6 @@
 """Workflow utilities."""
 
 import types
-from copy import copy
 import numpy as np
 
 

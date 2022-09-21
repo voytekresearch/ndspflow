@@ -50,7 +50,6 @@ class Model:
         """
         self.model = model
 
-        self.model.fit
         is_parameterized = False
 
         for p in list(signature(model.__init__).parameters):
