@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
@@ -9,15 +9,13 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery-dataframe.css" />
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
@@ -96,7 +94,7 @@
     <div class="body col-md-12 content" role="main">
       
   <section id="ndspflow-workflows-workflow">
-<h1>ndspflow.workflows.WorkFlow<a class="headerlink" href="#ndspflow-workflows-workflow" title="Permalink to this heading">¶</a></h1>
+<h1>ndspflow.workflows.WorkFlow<a class="headerlink" href="#ndspflow-workflows-workflow" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="ndspflow.workflows.WorkFlow">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">ndspflow.workflows.</span></span><span class="sig-name descname"><span class="pre">WorkFlow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_array</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_array</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/workflow.html#WorkFlow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.WorkFlow" title="Permalink to this definition">¶</a></dt>
@@ -136,7 +134,7 @@ See: {ndspflow.workflow.bids.BIDS, ndspflow.workflow.sim.Simulate}</p>
 </dd></dl>
 
 <p class="rubric">Methods</p>
-<table class="autosummary longtable docutils align-default">
+<table class="longtable docutils align-default">
 <colgroup>
 <col style="width: 10%" />
 <col style="width: 90%" />
@@ -157,23 +155,29 @@ See: {ndspflow.workflow.bids.BIDS, ndspflow.workflow.sim.Simulate}</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.fit" title="ndspflow.workflows.WorkFlow.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model, *args[, axis])</p></td>
 <td><p>Queue fit.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.fork" title="ndspflow.workflows.WorkFlow.fork"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fork</span></code></a>([ind])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.fit_transform" title="ndspflow.workflows.WorkFlow.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(model[, y_attrs, x_attrs, ...])</p></td>
+<td><p>Queue a model fit and transform y_array to model attributes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.fork" title="ndspflow.workflows.WorkFlow.fork"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fork</span></code></a>([ind])</p></td>
 <td><p>Queue fork.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.merge" title="ndspflow.workflows.WorkFlow.merge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge</span></code></a>([return_attrs, n_jobs, progress])</p></td>
-<td><p>Execute the workflow and extract arrays.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.merge" title="ndspflow.workflows.WorkFlow.merge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge</span></code></a>()</p></td>
+<td><p>Queue a merge.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.plot" title="ndspflow.workflows.WorkFlow.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a>([npad, ax, draw_kwargs])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.plot" title="ndspflow.workflows.WorkFlow.plot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot</span></code></a>([npad, ax, draw_kwargs])</p></td>
 <td><p>Plot workflow as a directed graph.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.read_bids" title="ndspflow.workflows.WorkFlow.read_bids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_bids</span></code></a>([subject, allow_ragged, queue])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.read_bids" title="ndspflow.workflows.WorkFlow.read_bids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_bids</span></code></a>([subject, allow_ragged, queue])</p></td>
 <td><p>Read the BIDS directory into memory.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.run" title="ndspflow.workflows.WorkFlow.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>([axis, return_attrs, n_jobs, progress])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.run" title="ndspflow.workflows.WorkFlow.run"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run</span></code></a>([axis, attrs, flatten, n_jobs, progress])</p></td>
 <td><p>Run workflow.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.run_fit" title="ndspflow.workflows.WorkFlow.run_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_fit</span></code></a>(x_array, y_array, *args[, axis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.run_fit" title="ndspflow.workflows.WorkFlow.run_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_fit</span></code></a>(x_array, y_array, *args[, axis])</p></td>
 <td><p>Execute fit.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.run_fit_transform" title="ndspflow.workflows.WorkFlow.run_fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_fit_transform</span></code></a>(y_attrs[, x_attrs, axis, ...])</p></td>
+<td><p>Execute a fit + transform.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#ndspflow.workflows.WorkFlow.run_fork" title="ndspflow.workflows.WorkFlow.run_fork"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_fork</span></code></a>([ind])</p></td>
 <td><p>Execute fork.</p></td>
@@ -208,6 +212,53 @@ See: {ndspflow.workflow.bids.BIDS, ndspflow.workflow.sim.Simulate}</p>
 <dt class="sig sig-object py" id="ndspflow.workflows.WorkFlow.fit">
 <span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ndspflow.workflows.WorkFlow.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Queue fit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>model</strong><span class="classifier">class</span></dt><dd><p>Model class with a .fit method that accepts
+{(x_array, y_array), y_array}.</p>
+</dd>
+<dt><strong>args</strong></dt><dd><p>Passed to the .fit method of the model class.</p>
+</dd>
+<dt><strong>axis</strong><span class="classifier">int, optional, default: None</span></dt><dd><p>Axis to fit model over.</p>
+</dd>
+<dt><strong>**kwargs</strong></dt><dd><p>Passed to the .fit method of the model class.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ndspflow.workflows.WorkFlow.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">queue</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/workflow.html#WorkFlow.fit_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.WorkFlow.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queue a model fit and transform y_array to model attributes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>model</strong><span class="classifier">class</span></dt><dd><p>Model class with a .fit method that accepts
+{(x_array, y_array), y_array}.</p>
+</dd>
+<dt><strong>y_attrs</strong><span class="classifier">str or list of str, optional, default: None</span></dt><dd><p>Model attributes to return as y_array.
+Required if model does not have fit_transform method.</p>
+</dd>
+<dt><strong>axis</strong><span class="classifier">int, optional, default: None</span></dt><dd><p>Axis to fit model over.</p>
+</dd>
+<dt><strong>x_attrs</strong><span class="classifier">list of str, optional, default: None</span></dt><dd><p>Model attributes to return as x_array.</p>
+</dd>
+<dt><strong>n_jobs</strong><span class="classifier">int, optional, default: -1</span></dt><dd><p>Number of jobs to run in parallel.</p>
+</dd>
+<dt><strong>progress</strong><span class="classifier">{None, tqdm.notebook.tqdm, tqdm.tqdm}</span></dt><dd><p>Progress bar.</p>
+</dd>
+<dt><strong>queue</strong><span class="classifier">bool, optional, default: False</span></dt><dd><p>Add to node queue if True. Otherwise, execute on call.</p>
+</dd>
+<dt><strong>fit_args</strong><span class="classifier">dict, optional, default: False</span></dt><dd><p>Passed to the .fit method of the model class.</p>
+</dd>
+<dt><strong>fit_kwargs</strong><span class="classifier">dict, optional, default: False</span></dt><dd><p>Passed to the .fit method of the model class.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -226,23 +277,8 @@ See: {ndspflow.workflow.bids.BIDS, ndspflow.workflow.sim.Simulate}</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ndspflow.workflows.WorkFlow.merge">
-<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">return_attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/workflow.html#WorkFlow.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.WorkFlow.merge" title="Permalink to this definition">¶</a></dt>
-<dd><p>Execute the workflow and extract arrays.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>return_attrs</strong><span class="classifier">list of str, optional, default: None</span></dt><dd><p>Model attributes to return.</p>
-</dd>
-<dt><strong>n_jobs</strong><span class="classifier">int, optional, default: -1</span></dt><dd><p>Number of jobs to run in parallel.</p>
-</dd>
-<dt><strong>progress</strong><span class="classifier">{None, tqdm.notebook.tqdm, tqdm.tqdm}</span></dt><dd><p>Progress bar.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>There should be not .fit methods defined when .merge is called, this method
-merges the array output form BIDS, simulations, and transformations together.</p>
+<span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/workflow.html#WorkFlow.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.WorkFlow.merge" title="Permalink to this definition">¶</a></dt>
+<dd><p>Queue a merge.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -273,16 +309,17 @@ output length to min raw length. Only used if ind is None.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="ndspflow.workflows.WorkFlow.run">
-<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/workflow.html#WorkFlow.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.WorkFlow.run" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flatten</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">progress</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/workflow.html#WorkFlow.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.WorkFlow.run" title="Permalink to this definition">¶</a></dt>
 <dd><p>Run workflow.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
 <dt><strong>axis</strong><span class="classifier">int or tuple of int, optional, default: None</span></dt><dd><p>Axis to pass to multiprocessing pools. Only used for 2d and greater.
-Identical to numpy axis arguments. Defaults to -1 for independent
-processing.</p>
+Identical to numpy axis arguments.</p>
 </dd>
-<dt><strong>return_attrs</strong><span class="classifier">list of str, optional, default: None</span></dt><dd><p>Model attributes to return.</p>
+<dt><strong>attrs</strong><span class="classifier">list of str, optional, default: None</span></dt><dd><p>Model attributes to return.</p>
+</dd>
+<dt><strong>flatten</strong><span class="classifier">bool, optional, default: False</span></dt><dd><p>Flattens all models and attributes into a 1d array, per y_array.</p>
 </dd>
 <dt><strong>n_jobs</strong><span class="classifier">int, optional, default: -1</span></dt><dd><p>Number of jobs to run in parallel.</p>
 </dd>
@@ -300,9 +337,9 @@ processing.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><dl class="simple">
-<dt><strong>y_array</strong><span class="classifier">ndarray, optional, default: None</span></dt><dd><p>Y-axis values. Usually voltage or power.</p>
+<dt><strong>y_array</strong><span class="classifier">ndarray</span></dt><dd><p>Y-axis values. Usually voltage or power.</p>
 </dd>
-<dt><strong>x_array</strong><span class="classifier">1d array, optional, default: None</span></dt><dd><p>X-axis values. Usually time or frequency.</p>
+<dt><strong>x_array</strong><span class="classifier">1d array</span></dt><dd><p>X-axis values. Usually time or frequency.</p>
 </dd>
 <dt><strong>*args</strong></dt><dd><p>Passed to the .fit method of the model class.</p>
 </dd>
@@ -315,6 +352,28 @@ processing.</p>
 </dl>
 <p class="rubric">Notes</p>
 <p>Pass ‘self’ to any arg or kwarg to infer its value from a instance variable.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="ndspflow.workflows.WorkFlow.run_fit_transform">
+<span class="sig-name descname"><span class="pre">run_fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y_attrs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_attrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/ndspflow/workflows/workflow.html#WorkFlow.run_fit_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#ndspflow.workflows.WorkFlow.run_fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a fit + transform.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>y_attrs</strong><span class="classifier">str or list of st</span></dt><dd><p>Model attributes to return as y_array.</p>
+</dd>
+<dt><strong>x_attrs</strong><span class="classifier">str or list of str, optional, default: None</span></dt><dd><p>Model attributes to return as x_array.</p>
+</dd>
+<dt><strong>args</strong><span class="classifier">tuple, optional, default: None</span></dt><dd><p>Passed to the .fit method of the model class.</p>
+</dd>
+<dt><strong>axis</strong><span class="classifier">int, optional, default: None</span></dt><dd><p>Axis to fit model over.</p>
+</dd>
+<dt><strong>kwargs</strong><span class="classifier">dict, optional, default: None</span></dt><dd><p>Passed to the .fit method of the model class.</p>
+</dd>
+</dl>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -435,7 +494,7 @@ also handles tuples of axes and can be applied to any series of array operations
     </p>
     <p>
         &copy; Copyright 2020-2022, VoytekLab.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.1.<br/>
     </p>
   </div>
 </footer>

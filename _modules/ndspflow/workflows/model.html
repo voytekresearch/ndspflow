@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,15 +8,13 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-dataframe.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/clipboard.min.js"></script>
     <script src="../../../_static/copybutton.js"></script>
@@ -98,8 +96,10 @@
 <span></span><span class="sd">&quot;&quot;&quot;Models.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">copy</span>
-<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">parse_args</span><span class="p">,</span> <span class="n">reshape</span>
+
 
 <div class="viewcode-block" id="Model"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.Model.html#ndspflow.workflows.Model">[docs]</a><span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Model wrapper.</span>
@@ -115,15 +115,34 @@
 
 <div class="viewcode-block" id="Model.__init__"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.Model.html#ndspflow.workflows.Model.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nodes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Initialize model.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="n">nodes</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">model_self</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span> <span class="o">=</span> <span class="kc">None</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;seeds&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="Model.fit"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.Model.html#ndspflow.workflows.Model.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Queue fit.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Queue fit.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : class</span>
+<span class="sd">            Model class with a .fit method that accepts</span>
+<span class="sd">            {(x_array, y_array), y_array}.</span>
+<span class="sd">        args</span>
+<span class="sd">            Passed to the .fit method of the model class.</span>
+<span class="sd">        axis : int, optional, default: None</span>
+<span class="sd">            Axis to fit model over.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Passed to the .fit method of the model class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s1">&#39;fit&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">])</span></div>
 
@@ -133,9 +152,9 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        y_array : ndarray, optional, default: None</span>
+<span class="sd">        y_array : ndarray</span>
 <span class="sd">            Y-axis values. Usually voltage or power.</span>
-<span class="sd">        x_array : 1d array, optional, default: None</span>
+<span class="sd">        x_array : 1d array</span>
 <span class="sd">            X-axis values. Usually time or frequency.</span>
 <span class="sd">        *args</span>
 <span class="sd">            Passed to the .fit method of the model class.</span>
@@ -149,44 +168,17 @@
 <span class="sd">        Pass &#39;self&#39; to any arg or kwarg to infer its value from a instance variable.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">]</span>
-
-        <span class="c1"># Get args and kwargs stored in attributes</span>
-        <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;self&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">]:</span>
-                <span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;self&#39;</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-
-        <span class="c1"># Fit follwoing merge assumes current state of y-array is required</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_merged_fit&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merged_fit</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">return</span>
+        <span class="c1"># Get args and kwargs stored in attribute</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
 
         <span class="c1"># Apply model to specific axis of y-array</span>
         <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-
-            <span class="c1"># Invert axis indices</span>
-            <span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">axis</span>
-            <span class="n">axes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span>
-            <span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">axes</span><span class="p">[</span><span class="n">ax</span><span class="p">]</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">]</span>
-            <span class="n">axis</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">])</span>
-
-            <span class="c1"># Reshape to 2d based on axis argument</span>
-            <span class="c1">#   this allows passing slices to mp pools</span>
-            <span class="n">n_axes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
-            <span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_axes</span><span class="p">)))</span>
-            <span class="n">newshape</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">n_axes</span><span class="p">:]]</span>
-            <span class="n">y_array</span> <span class="o">=</span> <span class="n">y_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">newshape</span><span class="p">)</span>
+            <span class="n">y_array</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">reshape</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
 
             <span class="n">model</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">y_array</span><span class="p">:</span>
@@ -196,7 +188,6 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
                 <span class="n">model</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_model</span><span class="p">)</span>
-
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">x_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -206,27 +197,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span></div></div>
-
-<span class="k">class</span> <span class="nc">Merge</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Dummy model used to merge arrays.</span>
-
-<span class="sd">    Notes</span>
-<span class="sd">    -----</span>
-<span class="sd">    The .fit method is a pass-through that collects</span>
-<span class="sd">    the y-array into a temporary attribute.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_x_array</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_y_array</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_y_array</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-             <span class="bp">self</span><span class="o">.</span><span class="n">_x_array</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-             <span class="bp">self</span><span class="o">.</span><span class="n">_y_array</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
 
 <span class="k">class</span> <span class="nc">Result</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Class to allow numpy reshaping.</span>
@@ -253,7 +223,7 @@
     </p>
     <p>
         &copy; Copyright 2020-2022, VoytekLab.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.1.<br/>
     </p>
   </div>
 </footer>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
@@ -9,21 +9,19 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/gallery-dataframe.css" />
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
 <meta charset='utf-8'>
@@ -372,7 +370,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="WorkFlow-Class">
-<h1>WorkFlow Class<a class="headerlink" href="#WorkFlow-Class" title="Permalink to this heading">¶</a></h1>
+<h1>WorkFlow Class<a class="headerlink" href="#WorkFlow-Class" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">WorkFlow</span></code> objects wrap analyses that are typically functionally oriented into a unified object. This provides reproducible analyses, a unified interface for a variety of DSP packages and models, and memory/computational efficiency. This class consist of three types of nodes:</p>
 <ol class="arabic simple">
 <li><p><strong>Input</strong> : Defines the raw input numpy array, including simulations, reading BIDS structure, or custom classes or functions to read in raw binary data.</p></li>
@@ -381,7 +379,7 @@ div.rendered_html tbody tr:hover {
 </ol>
 <p><strong>Forks</strong> : Forks refer to the splitting of the workflow into multiple streams. Forks may optionally have additional transforms (e.g. one model may want power spectra, whereas another requires time series).</p>
 <section id="Initialization">
-<h2>Initialization<a class="headerlink" href="#Initialization" title="Permalink to this heading">¶</a></h2>
+<h2>Initialization<a class="headerlink" href="#Initialization" title="Permalink to this headline">¶</a></h2>
 <p>When initializing a <code class="docutils literal notranslate"><span class="pre">WorkFlow</span></code> object, arbitary keyword arguments may be passed that are required by one of its sub-classes. In the case below, we want to set the seeds attributes, required by the <code class="docutils literal notranslate"><span class="pre">Simulation</span></code> sub-class accesed via the <code class="docutils literal notranslate"><span class="pre">.simulate()</span></code> method. X-axis values may be optionally defined here, if required by the model passed to the <code class="docutils literal notranslate"><span class="pre">.fit()</span></code> method.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -390,7 +388,7 @@ div.rendered_html tbody tr:hover {
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Settings</span>
 <span class="n">n_seconds</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="n">fs</span> <span class="o">=</span> <span class="mi">1000</span>
-<span class="n">seeds</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">seeds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="c1"># Initialize</span>
 <span class="n">wf</span> <span class="o">=</span> <span class="n">WorkFlow</span><span class="p">(</span><span class="n">seeds</span><span class="o">=</span><span class="n">seeds</span><span class="p">)</span>
@@ -399,7 +397,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="1.-Input">
-<h2>1. Input<a class="headerlink" href="#1.-Input" title="Permalink to this heading">¶</a></h2>
+<h2>1. Input<a class="headerlink" href="#1.-Input" title="Permalink to this headline">¶</a></h2>
 <p>Next we define the input array, here a series of simulations. Multiple simulations calls may be stacked to create the input array. Any simulation function may be used as long as a single array is returned. The way arrays are combined are defined by the <code class="docutils literal notranslate"><span class="pre">operator</span></code> argument. The general form follows:</p>
 <p><code class="docutils literal notranslate"><span class="pre">.simulate(func,</span> <span class="pre">*args,</span> <span class="pre">operator,</span> <span class="pre">**kwargs)</span></code></p>
 <div class="nbinput nblast docutils container">
@@ -415,7 +413,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="2.-Transform">
-<h2>2. Transform<a class="headerlink" href="#2.-Transform" title="Permalink to this heading">¶</a></h2>
+<h2>2. Transform<a class="headerlink" href="#2.-Transform" title="Permalink to this headline">¶</a></h2>
 <p>The input array may transformed using any function, as long as a single array is returned. Transformation calls may also be stacked to define a series of transformations (e.g. pre-processing steps). The <code class="docutils literal notranslate"><span class="pre">axis</span></code> argument is used for ndarrays with greater than two dimensions and specifies which axis to iterate over to apply the transform. The general form follows:</p>
 <p><code class="docutils literal notranslate"><span class="pre">.transform(func,</span> <span class="pre">*args,</span> <span class="pre">axis=None,</span> <span class="pre">**kwargs)</span></code>.</p>
 <div class="nbinput nblast docutils container">
@@ -429,7 +427,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="3.-Model">
-<h2>3. Model<a class="headerlink" href="#3.-Model" title="Permalink to this heading">¶</a></h2>
+<h2>3. Model<a class="headerlink" href="#3.-Model" title="Permalink to this headline">¶</a></h2>
 <p>Up to this point, all sub-workflows share the same set of simulations (4 unique seeds) and the 300 Hz low-pass filter. The <code class="docutils literal notranslate"><span class="pre">.fork(index)</span></code> method is used to split the workflow into sub-workflows. The first <code class="docutils literal notranslate"><span class="pre">.fork(0)</span></code> called with a unique index argument creates a save state at the point of the call. Subsequent <code class="docutils literal notranslate"><span class="pre">.fork(0)</span></code> calls restore that state at the time of the inital <code class="docutils literal notranslate"><span class="pre">.fork</span></code> call before proceding. New fork calls (e.g. <code class="docutils literal notranslate"><span class="pre">.fork(1)</span></code>) creates a new save state that can be later restored
 upon subsequent calls of <code class="docutils literal notranslate"><span class="pre">.fork(1)</span></code>. In general, a unique index passed to <code class="docutils literal notranslate"><span class="pre">.fork(ind)</span></code> creates a new save state, and an existing index restores the corresponding save state at the time of the first call. Below, we fork the workflow into sub-flows that end on two sets of <code class="docutils literal notranslate"><span class="pre">FOOOF</span></code> and <code class="docutils literal notranslate"><span class="pre">Bycycle</span></code> models. Note that the <code class="docutils literal notranslate"><span class="pre">.fit()</span></code> calls belows does not run the workflow and instead adds fitting the model to the call stack. Once the <code class="docutils literal notranslate"><span class="pre">WorkFlow</span></code> is complete, the <code class="docutils literal notranslate"><span class="pre">.run()</span></code> method is used to
 execute the workflow, as shown in the next section.</p>
@@ -490,7 +488,7 @@ execute the workflow, as shown in the next section.</p>
 </div>
 </section>
 <section id="Execute">
-<h2>Execute<a class="headerlink" href="#Execute" title="Permalink to this heading">¶</a></h2>
+<h2>Execute<a class="headerlink" href="#Execute" title="Permalink to this headline">¶</a></h2>
 <p>Lastly, the <code class="docutils literal notranslate"><span class="pre">WorkFlow</span></code> is executed in parallel using the <code class="docutils literal notranslate"><span class="pre">run</span></code> method. Results are accesible via the <code class="docutils literal notranslate"><span class="pre">.results</span></code> attirbute. The order of models in <code class="docutils literal notranslate"><span class="pre">.results</span></code> maintains the in the same order as the <code class="docutils literal notranslate"><span class="pre">WorkFlow</span></code> was defined. Here the first index of <code class="docutils literal notranslate"><span class="pre">.results</span></code> refers to the simulation seed (in order of <code class="docutils literal notranslate"><span class="pre">seeds</span></code> above) and the second index refers to the order of the <code class="docutils literal notranslate"><span class="pre">.fit</span></code> calls above.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
@@ -510,76 +508,62 @@ execute the workflow, as shown in the next section.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[[&lt;fooof.objs.fit.FOOOF at 0x7f0edbf2b4f0&gt;,
-  &lt;fooof.objs.fit.FOOOF at 0x7f0edbf2b730&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0edbf2bc40&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0edbf381f0&gt;],
- [&lt;fooof.objs.fit.FOOOF at 0x7f0edbf22c70&gt;,
-  &lt;fooof.objs.fit.FOOOF at 0x7f0edbf2b7f0&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0edbf38760&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0edbf389a0&gt;],
- [&lt;fooof.objs.fit.FOOOF at 0x7f0edbf2b5e0&gt;,
-  &lt;fooof.objs.fit.FOOOF at 0x7f0edbf38c10&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0edbf38dc0&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0f39334040&gt;],
- [&lt;fooof.objs.fit.FOOOF at 0x7f0edbf2b9a0&gt;,
-  &lt;fooof.objs.fit.FOOOF at 0x7f0edbf38e80&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0f393343a0&gt;,
-  &lt;bycycle.objs.fit.Bycycle at 0x7f0f393345e0&gt;]]
+array([[&lt;fooof.objs.fit.FOOOF object at 0x7fb6e6b89400&gt;,
+        &lt;fooof.objs.fit.FOOOF object at 0x7fb6e6b89940&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb6e6b89e50&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb6e6b92400&gt;],
+       [&lt;fooof.objs.fit.FOOOF object at 0x7fb6e6b89700&gt;,
+        &lt;fooof.objs.fit.FOOOF object at 0x7fb6e6b92280&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb6e6b92a30&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb6e6b92c70&gt;],
+       [&lt;fooof.objs.fit.FOOOF object at 0x7fb6e6b89790&gt;,
+        &lt;fooof.objs.fit.FOOOF object at 0x7fb6e6b92af0&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb6e6b92fd0&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb72dccd250&gt;],
+       [&lt;fooof.objs.fit.FOOOF object at 0x7fb6e6b899d0&gt;,
+        &lt;fooof.objs.fit.FOOOF object at 0x7fb72dccd0d0&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb72dccd5b0&gt;,
+        &lt;bycycle.objs.fit.Bycycle object at 0x7fb72dccd7f0&gt;]],
+      dtype=object)
 </pre></div></div>
 </div>
 <section id="Returning-Model-Attributes">
-<h3>Returning Model Attributes<a class="headerlink" href="#Returning-Model-Attributes" title="Permalink to this heading">¶</a></h3>
+<h3>Returning Model Attributes<a class="headerlink" href="#Returning-Model-Attributes" title="Permalink to this headline">¶</a></h3>
 <p>The the <code class="docutils literal notranslate"><span class="pre">return_attrs</span></code> arguments is used to transfer any attribute in the model class (here a <code class="docutils literal notranslate"><span class="pre">FOOOF</span></code> and <code class="docutils literal notranslate"><span class="pre">Bycycle</span></code> object) to the <code class="docutils literal notranslate"><span class="pre">results</span></code> attribute of the <code class="docutils literal notranslate"><span class="pre">WorkFlow</span></code> class. This is more memory efficienct as copies of PSDs, time series, and all other model class attributes are not passed to the <code class="docutils literal notranslate"><span class="pre">results</span></code> attribute and are dropped from memory.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">return_attrs</span></code> is a string or list of strings, these attribues are expected to exist in each model. A 2d list of <code class="docutils literal notranslate"><span class="pre">return_attrs</span></code> strings provides the greatest flexibility, pairing each list of attributes to each model.</p>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Execute workflow</span>
-<span class="n">return_attrs</span> <span class="o">=</span> <span class="p">[</span>
+<span class="n">attrs</span> <span class="o">=</span> <span class="p">[</span>
     <span class="o">*</span><span class="p">[[</span><span class="s1">&#39;peak_params_&#39;</span><span class="p">,</span> <span class="s1">&#39;aperiodic_params_&#39;</span><span class="p">,</span> <span class="s1">&#39;r_squared_&#39;</span><span class="p">]]</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="c1"># FOOOF attributes</span>
     <span class="o">*</span><span class="p">[[</span><span class="s1">&#39;time_peak&#39;</span><span class="p">,</span> <span class="s1">&#39;time_rdsym&#39;</span><span class="p">,</span> <span class="s1">&#39;monotonicity&#39;</span><span class="p">]]</span> <span class="o">*</span> <span class="mi">2</span>          <span class="c1"># Bycycle attributes</span>
 <span class="p">]</span>
 
-<span class="c1"># Define attributes to extract from each model</span>
-<span class="n">return_attrs</span>
+<span class="c1"># Rerun the workflow</span>
+<span class="n">wf</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">attrs</span><span class="o">=</span><span class="n">attrs</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-[[&#39;peak_params_&#39;, &#39;aperiodic_params_&#39;, &#39;r_squared_&#39;],
- [&#39;peak_params_&#39;, &#39;aperiodic_params_&#39;, &#39;r_squared_&#39;],
- [&#39;time_peak&#39;, &#39;time_rdsym&#39;, &#39;monotonicity&#39;],
- [&#39;time_peak&#39;, &#39;time_rdsym&#39;, &#39;monotonicity&#39;]]
-</pre></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Rerun the workflow</span>
-<span class="n">wf</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">return_attrs</span><span class="o">=</span><span class="n">return_attrs</span><span class="p">)</span>
-
-<span class="c1"># This first index below references the first simulation.</span>
-<span class="c1"># The second index reference the model</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">wf</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">wf</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-dict_keys([&#39;peak_params_&#39;, &#39;aperiodic_params_&#39;, &#39;r_squared_&#39;])
-dict_keys([&#39;time_peak&#39;, &#39;time_rdsym&#39;, &#39;monotonicity&#39;])
+{&#39;peak_params_&#39;: array([[10.00966989,  3.32493202,  1.9312485 ],
+        [19.99507858,  4.0559911 ,  1.99129882]]),
+ &#39;aperiodic_params_&#39;: array([-1.20772038,  1.96193711]),
+ &#39;r_squared_&#39;: 0.97146685302719}
 </pre></div></div>
 </div>
 </section>
@@ -599,7 +583,7 @@ dict_keys([&#39;time_peak&#39;, &#39;time_rdsym&#39;, &#39;monotonicity&#39;])
     </p>
     <p>
         &copy; Copyright 2020-2022, VoytekLab.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.1.<br/>
     </p>
   </div>
 </footer>

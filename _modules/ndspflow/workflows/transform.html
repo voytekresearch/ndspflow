@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,15 +8,13 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-dataframe.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/clipboard.min.js"></script>
     <script src="../../../_static/copybutton.js"></script>
@@ -100,6 +98,8 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">parse_args</span><span class="p">,</span> <span class="n">reshape</span>
+
 
 <div class="viewcode-block" id="Transform"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.Transform.html#ndspflow.workflows.Transform">[docs]</a><span class="k">class</span> <span class="nc">Transform</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Transformation class.</span>
@@ -169,110 +169,40 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Get args and kwargs stored in attributes</span>
-        <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">parse_args</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">),</span> <span class="n">kwargs</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;self&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">]:</span>
-                <span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="s1">&#39;self&#39;</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">,</span> <span class="n">origshape</span> <span class="o">=</span> <span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
 
-        <span class="c1"># 1d case</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">func_wrapper</span><span class="p">(</span>
-                <span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">,</span>
-                <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-            <span class="p">)</span>
-            <span class="k">return</span>
+            <span class="n">_y_array</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># Initialize slice indices using numpy-like axis argument</span>
-        <span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">axis</span>
+            <span class="c1"># Iterate over first axis</span>
+            <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">):</span>
 
-        <span class="c1"># All axes</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">)))</span>
+                <span class="c1"># Apply function</span>
+                <span class="n">x_array</span><span class="p">,</span> <span class="n">y_array</span> <span class="o">=</span> <span class="n">func_wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="c1"># Account for negative indices</span>
-        <span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">axes</span><span class="p">[</span><span class="n">ax</span><span class="p">]</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">]</span>
+                <span class="c1"># Infer shape compatibility</span>
+                <span class="k">if</span> <span class="n">ind</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">y_array</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                    <span class="n">_y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">),</span> <span class="o">*</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
 
-        <span class="c1"># Invert the axis list to be numpy-like</span>
-        <span class="n">axis</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">_y_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">_y_array</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">y_array</span>
+                <span class="k">elif</span> <span class="n">_y_array</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="o">=</span> <span class="n">y_array</span>
 
-        <span class="n">inds</span> <span class="o">=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">axis</span> <span class="k">else</span> <span class="mi">0</span>
-                <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">)))]</span>
-
-        <span class="c1"># Iterate over axis indices</span>
-        <span class="n">mod_shape</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">]]):</span>
-
-            <span class="c1"># Get slice to pass into func</span>
-            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)):</span>
-                <span class="n">inds</span><span class="p">[</span><span class="n">axis</span><span class="p">[</span><span class="n">j</span><span class="p">]]</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
-
-            <span class="c1"># Infer shape</span>
-            <span class="k">if</span> <span class="n">mod_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-
-                <span class="c1"># Determine if array can be modified in place</span>
-                <span class="n">_</span><span class="p">,</span>  <span class="n">y_array_mod</span> <span class="o">=</span> <span class="n">func_wrapper</span><span class="p">(</span>
-                    <span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)],</span>
-                    <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-                <span class="p">)</span>
-
-                <span class="n">slice_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-                <span class="n">mod_shape</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">y_array_mod</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mod_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">mod_shape</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-
-                <span class="k">if</span> <span class="n">mod_shape</span> <span class="o">==</span> <span class="n">slice_shape</span><span class="p">:</span>
-                    <span class="n">in_place</span> <span class="o">=</span> <span class="kc">True</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">in_place</span> <span class="o">=</span> <span class="kc">False</span>
-
-                    <span class="c1"># Determine new shape</span>
-                    <span class="n">mod_shape_gen</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">mod_shape</span><span class="p">)</span>
-                    <span class="n">new_shape</span> <span class="o">=</span> <span class="p">[]</span>
-                    <span class="n">get_next</span> <span class="o">=</span> <span class="kc">True</span>
-
-                    <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">iax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
-
-                        <span class="k">if</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">:</span>
-
-                            <span class="n">new_shape</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iax</span><span class="p">)</span>
-                            <span class="k">continue</span>
-
-                        <span class="k">if</span> <span class="n">get_next</span><span class="p">:</span>
-                            <span class="n">ax_mod</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">mod_shape_gen</span><span class="p">)</span>
-
-                        <span class="k">if</span> <span class="n">ax_mod</span> <span class="o">==</span> <span class="n">iax</span><span class="p">:</span>
-                            <span class="n">new_shape</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax_mod</span><span class="p">)</span>
-                            <span class="n">get_next</span> <span class="o">=</span> <span class="kc">True</span>
-                        <span class="k">else</span><span class="p">:</span>
-                            <span class="n">new_shape</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-                            <span class="n">get_next</span> <span class="o">=</span> <span class="kc">False</span>
-
-                    <span class="n">y_array_reshape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">in_place</span> <span class="ow">and</span> <span class="n">y_array_mod</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">y_array_reshape</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)]</span> <span class="o">=</span> <span class="n">y_array_mod</span>
-                <span class="n">y_array_mod</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">elif</span> <span class="n">in_place</span> <span class="ow">and</span> <span class="n">y_array_mod</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)]</span> <span class="o">=</span> <span class="n">y_array_mod</span>
-                <span class="n">y_array_mod</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="n">in_place</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="n">y_array_reshape</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)]</span> <span class="o">=</span> <span class="n">func_wrapper</span><span class="p">(</span>
-                    <span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)],</span>
-                    <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-                <span class="p">)</span>
+            <span class="c1"># Squeeze and reshape</span>
+            <span class="k">if</span> <span class="n">_y_array</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">origshape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)]</span> <span class="o">=</span> <span class="n">func_wrapper</span><span class="p">(</span>
-                    <span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">inds</span><span class="p">)],</span>
-                    <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">_y_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">origshape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">in_place</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">y_array_reshape</span><span class="p">)</span></div></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="n">x_array</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">func_wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">,</span>
+                                                      <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 
 
 <span class="k">def</span> <span class="nf">func_wrapper</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">x_array</span><span class="p">,</span> <span class="n">y_array</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -313,7 +243,7 @@
     </p>
     <p>
         &copy; Copyright 2020-2022, VoytekLab.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.1.<br/>
     </p>
   </div>
 </footer>

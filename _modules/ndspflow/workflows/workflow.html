@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,15 +8,13 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/bootstrap-sphinx.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-binder.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/gallery-dataframe.css" />
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/clipboard.min.js"></script>
     <script src="../../../_static/copybutton.js"></script>
@@ -97,6 +95,7 @@
   <h1>Source code for ndspflow.workflows.workflow</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Workflows.&quot;&quot;&quot;</span>
 
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
@@ -112,9 +111,9 @@
 <span class="kn">from</span> <span class="nn">.bids</span> <span class="kn">import</span> <span class="n">BIDS</span>
 <span class="kn">from</span> <span class="nn">.sim</span> <span class="kn">import</span> <span class="n">Simulate</span>
 <span class="kn">from</span> <span class="nn">.transform</span> <span class="kn">import</span> <span class="n">Transform</span>
-<span class="kn">from</span> <span class="nn">.model</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">Merge</span>
+<span class="kn">from</span> <span class="nn">.model</span> <span class="kn">import</span> <span class="n">Model</span>
 <span class="kn">from</span> <span class="nn">.graph</span> <span class="kn">import</span> <span class="n">create_graph</span>
-
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">reshape</span><span class="p">,</span> <span class="n">extract_results</span>
 
 <div class="viewcode-block" id="WorkFlow"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow">[docs]</a><span class="k">class</span> <span class="nc">WorkFlow</span><span class="p">(</span><span class="n">BIDS</span><span class="p">,</span> <span class="n">Simulate</span><span class="p">,</span> <span class="n">Transform</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Workflow definition.</span>
@@ -181,68 +180,74 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">fork_inds</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_merged_fit</span> <span class="o">=</span> <span class="kc">False</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="WorkFlow.run"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">return_attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="WorkFlow.run"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run workflow.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        axis : int or tuple of int, optional, default: None</span>
 <span class="sd">            Axis to pass to multiprocessing pools. Only used for 2d and greater.</span>
-<span class="sd">            Identical to numpy axis arguments. Defaults to -1 for independent</span>
-<span class="sd">            processing.</span>
-<span class="sd">        return_attrs : list of str, optional, default: None</span>
+<span class="sd">            Identical to numpy axis arguments.</span>
+<span class="sd">        attrs : list of str, optional, default: None</span>
 <span class="sd">            Model attributes to return.</span>
+<span class="sd">        flatten : bool, optional, default: False</span>
+<span class="sd">            Flattens all models and attributes into a 1d array, per y_array.</span>
 <span class="sd">        n_jobs : int, optional, default: -1</span>
 <span class="sd">            Number of jobs to run in parallel.</span>
 <span class="sd">        progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}</span>
 <span class="sd">            Progress bar.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Reset pre-existing results</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_merged_fit</span><span class="p">:</span>
-            <span class="c1"># Workflow has been ran, now fit resulting y_array</span>
-            <span class="n">x_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">x_array</span><span class="o">=</span><span class="n">x_array</span><span class="p">)</span>
-            <span class="k">return</span>
+        <span class="c1"># Handle merges</span>
+        <span class="n">_merges</span> <span class="o">=</span> <span class="p">[</span><span class="n">ind</span> <span class="k">for</span> <span class="n">ind</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">))</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">ind</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;merge&#39;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">_merges</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="n">common_nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">_merges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="n">i_off</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">_merges</span><span class="p">)):</span>
+
+                <span class="c1"># Replace merges with common nodes</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">_merges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">i_off</span><span class="p">]</span>
+                <span class="n">i_off</span> <span class="o">-=</span> <span class="mi">1</span>
+
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">common_nodes</span><span class="p">)):</span>
+                    <span class="n">i_off</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">_merges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">i_off</span><span class="p">,</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">common_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+
+                <span class="c1"># Remove trailing fork node</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">_merges</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[:</span><span class="n">_merges</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">i_off</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fork_inds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">y_array_stash</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fork_inds</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">x_array_stash</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fork_inds</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span> <span class="o">=</span> <span class="n">return_attrs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span> <span class="o">=</span> <span class="n">attrs</span>
 
         <span class="c1"># Infer input array type</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">origshape</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Drop instance arrays to prevent passing copies to mp pools</span>
             <span class="n">y_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">x_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="kc">None</span>
 
-            <span class="c1"># Track original shape to later reshape results</span>
-            <span class="n">y_array_shape</span> <span class="o">=</span> <span class="n">y_array</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">y_array</span><span class="p">,</span> <span class="n">origshape</span> <span class="o">=</span> <span class="n">reshape</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">axis</span><span class="p">)</span>
 
-            <span class="c1"># Invert axis indices</span>
-            <span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">axis</span>
-            <span class="n">axes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_array_shape</span><span class="p">)))</span>
-            <span class="n">axis</span> <span class="o">=</span> <span class="p">[</span><span class="n">axes</span><span class="p">[</span><span class="n">ax</span><span class="p">]</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">]</span>
-            <span class="n">axis</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">])</span>
-
-            <span class="c1"># Reshape to 2d based on axis argument</span>
-            <span class="c1">#   this allows passing slices to mp pools</span>
-            <span class="n">n_axes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
-            <span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">n_axes</span><span class="p">)))</span>
-            <span class="n">newshape</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">*</span><span class="n">y_array</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">n_axes</span><span class="p">:]]</span>
-            <span class="n">y_array</span> <span class="o">=</span> <span class="n">y_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">newshape</span><span class="p">)</span>
-
+            <span class="n">node_type</span> <span class="o">=</span> <span class="s1">&#39;preload&#39;</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Drop instance arrays to prevent passing copies to mp pools</span>
+            <span class="n">y_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">x_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">node_type</span> <span class="o">=</span> <span class="s1">&#39;preload&#39;</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># Simulation workflow</span>
             <span class="n">y_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seeds</span>
@@ -255,42 +260,74 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Undefined input.&#39;</span><span class="p">)</span>
 
-        <span class="c1"># Parallel execution</span>
-        <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span> <span class="k">if</span> <span class="n">n_jobs</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="n">n_jobs</span>
-
-        <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
-
-            <span class="n">mapping</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">imap</span><span class="p">(</span>
-                <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">x_array</span><span class="o">=</span><span class="n">x_array</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="n">node_type</span><span class="p">),</span>
-                <span class="nb">zip</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_array</span><span class="p">)))</span>
+        <span class="c1"># Infer if mp is needed</span>
+        <span class="n">use_pool</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">node_type</span> <span class="o">!=</span> <span class="s1">&#39;sim&#39;</span><span class="p">:</span>
+            <span class="n">use_pool</span> <span class="o">=</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">y_array</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span>
+                <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
             <span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">progress</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">_results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">progress</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">y_array</span><span class="p">),</span>
-                                         <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Running Workflow&#39;</span><span class="p">))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">_results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_results</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">use_pool</span><span class="p">:</span>
+            <span class="n">_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">((</span><span class="n">y_array</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">x_array</span><span class="p">,</span> <span class="n">node_type</span><span class="p">,</span> <span class="n">flatten</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">_results</span>
+            <span class="c1"># Parallel execution</span>
+            <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">cpu_count</span><span class="p">()</span> <span class="k">if</span> <span class="n">n_jobs</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="k">else</span> <span class="n">n_jobs</span>
+
+            <span class="k">with</span> <span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">)</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+
+                <span class="n">mapping</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">imap</span><span class="p">(</span>
+                    <span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">,</span> <span class="n">x_array</span><span class="o">=</span><span class="n">x_array</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="n">node_type</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="n">flatten</span><span class="p">),</span>
+                    <span class="nb">zip</span><span class="p">(</span><span class="n">y_array</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_array</span><span class="p">)))</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">progress</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">_results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">progress</span><span class="p">(</span><span class="n">mapping</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">y_array</span><span class="p">),</span>
+                                            <span class="n">desc</span><span class="o">=</span><span class="s1">&#39;Running Workflow&#39;</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">_results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+
+                <span class="c1"># Ensure pools exits (needed for pytest cov)</span>
+                <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+        <span class="c1"># Workflow ends on transform or sim node</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;transform&#39;</span><span class="p">,</span> <span class="s1">&#39;simulate&#39;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">_results</span><span class="p">))</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Flatten should return an even array (unless models produce sparse results)</span>
+        <span class="k">if</span> <span class="n">flatten</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">_results</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">_results</span>
 
         <span class="k">try</span><span class="p">:</span>
 
             <span class="c1"># Squeeze extraneous dimensions</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;object&#39;</span><span class="p">))</span>
 
-            <span class="c1"># Pull models out of dummy result class</span>
-            <span class="k">for</span> <span class="n">inds</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">shape</span><span class="p">]):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span><span class="o">.</span><span class="n">result</span>
+            <span class="k">if</span> <span class="n">origshape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 
-            <span class="c1"># Convert results to list</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">origshape</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
 
-        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-            <span class="c1"># Multiple models with unique return shapes  are ragged</span>
-            <span class="c1">#  and are output as dicts. Don&#39;t attempt to reshape.</span>
+                <span class="c1"># Pull models out of dummy result class</span>
+                <span class="k">for</span> <span class="n">inds</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">origshape</span><span class="p">]):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span><span class="o">.</span><span class="n">result</span>
+
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="c1"># Pull models out of dummy result class</span>
+                <span class="k">for</span> <span class="n">inds</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">shape</span><span class="p">]):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="n">inds</span><span class="p">]</span><span class="o">.</span><span class="n">result</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">AttributeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="c1"># Multiple models with unique return shapes are ragged</span>
+            <span class="c1">#  and resultes are returned as dicts. Don&#39;t attempt to reshape.</span>
             <span class="k">pass</span>
 
         <span class="c1"># Reset temporary attributes</span>
@@ -298,7 +335,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
-    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">x_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="n">x_array</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flatten</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Sub-function to allow imap parallelziation.</span>
 
 <span class="sd">        Parameters</span>
@@ -310,13 +347,15 @@
 <span class="sd">            X-axis values.</span>
 <span class="sd">        node_type : {None, &#39;bids&#39;, &#39;sim&#39;}</span>
 <span class="sd">            Type of node.</span>
+<span class="sd">        flatten : bool, optional, default: False</span>
+<span class="sd">            Flattens all models and attributes into a 1d array, per y_array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># Reset de-instanced arrays</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="n">x_array</span>
 
         <span class="c1"># Unpack process index</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pind</span> <span class="o">=</span> <span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_ind</span> <span class="o">=</span> <span class="nb">input</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="nb">input</span> <span class="o">=</span> <span class="nb">input</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">node_type</span> <span class="o">==</span> <span class="s1">&#39;sim&#39;</span><span class="p">:</span>
@@ -335,26 +374,16 @@
             <span class="k">elif</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fit&#39;</span><span class="p">:</span>
                 <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;run_&#39;</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">])(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">,</span>
                                                 <span class="o">*</span><span class="n">node</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">node</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="o">**</span><span class="n">node</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+            <span class="k">elif</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fit_transform&#39;</span><span class="p">:</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;run_&#39;</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">])(</span><span class="o">*</span><span class="n">node</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span>
             <span class="k">elif</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fork&#39;</span><span class="p">:</span>
                 <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;run_&#39;</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">])(</span><span class="n">node</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;run_&#39;</span> <span class="o">+</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">])(</span><span class="o">*</span><span class="n">node</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">node</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
 
         <span class="c1"># Sort results</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="c1"># Single and same attribute extracted from all models</span>
-            <span class="k">return</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">result</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">)</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="c1"># 1d attributes, same for each model</span>
-            <span class="k">return</span> <span class="p">[[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">result</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">]</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="c1"># 2d attributes, unique for each model</span>
-            <span class="k">return</span> <span class="p">[{</span><span class="n">r</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">result</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span><span class="p">[</span><span class="n">i</span><span class="p">]}</span>
-                     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">model</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">)]</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_attrs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;simulate&#39;</span><span class="p">,</span> <span class="s1">&#39;transform&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span>
+
+        <span class="k">return</span> <span class="n">extract_results</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span> <span class="n">flatten</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="WorkFlow.fork"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.fork">[docs]</a>    <span class="k">def</span> <span class="nf">fork</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ind</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
@@ -391,52 +420,90 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_array_stash</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="WorkFlow.merge"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">return_attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Execute the workflow and extract arrays.</span>
+<div class="viewcode-block" id="WorkFlow.merge"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Queue a merge.&quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s1">&#39;merge&#39;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="WorkFlow.fit_transform"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">y_attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x_attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">queue</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fit_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fit_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Queue a model fit and transform y_array to model attributes.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        return_attrs : list of str, optional, default: None</span>
-<span class="sd">            Model attributes to return.</span>
+<span class="sd">        model : class</span>
+<span class="sd">            Model class with a .fit method that accepts</span>
+<span class="sd">            {(x_array, y_array), y_array}.</span>
+<span class="sd">        y_attrs : str or list of str, optional, default: None</span>
+<span class="sd">            Model attributes to return as y_array.</span>
+<span class="sd">            Required if model does not have fit_transform method.</span>
+<span class="sd">        axis : int, optional, default: None</span>
+<span class="sd">            Axis to fit model over.</span>
+<span class="sd">        x_attrs : list of str, optional, default: None</span>
+<span class="sd">            Model attributes to return as x_array.</span>
 <span class="sd">        n_jobs : int, optional, default: -1</span>
 <span class="sd">            Number of jobs to run in parallel.</span>
 <span class="sd">        progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}</span>
 <span class="sd">            Progress bar.</span>
-
-<span class="sd">        Notes</span>
-<span class="sd">        -----</span>
-<span class="sd">        There should be not .fit methods defined when .merge is called, this method</span>
-<span class="sd">        merges the array output form BIDS, simulations, and transformations together.</span>
+<span class="sd">        queue : bool, optional, default: False</span>
+<span class="sd">            Add to node queue if True. Otherwise, execute on call.</span>
+<span class="sd">        fit_args : dict, optional, default: False</span>
+<span class="sd">            Passed to the .fit method of the model class.</span>
+<span class="sd">        fit_kwargs : dict, optional, default: False</span>
+<span class="sd">            Passed to the .fit method of the model class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fit&#39;</span><span class="p">:</span>
-            <span class="c1"># Merge all node, including fit nodes</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">return_attrs</span><span class="o">=</span><span class="n">return_attrs</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">queue</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="s1">&#39;fit_transform&#39;</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">y_attrs</span><span class="p">,</span>  <span class="n">x_attrs</span><span class="p">,</span>
+                               <span class="n">axis</span><span class="p">,</span> <span class="n">fit_args</span><span class="p">,</span> <span class="n">fit_kwargs</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s1">&#39;fit_transform&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Merge input &amp; transform nodes</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Merge</span><span class="p">())</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="n">progress</span><span class="p">)</span>
+            <span class="n">fit_args</span> <span class="o">=</span> <span class="p">()</span> <span class="k">if</span> <span class="n">fit_args</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">fit_args</span>
+            <span class="n">fit_kwargs</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">fit_kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">fit_kwargs</span>
 
-            <span class="c1"># Extract y_arrays from dummy models</span>
-            <span class="n">dmodels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;object&#39;</span><span class="p">))</span>
-            <span class="n">orig_shape</span> <span class="o">=</span> <span class="n">dmodels</span><span class="o">.</span><span class="n">shape</span>
+            <span class="c1"># Fit</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="o">*</span><span class="n">fit_args</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">y_attrs</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="n">progress</span><span class="p">)</span>
 
-            <span class="n">dmodels</span> <span class="o">=</span> <span class="n">dmodels</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># Transform</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">results</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">_y_array</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">dmodels</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="n">dmodels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">_x_array</span>
+            <span class="c1"># Clear</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">[]</span></div>
 
-        <span class="c1"># Clear results</span>
+
+<div class="viewcode-block" id="WorkFlow.run_fit_transform"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.run_fit_transform">[docs]</a>    <span class="k">def</span> <span class="nf">run_fit_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y_attrs</span><span class="p">,</span> <span class="n">x_attrs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Execute a fit + transform.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        y_attrs : str or list of st</span>
+<span class="sd">            Model attributes to return as y_array.</span>
+<span class="sd">        x_attrs : str or list of str, optional, default: None</span>
+<span class="sd">            Model attributes to return as x_array.</span>
+<span class="sd">        args : tuple, optional, default: None</span>
+<span class="sd">            Passed to the .fit method of the model class.</span>
+<span class="sd">        axis : int, optional, default: None</span>
+<span class="sd">            Axis to fit model over.</span>
+<span class="sd">        kwargs : dict, optional, default: None</span>
+<span class="sd">            Passed to the .fit method of the model class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Fit</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">()</span> <span class="k">if</span> <span class="n">args</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">args</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">kwargs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">kwargs</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># Transform</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_array</span> <span class="o">=</span> <span class="n">extract_results</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="n">y_attrs</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_array</span> <span class="o">=</span> <span class="n">extract_results</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">,</span> <span class="n">x_attrs</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">x_attrs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="c1"># Clear</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">results</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="c1"># This is a hack to prevent nodes from double executing</span>
-        <span class="c1">#   this should be changed to tracking which nodes have</span>
-        <span class="c1">#   been previously ran.</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="c1"># Prevents passing to another mp pool</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_merged_fit</span> <span class="o">=</span> <span class="kc">True</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">[]</span></div>
 
 
 <div class="viewcode-block" id="WorkFlow.drop_x"><a class="viewcode-back" href="../../../generated/ndspflow.workflows.WorkFlow.html#ndspflow.workflows.WorkFlow.drop_x">[docs]</a>    <span class="k">def</span> <span class="nf">drop_x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -485,7 +552,7 @@
     </p>
     <p>
         &copy; Copyright 2020-2022, VoytekLab.<br/>
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.1.<br/>
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.1.<br/>
     </p>
   </div>
 </footer>
