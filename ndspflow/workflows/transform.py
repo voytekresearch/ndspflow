@@ -32,7 +32,7 @@ class Transform:
         self.nodes = []
 
 
-    def transform(self, func, *args, axis=None, mode='notebook', **kwargs):
+    def transform(self, func, *args, axis=None, mode=None, **kwargs):
         """Queue transformation.
 
         Parameters
@@ -44,7 +44,7 @@ class Transform:
         axis : int or tuple of int, optional, default: None
             Axis to apply the function along 1d-slices. Only used for 2d and greater.
             Identical to numpy axis arguments. None assumes transform requires 2d input.
-        mode : {'notebook', None}
+        mode : {None, 'notebook'}
             Notebook mode allows functions to be defined in notebooks, rather than
             imported from a module.
         **kwargs
