@@ -136,13 +136,20 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
 
             wfs_fit = []
 
-            for _nodes in nodes_post:
+            for nodes in nodes_post:
 
+                # Re-initialize model after parsing Param object(s)
+                for inner_ind in range(len(nodes)):
+                    if nodes[inner_ind][0] == 'fit':
+                        _params = {attr: getattr(nodes[inner_ind][1], attr) for attr in
+                                   list(signature(nodes[inner_ind][1].__init__).parameters.keys())}
+                        nodes[inner_ind][1].__init__(**_params)
+
+                # Create workflow
                 wf_param = WorkFlow()
-
                 wf_param.y_array = ys
                 wf_param.x_array = xs
-                wf_param.nodes = _nodes
+                wf_param.nodes = nodes
                 wf_param.run(n_jobs=1)
                 wfs_fit.append(copy(wf_param.results))
 
@@ -291,7 +298,7 @@ def compute_grid(nodes):
         if node[0] == 'fit':
 
             p = {attr: getattr(node[1], attr) for attr in
-                list(signature(node[1].__init__).parameters.keys())}
+                 list(signature(node[1].__init__).parameters.keys())}
 
             node = [1, p]
 
@@ -352,8 +359,16 @@ def check_is_parameterized(args, kwargs):
                 break
 
     return is_parameterized
+
+
 class Param:
     """Smoke class to allow type checking."""
 
     def __init__(self, iterable):
         self.iterable = iterable
+
+    def __iter__(self):
+        # Dummy iter to not break model classes that
+        #   need to iterate over a parameter on initalization
+        for i in self.iterable[0]:
+            yield i
