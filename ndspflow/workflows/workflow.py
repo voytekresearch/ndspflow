@@ -124,6 +124,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
             from .param import run_subflows
 
+            iterable = None
+
             for attr in ['seeds', 'subjects']:
 
                 iterable = getattr(self, attr)
@@ -131,7 +133,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                 if iterable is not None:
                     break
 
-            self.results = run_subflows(self, iterable, attr, n_jobs=n_jobs, progress=progress)
+            self.results = run_subflows(self, iterable, attr, axis=axis,
+                                        n_jobs=n_jobs, progress=progress)
 
             return
 

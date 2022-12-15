@@ -10,7 +10,7 @@ from multiprocessing import Pool, cpu_count
 import numpy as np
 
 
-def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
+def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     """Parse a workflow's nodes, parameterize (e.g. grid search), and run.
 
     Parameters
@@ -20,11 +20,14 @@ def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
     iterable : list
         Values to pass to each jobs in the pool, specifying either:
 
-        - seeds    : for simulations
-        - subjects : for reading BIDS directories
+        - seeds    : list of int, for simulations
+        - subjects : list of int, for reading BIDS directories
+        - custom (x_) and y_array : None, instead slices along axis
 
     attr : {'seeds' or 'subjects'}
         WorkFlow attribue to set iterable to.
+    axis : int, optional, default: None
+        Axis to iterate over.
     n_jobs : int, optional, default: -1
         Number of jobs to run in parallel.
     progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
@@ -35,6 +38,11 @@ def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
     results : 2d, 3d, or 4d list
         Nested results with shape (n_inputs, (n_grid_common,) (n_grid_unique,) n_params).
     """
+
+    # If using an axis
+    if axis is not None and iterable is None:
+        iterable = np.swapaxes(deepcopy(wf.y_array).T, 0, axis)
+        del wf.y_array
 
     # Split shared and forked nodes
     nodes_common, nodes_unique = parse_nodes(wf.nodes)
@@ -60,6 +68,7 @@ def run_subflows(wf, iterable, attr, n_jobs=-1, progress=None):
         # Avoid mp pool
         results = []
         iterable = iterable if progress is None else progress(iterable, total=len(iterable))
+
         for i in iterable:
             results.append(pfunc(i))
 
@@ -95,22 +104,30 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
 
     from .workflow import WorkFlow
 
+    if isinstance(index, np.ndarray):
+        wf.y_array = index
+
     wfs = []
 
     for nodes_common in nodes_common_grid:
 
         # Pre fork workflow
-        wf_pre = deepcopy(wf)
+        if len(nodes_common) > 0:
+            wf_pre = deepcopy(wf)
 
-        setattr(wf_pre, attr, index)
+            if index is not None:
+                setattr(wf_pre, attr, index)
 
-        wf_pre.nodes = nodes_common
-        wf_pre.run(n_jobs=1)
+            wf_pre.nodes = nodes_common
+            wf_pre.run(n_jobs=1)
 
-        ys = wf_pre.y_array
-        xs = None
-        if wf_pre.x_array is not None:
-            xs = wf_pre.x_array
+            ys = wf_pre.y_array
+            xs = None
+            if wf_pre.x_array is not None:
+                xs = wf_pre.x_array
+        else:
+            ys = wf.y_array
+            xs = wf.x_array
 
         # Post fork workflow
         wfs_sim = []
