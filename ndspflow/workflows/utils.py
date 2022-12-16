@@ -1,6 +1,7 @@
 """Workflow utilities."""
 
 import types
+from inspect import signature
 import numpy as np
 
 
@@ -139,3 +140,30 @@ def extract_results(models, attrs=None, flatten=False):
         results = np.hstack([i[j].flatten() for i in results for j in i])
 
     return results
+
+
+def get_init_params(model):
+    """Get model initialization parameters.
+
+    Parameters
+    ----------
+    model : class
+        Model object with a .fit method.
+
+    Returns
+    -------
+    params_init : list of str
+        Names of parameters that are accepts by the model's init or
+        by the model's super class.
+    """
+    # Search current class
+    params_init = [i for i in list(signature(model.__init__).parameters)
+                   if i not in ['self', 'args', 'kwargs']]
+
+    # Search super class(es)
+    params_init.extend(
+        [j for i in model.__class__.__bases__ for j in
+        list(signature(i.__init__).parameters) if j not in ['self', 'args', 'kwargs']]
+    )
+
+    return params_init

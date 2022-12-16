@@ -19,6 +19,8 @@ from .transform import Transform
 from .model import Model
 from .graph import create_graph
 from .utils import reshape, extract_results
+
+
 class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
 

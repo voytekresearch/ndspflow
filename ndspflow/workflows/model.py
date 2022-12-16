@@ -3,7 +3,7 @@
 from copy import copy
 from inspect import signature
 
-from .utils import parse_args, reshape
+from .utils import parse_args, reshape, get_init_params
 from .param import Param
 
 class Model:
@@ -32,6 +32,8 @@ class Model:
         if not hasattr(self, 'seeds'):
             self.seeds = None
 
+        self.params_init = None
+
 
     def fit(self, model, *args, axis=None, **kwargs):
         """Queue fit.
@@ -50,13 +52,15 @@ class Model:
         """
         self.model = model
 
+        # Determine if any Param objects have been passed to model initalization
         is_parameterized = False
 
-        for p in list(signature(model.__init__).parameters):
+        self.params_init = get_init_params(model)
+
+        for p in self.params_init:
             if isinstance(getattr(model, p), Param):
                 is_parameterized = True
                 break
-
 
         self.nodes.append(['fit', model, args, axis, kwargs, is_parameterized])
 

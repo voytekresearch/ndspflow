@@ -9,6 +9,8 @@ from multiprocessing import Pool, cpu_count
 
 import numpy as np
 
+from .utils import get_init_params
+
 
 def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     """Parse a workflow's nodes, parameterize (e.g. grid search), and run.
@@ -94,7 +96,15 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     wf.grid_keys_common = keys_common
     wf.grid_keys_unique = keys_unique
 
-    results = np.array(results, dtype='object')
+    if isinstance(results, list) and isinstance(results[0], list):
+        _results = np.empty((len(results), len(results[0])), dtype=object)
+    elif isinstance(results[0], list):
+        _results = np.empty(len(_results), dtype=object)
+
+    _results[:] = results
+
+    results = _results
+    del _results
 
     return results
 
@@ -139,11 +149,13 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
             for nodes in nodes_post:
 
                 # Re-initialize model after parsing Param object(s)
-                for inner_ind in range(len(nodes)):
-                    if nodes[inner_ind][0] == 'fit':
-                        _params = {attr: getattr(nodes[inner_ind][1], attr) for attr in
-                                   list(signature(nodes[inner_ind][1].__init__).parameters.keys())}
-                        nodes[inner_ind][1].__init__(**_params)
+                for ind in range(len(nodes)):
+                    if nodes[ind][0] == 'fit':
+
+                        _params = {attr: getattr(nodes[ind][1], attr) for attr in
+                                   get_init_params(nodes[ind][1])}
+
+                        nodes[ind][1].__init__(**_params)
 
                 # Create workflow
                 wf_param = WorkFlow()
@@ -246,8 +258,10 @@ def nodes_from_grid(nodes, grid, locs):
             if _nodes[loc[0]][0] == 'fit':
 
                 if kwargs is None:
-                    kwargs = {k: getattr(_nodes[loc[0]][1], k)
-                            for k in list(signature(_nodes[loc[0]][1].__init__).parameters)}
+
+                    # Get model's initalized arguments
+                    params_init = get_init_params(_nodes[loc[0]][1])
+                    kwargs = {attr: getattr(_nodes[loc[0]][1], attr) for attr in params_init}
 
                 kwargs[loc[2]] = param
 
@@ -297,8 +311,9 @@ def compute_grid(nodes):
 
         if node[0] == 'fit':
 
-            p = {attr: getattr(node[1], attr) for attr in
-                 list(signature(node[1].__init__).parameters.keys())}
+            # Get model's initalized arguments
+            params_init = get_init_params(node[1])
+            p = {attr: getattr(node[1], attr) for attr in params_init}
 
             node = [1, p]
 
@@ -372,3 +387,4 @@ class Param:
         #   need to iterate over a parameter on initalization
         for i in self.iterable[0]:
             yield i
+
