@@ -98,22 +98,35 @@ class Model:
         if axis is not None:
             y_array, _ = reshape(y_array, axis)
 
-            model = []
+            models = []
             for y in y_array:
                 _model = copy(self.model)
                 if x_array is not None:
-                    _model.fit(x_array, y, *args, **kwargs)
+                    mfit = _model.fit(x_array, y, *args, **kwargs)
                 else:
-                    _model.fit(y, *args, **kwargs)
-                model.append(_model)
-            self.model = model
+                    mfit = _model.fit(y, *args, **kwargs)
+
+                # Some model's .fit method returns a results object (e.g. statmodels)
+                #   Other libraries (e.g. sklearn) update results in self.
+                if mfit is None:
+                    models.append(_model)
+                else:
+                    models.append(mfit)
+
+            self.models = [Result(m) for m in models]
         else:
             if x_array is not None:
-                self.model.fit(x_array, y_array, *args, **kwargs)
+                mfit = self.model.fit(x_array, y_array, *args, **kwargs)
             else:
-                self.model.fit(y_array, *args, **kwargs)
+                mfit = self.model.fit(y_array, *args, **kwargs)
 
-        self.models.append(Result(self.model))
+            # Some model's .fit method returns a results object (e.g. statmodels)
+            #   Other libraries (e.g. sklearn) update results in self.
+            if mfit is None:
+                self.models.append(Result(self.model))
+            else:
+                self.models.append(Result(mfit))
+
         self.model = None
 
 class Result:
