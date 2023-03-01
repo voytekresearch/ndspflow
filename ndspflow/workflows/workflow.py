@@ -101,6 +101,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.grid_keys_common = None
         self.grid_keys_unique = None
 
+    def __call__(self, y_array, x_array=None):
+        """Call class to update array inputs."""
+        self.y_array = y_array
+        if x_array is not None:
+            self.x_array = x_array
+
 
     def run(self, axis=None, attrs=None, parameterize=False, flatten=False,
             n_jobs=-1, progress=None):
@@ -406,11 +412,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             fit_kwargs = {} if fit_kwargs is None else fit_kwargs
 
             # Fit
-            self.fit(model, *fit_args, axis=None, **fit_kwargs)
+            self.fit(model, *fit_args, axis=axis, **fit_kwargs)
             self.run(axis, y_attrs, False, True, n_jobs, progress)
 
             # Transform
             self.y_array = self.results
+            self.x_array = None
 
             # Clear
             self.results = None
@@ -438,11 +445,14 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         args = () if args is None else args
         kwargs = {} if kwargs is None else kwargs
 
-        self.run_fit(self.x_array, self.y_array, *args, axis=axis, **kwargs)
+        if hasattr(self.node[1], 'fit_transform'):
+            self.y_array = self.node[1].fit_transform(self.y_array)
+        else:
+            self.run_fit(self.x_array, self.y_array, *args, axis=axis, **kwargs)
 
-        # Transform
-        self.y_array = extract_results(self.models, y_attrs, True)
-        self.x_array = extract_results(self.models, x_attrs, True) if x_attrs is not None else None
+            # Transform
+            self.y_array = extract_results(self.models, y_attrs, True)
+            self.x_array = extract_results(self.models, x_attrs, True) if x_attrs is not None else None
 
         # Clear
         self.results = None
@@ -481,3 +491,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
     def create_graph(self, npad=2):
         self.graph = create_graph(self, npad)
+
+    def copy(self):
+        return deepcopy(self)
