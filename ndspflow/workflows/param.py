@@ -96,6 +96,12 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     wf.grid_keys_common = keys_common
     wf.grid_keys_unique = keys_unique
 
+    if wf.nodes[0][0] == 'transform':
+        # Transforms will produce stackable arrays
+        results = np.stack(results)
+        return results
+
+    # Model results stacked into object array
     if isinstance(results, list) and isinstance(results[0], list):
         _results = np.empty((len(results), len(results[0])), dtype=object)
     elif isinstance(results[0], list):
@@ -163,7 +169,16 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
                 wf_param.x_array = xs
                 wf_param.nodes = nodes
                 wf_param.run(n_jobs=1)
-                wfs_fit.append(copy(wf_param.results))
+
+                if wf_param.results is None and wf_param.x_array is None:
+                    # Workflow ended on a transform node.
+                    #   Return state of array instead of model results.
+                    wfs_fit.append(wf_param.y_array)
+                elif wf_param.results is None:
+                    wfs_fit.append([wf_param.x_array, wf_param.y_array])
+                else:
+                    # Model was fit, return results
+                    wfs_fit.append(copy(wf_param.results))
 
             wfs_fit = wfs_fit[0] if len(wfs_fit) == 1 else wfs_fit
 
