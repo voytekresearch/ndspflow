@@ -1,5 +1,9 @@
 """Workflow utilities."""
 
+import os
+import re
+import inspect
+
 import types
 from inspect import signature
 import numpy as np
@@ -167,3 +171,40 @@ def get_init_params(model):
     )
 
     return params_init
+
+
+def import_function(func):
+    """Imports function defined on main. Required for multiprocessing with
+    functions defined in jupyter.
+
+    Parameters
+    ----------
+    func : function
+        Function defined on __main__.
+
+    Returns
+    -------
+    func : function
+        Function defined from temporary import.
+    """
+
+    # Move func to a .py file
+    if os.path.isfile('_tmp_funcs_mp.py'):
+        os.remove('_tmp_funcs_mp.py')
+
+    lines = inspect.getsource(func)
+
+    # Ensure consistent func name for importing
+    func_name = func.__name__
+
+    lines = re.sub(f'def {func_name}', 'def func', lines)
+
+    # Write function
+    with open('_tmp_funcs_mp.py', 'w') as f:
+        for line in lines:
+            f.write(line)
+
+    # Import
+    from _tmp_funcs_mp import func
+
+    return func
