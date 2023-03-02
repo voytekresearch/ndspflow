@@ -4,12 +4,12 @@ from copy import deepcopy
 from functools import partial
 from itertools import product
 from inspect import signature
+from warnings import warn
 
-from multiprocessing import Pool, cpu_count
+from pathos.multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
 
 import numpy as np
-import networkx as nx
 
 from mne_bids import BIDSPath
 
@@ -214,11 +214,22 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             )
 
         if not use_pool:
+            # Not using simulations, and y_array and axis don't require mp
             _results = self._run((y_array, None), x_array, node_type, flatten)
         elif n_jobs == 1 and self.seeds is None:
             # Don't enter pool if n_jobs is 1 and y_array is 1d
             _results = self._run((y_array, None), x_array=x_array,
                                  node_type=node_type, flatten=flatten)
+        elif n_jobs == 1:
+            # Using random seeds to simulate
+            pfunc = partial(self._run, x_array=x_array, node_type=node_type, flatten=flatten)
+            _results = []
+            for ind, seed in enumerate(y_array):
+                _results.append(pfunc((seed, ind)))
+                # Clear before the next simulation
+                self.y_array = None
+                self.x_array = None
+                self.models = []
         else:
             # Parallel execution
             n_jobs = cpu_count() if n_jobs == -1 else n_jobs
@@ -242,7 +253,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         # Workflow ends on transform or sim node
         if self.nodes[-1][0] in ['transform', 'simulate']:
-            self.y_array = np.squeeze(np.array(_results))
+            self.y_array = np.array(_results)
+
+            if self.y_array.size != 1:
+                # If array > 1 value, squeeze potential extraneous dimensions
+                self.y_array = np.squeeze(self.y_array)
+
             return
 
         # Flatten should return an even array (unless models produce sparse results)
@@ -471,6 +487,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
     def plot(self, npad=2, ax=None, draw_kwargs=None):
         """Plot workflow as a directed graph."""
+
+        try:
+            import networkx as nx
+        except ModuleNotFoundError:
+            warn("Install networkx for creating and plotting workflow graphs.")
+            return
 
         if self.graph is None:
             self.create_graph(npad)
