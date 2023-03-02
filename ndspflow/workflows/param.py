@@ -5,7 +5,7 @@ from itertools import product
 from functools import partial
 from copy import copy, deepcopy
 
-from multiprocessing import Pool, cpu_count
+from pathos.multiprocessing import Pool, cpu_count
 
 import numpy as np
 
@@ -91,12 +91,17 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
             pool.close()
             pool.join()
 
+    if len(grid_unique) == 1:
+        grid_unique = grid_common[0]
+        keys_unique = keys_unique[0]
+
     wf.grid_common = grid_common
     wf.grid_unique = grid_unique
     wf.grid_keys_common = keys_common
     wf.grid_keys_unique = keys_unique
 
-    if wf.nodes[0][0] == 'transform':
+    if (wf.nodes[0][0] == 'transform' and
+        all([res.shape == results[0][0].shape for res in results[0][1:]])):
         # Transforms will produce stackable arrays
         results = np.stack(results)
         return results
