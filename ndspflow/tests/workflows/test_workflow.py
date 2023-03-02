@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 
-from ndspflow.tests.utils import plot_test, pbar, FitPass
+from ndspflow.tests.utils import plot_test, pbar, TestModel
 from neurodsp.sim import sim_oscillation, sim_powerlaw
 from neurodsp.spectral import compute_spectrum
 
@@ -262,11 +262,11 @@ def test_workflow_fit_transform():
     wf.fit_transform(FOOOF(max_n_peaks=1, verbose=False),
                      y_attrs=['peak_params_', 'aperiodic_params_'], queue=True)
 
-    wf.fit(FitPass())
+    wf.fit(TestModel())
 
-    wf.run(attrs='params')
+    wf.run(attrs='result')
 
-    assert wf.results.shape == (3, 5)
+    assert wf.results.shape == (3,)
 
     # Pass FOOOF params (as y_array) to the fit_transform method of PCA
     wf = WorkFlow(seeds=np.arange(3))

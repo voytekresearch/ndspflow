@@ -31,7 +31,19 @@ def pbar(func, *args, **kwargs):
     return func
 
 
-class FitPass:
-    # Dummy fit class
-    def __init__(self): pass
-    def fit(self, params): self.params = params
+class TestModel:
+    def __init__(self):
+        self.result = None
+
+    def fit(self, *arrays):
+
+        if len(arrays) == 2:
+            _, y = arrays
+        else:
+            y = arrays[0]
+
+        self.result = y.sum()
+
+    def fit_transform(self, *arrays):
+        self.fit(*arrays)
+        return self.result
