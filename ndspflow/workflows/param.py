@@ -117,6 +117,8 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     results = _results
     del _results
 
+    results = np.array(results.tolist())
+
     return results
 
 
@@ -152,7 +154,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
 
         # Post fork workflow
         wfs_sim = []
-
+        seeds = None
         for nodes_post in nodes_unique_grid:
 
             wfs_fit = []
@@ -167,9 +169,11 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
                                    get_init_params(nodes[ind][1])}
 
                         nodes[ind][1].__init__(**_params)
+                    elif nodes[ind][0] == 'simulate':
+                        seeds = getattr(wf, attr)
 
                 # Create workflow
-                wf_param = WorkFlow()
+                wf_param = WorkFlow(seeds)
                 wf_param.y_array = ys
                 wf_param.x_array = xs
                 wf_param.nodes = nodes
@@ -190,7 +194,11 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
             wfs_sim.append(wfs_fit)
 
         wfs_sim = wfs_sim[0] if len(wfs_sim) == 1 else wfs_sim
-        wfs.append(wfs_sim)
+
+        if isinstance(wfs_sim, list) and isinstance(wfs_sim[0], list):
+            wfs.append(list(map(list, zip(*wfs_sim))))
+        else:
+            wfs.append(wfs_sim)
 
     wfs = wfs[0] if len(wfs) == 1 else wfs
 
@@ -224,7 +232,7 @@ def parse_nodes(nodes):
         if node[0] == 'fork':
             i += 1
             break
-        elif node[0] in ['fit', 'transform'] and node[-1]:
+        elif node[0] in ['fit', 'transform']:
             break
 
         if node[0] != 'fork':
@@ -233,15 +241,43 @@ def parse_nodes(nodes):
     # Get parameterized nodes
     nodes_unique = []
     nodes_fork = []
+    nodes_pre_shared = []
+
+    has_fork = False
+    forks = {}
+    in_fork = None
 
     for node in nodes[i:]:
-        if node[0] == 'fork' and len(nodes_fork) != 0:
-            nodes_unique.append(nodes_fork)
-            nodes_fork = []
-        else:
-            nodes_fork.append(node)
 
-    nodes_unique.append(nodes_fork)
+        if not has_fork:
+
+            if node[0] == "fork":
+                has_fork = True
+            else:
+                nodes_pre_shared.append(node)
+                continue
+
+        if node[0] == 'fork':
+
+            if node[1] not in forks.keys():
+                nodes_base = nodes_pre_shared + nodes_fork
+                forks[node[1]] = nodes_base
+            else:
+                nodes_base = forks[node[1]]
+
+            in_fork = node[1]
+
+            nodes_fork = []
+        elif node[0] != 'fit':
+            nodes_fork.append(node)
+        elif node[0] == 'fit':
+            if in_fork is not None and in_fork in list(forks.keys()):
+                nodes_unique.append(forks[in_fork] + [node])
+            else:
+                nodes_unique.append([node])
+
+    if len(nodes_unique) == 0 and len(nodes_pre_shared) > 0:
+        nodes_unique = [nodes_pre_shared]
 
     return nodes_common, nodes_unique
 

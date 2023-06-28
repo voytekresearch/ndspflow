@@ -109,7 +109,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
 
     def run(self, axis=None, attrs=None, parameterize=False, flatten=False,
-            n_jobs=-1, progress=None):
+            optimize=False, n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
@@ -121,6 +121,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Model attributes to return.
         parameterize : bool, optional, default: False
             Attempt to parameterize the workflow if True.
+        optimize : bool, optional, default: False
+            Optimize parameters of the
         flatten : bool, optional, default: False
             Flattens all models and attributes into a 1d array, per y_array.
         n_jobs : int, optional, default: -1
@@ -224,6 +226,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             # Using random seeds to simulate
             pfunc = partial(self._run, x_array=x_array, node_type=node_type, flatten=flatten)
             _results = []
+            y_array = [y_array] if not isinstance(y_array, (np.ndarray, list)) else y_array
             for ind, seed in enumerate(y_array):
                 _results.append(pfunc((seed, ind)))
                 # Clear before the next simulation
