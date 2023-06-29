@@ -91,10 +91,6 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
             pool.close()
             pool.join()
 
-    if len(grid_unique) == 1:
-        grid_unique = grid_common[0]
-        keys_unique = keys_unique[0]
-
     wf.grid_common = grid_common
     wf.grid_unique = grid_unique
     wf.grid_keys_common = keys_common
@@ -106,18 +102,17 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
         results = np.stack(results)
         return results
 
-    # Model results stacked into object array
-    if isinstance(results, list) and isinstance(results[0], list):
-        _results = np.empty((len(results), len(results[0])), dtype=object)
-    elif isinstance(results[0], list):
-        _results = np.empty(len(_results), dtype=object)
+    shape_common = np.squeeze(np.array(grid_common)).shape
+    shape_unique = [len(np.unique(i)) for i in
+                    np.vectorize(id)(np.squeeze(np.array(grid_unique))).T]
 
-    _results[:] = results
-
-    results = _results
-    del _results
-
-    results = np.array(results.tolist())
+    if np.all(np.array(shape_unique) == shape_unique[0]):
+        # Using forks
+        results = np.array(results)
+    else:
+        # Using Param objects
+        results = np.array(results, dtype='object')
+        results = results.reshape(len(iterable), *list(shape_common) + shape_unique)
 
     return results
 
@@ -319,9 +314,8 @@ def nodes_from_grid(nodes, grid, locs):
                     params_init = get_init_params(_nodes[loc[0]][1])
                     kwargs = {attr: getattr(_nodes[loc[0]][1], attr) for attr in params_init}
 
-                kwargs[loc[2]] = param
-
-                continue
+                if loc[2] in kwargs:
+                    kwargs[loc[2]] = param
 
             # Non-fit nodes
             if isinstance(_nodes[loc[0]][loc[1]], tuple):
@@ -370,8 +364,6 @@ def compute_grid(nodes):
             # Get model's initalized arguments
             params_init = get_init_params(node[1])
             p = {attr: getattr(node[1], attr) for attr in params_init}
-
-            node = [1, p]
 
         for i_step, step in enumerate(node):
 
