@@ -9,7 +9,7 @@ from neurodsp.spectral import compute_spectrum
 
 from fooof import FOOOF
 from bycycle import Bycycle
-from sklearn.decomposition import PCA
+
 
 from ndspflow.workflows import WorkFlow
 
