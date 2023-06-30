@@ -31,7 +31,7 @@ install:
 	# Clean out existing build
 	make clean
 	# Clone, specifically, the gh-pages branch, putting it into '_build/gh_pages/'
-	git clone -b gh-pages --single-branch --no-checkout --depth 1 https://github.com/voytekresearch/ndspflow _build/gh_pages
+	git clone -b gh-pages --single-branch --no-checkout --depth 1 git@github.com:voytekresearch/ndspflow.git _build/gh_pages
 	# A .nojekyll file tells Github pages to bypass Jekyll processing
 	touch _build/gh_pages/.nojekyll
 	# Build the sphinx site

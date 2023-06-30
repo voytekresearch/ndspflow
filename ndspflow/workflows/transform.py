@@ -1,7 +1,6 @@
 """Transformations."""
 
 import numpy as np
-from itertools import product
 
 from .utils import parse_args, reshape
 from .param import check_is_parameterized
@@ -33,7 +32,7 @@ class Transform:
         self.nodes = []
 
 
-    def transform(self, func, *args, axis=None, **kwargs):
+    def transform(self, func, *args, axis=None, mode=None, **kwargs):
         """Queue transformation.
 
         Parameters
@@ -43,13 +42,17 @@ class Transform:
         *args
             Additonal positional arguments to func.
         axis : int or tuple of int, optional, default: None
-           Axis to apply the function along 1d-slices. Only used for 2d and greater.
+            Axis to apply the function along 1d-slices. Only used for 2d and greater.
             Identical to numpy axis arguments. None assumes transform requires 2d input.
+        mode : {None, 'notebook'}
+            Notebook mode allows functions to be defined in notebooks, rather than
+            imported from a module.
         **kwargs
             Addional keyword arguements to func.
         """
-        is_parameterized = check_is_parameterized(args, kwargs)
 
+        is_parameterized = check_is_parameterized(args, kwargs)
+    
         self.nodes.append(['transform', func, args,
                            {'axis': axis}, kwargs, is_parameterized])
 

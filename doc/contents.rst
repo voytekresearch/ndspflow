@@ -5,4 +5,4 @@ Table of Contents
    :maxdepth: 3
 
    api.rst
-
+   auto_tutorials/index.rst

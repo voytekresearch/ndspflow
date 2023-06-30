@@ -81,15 +81,3 @@ Functions to generate workflow graphs using networkx.
 
     create_graph
     inspect_workflow
-
-
-Models
-~~~~~~
-
-Fits FOOOF and Bycycle models for 1D, 2D or 3D arrays.
-
-.. autosummary::
-    :toctree: generated/
-
-    fit_fooof
-    fit_bycycle

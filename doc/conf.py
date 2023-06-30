@@ -7,7 +7,6 @@
 # -- Path setup --------------------------------------------------------------
 
 import os
-from os.path import dirname as up
 import sys
 
 from datetime import date
@@ -69,7 +68,7 @@ autodoc_default_options = {
 autosummary_generate = True
 
 # The suffix(es) of source filenames. Can be str or list of string
-source_suffix = '.rst' # ['.rst', '.md']
+source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
@@ -89,7 +88,7 @@ html_theme = 'bootstrap'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Set the theme path explicitly
 #   This isn't always needed, but is useful so bulding docs doesn't fail on
