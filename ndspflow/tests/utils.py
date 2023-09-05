@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 def plot_test(func):
     """Decorator for simple testing of plotting functions.
+
     Notes
     -----
     This decorator closes all plots prior to the test.
@@ -45,5 +46,10 @@ class TestModel:
         self.result = y.sum()
 
     def fit_transform(self, *arrays):
-        self.fit(*arrays)
-        return self.result
+
+        if len(arrays) == 2:
+            _, y = arrays
+        else:
+            y = arrays[0]
+
+        return y.mean(axis=1)

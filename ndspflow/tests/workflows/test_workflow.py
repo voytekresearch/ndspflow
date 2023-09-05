@@ -135,7 +135,7 @@ def test_workflow_fork():
 
     wf.run()
 
-    assert np.product(wf.results.shape) == 9
+    assert np.prod(wf.results.shape) == 9
 
 
 def test_workflow_merge():
@@ -266,9 +266,9 @@ def test_workflow_fit_transform():
 
     wf.run(attrs='result')
 
-    assert wf.results.shape == (3,)
+    assert len(wf.results) == 3
 
-    # Pass FOOOF params (as y_array) to the fit_transform method of PCA
+    # Pass FOOOF params (as y_array) to another fit_transform method
     wf = WorkFlow(seeds=np.arange(3))
 
     wf.simulate(sim_powerlaw, 10, 1000)
@@ -277,11 +277,11 @@ def test_workflow_fit_transform():
     wf.transform(compute_spectrum, 1000)
 
     wf.fit_transform(FOOOF(max_n_peaks=1, verbose=False),
-                    y_attrs=['peak_params_', 'aperiodic_params_'])
+                     y_attrs=['peak_params_', 'aperiodic_params_'])
 
-    wf.fit_transform(PCA(n_components=2))
+    wf.fit_transform(TestModel())
 
-    assert wf.y_array.shape == (3, 2)
+    assert len(wf.y_array) == 3
 
 
 def test_workflow_drop():

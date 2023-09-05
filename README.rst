@@ -4,7 +4,7 @@ ndspflow
 
 |CircleCI|_ |Codecov|_
 
-.. |CircleCI| image:: https://circleci.com/gh/voytekresearch/ndspflow.svg?style=svg&circle-token=b26555544cf83f79a4aa45f6f4b98423e2ee06d0
+.. |CircleCI| image:: https://dl.circleci.com/status-badge/img/gh/voytekresearch/ndspflow/tree/master.svg?style=svg
 .. _CircleCI: https://circleci.com/gh/voytekresearch/ndspflow
 
 .. |Codecov| image:: https://codecov.io/gh/voytekresearch/ndspflow/branch/master/graph/badge.svg?token=I9Z7OPIZ7J
