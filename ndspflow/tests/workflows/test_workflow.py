@@ -3,13 +3,13 @@
 import pytest
 import numpy as np
 
-from ndspflow.tests.utils import plot_test, pbar, FitPass
+from ndspflow.tests.utils import plot_test, pbar, TestModel
 from neurodsp.sim import sim_oscillation, sim_powerlaw
 from neurodsp.spectral import compute_spectrum
 
 from fooof import FOOOF
 from bycycle import Bycycle
-from sklearn.decomposition import PCA
+
 
 from ndspflow.workflows import WorkFlow
 
@@ -135,7 +135,7 @@ def test_workflow_fork():
 
     wf.run()
 
-    assert np.product(wf.results.shape) == 9
+    assert np.prod(wf.results.shape) == 9
 
 
 def test_workflow_merge():
@@ -262,13 +262,13 @@ def test_workflow_fit_transform():
     wf.fit_transform(FOOOF(max_n_peaks=1, verbose=False),
                      y_attrs=['peak_params_', 'aperiodic_params_'], queue=True)
 
-    wf.fit(FitPass())
+    wf.fit(TestModel())
 
-    wf.run(attrs='params')
+    wf.run(attrs='result')
 
-    assert wf.results.shape == (3, 5)
+    assert len(wf.results) == 3
 
-    # Pass FOOOF params (as y_array) to the fit_transform method of PCA
+    # Pass FOOOF params (as y_array) to another fit_transform method
     wf = WorkFlow(seeds=np.arange(3))
 
     wf.simulate(sim_powerlaw, 10, 1000)
@@ -277,11 +277,11 @@ def test_workflow_fit_transform():
     wf.transform(compute_spectrum, 1000)
 
     wf.fit_transform(FOOOF(max_n_peaks=1, verbose=False),
-                    y_attrs=['peak_params_', 'aperiodic_params_'])
+                     y_attrs=['peak_params_', 'aperiodic_params_'])
 
-    wf.fit_transform(PCA(n_components=2))
+    wf.fit_transform(TestModel())
 
-    assert wf.y_array.shape == (3, 2)
+    assert len(wf.y_array) == 3
 
 
 def test_workflow_drop():

@@ -82,10 +82,12 @@ class BIDS:
             Queue's reading into nodes if True. Otherwise reads y_array in.
         """
 
+        if isinstance(self.subjects, str):
+            subject = self.subjects
+
         if queue:
             # Queue for later execution
             self.nodes.append(['read_bids', allow_ragged, False])
-
         elif subject is not None:
             # Read single subject
             subject = subject.strip('sub-')

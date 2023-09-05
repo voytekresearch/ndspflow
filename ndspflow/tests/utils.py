@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 def plot_test(func):
     """Decorator for simple testing of plotting functions.
+
     Notes
     -----
     This decorator closes all plots prior to the test.
@@ -31,7 +32,24 @@ def pbar(func, *args, **kwargs):
     return func
 
 
-class FitPass:
-    # Dummy fit class
-    def __init__(self): pass
-    def fit(self, params): self.params = params
+class TestModel:
+    def __init__(self):
+        self.result = None
+
+    def fit(self, *arrays):
+
+        if len(arrays) == 2:
+            _, y = arrays
+        else:
+            y = arrays[0]
+
+        self.result = y.sum()
+
+    def fit_transform(self, *arrays):
+
+        if len(arrays) == 2:
+            _, y = arrays
+        else:
+            y = arrays[0]
+
+        return y.mean(axis=1)

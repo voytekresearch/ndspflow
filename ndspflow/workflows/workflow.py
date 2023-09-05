@@ -4,12 +4,12 @@ from copy import deepcopy
 from functools import partial
 from itertools import product
 from inspect import signature
+from warnings import warn
 
-from multiprocessing import Pool, cpu_count
+from pathos.multiprocessing import Pool, cpu_count
 import matplotlib.pyplot as plt
 
 import numpy as np
-import networkx as nx
 
 from mne_bids import BIDSPath
 
@@ -20,6 +20,7 @@ from .model import Model
 from .graph import create_graph
 from .utils import reshape, extract_results
 
+
 class WorkFlow(BIDS, Simulate, Transform, Model):
     """Workflow definition.
 
@@ -28,12 +29,16 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
     models : list
         Fit model objects.
     results : list, optional
-        Attributes from model classes.
+        Fit model classes or attributes from model classes.
     graph : networkx.DiGraph
         Directed workflow graph.
     nodes : list of list
         Contains order of operations as:
         [[node_type, function, *args, **kwargs], ...]
+    params : 3d array
+        Parameterized arguments with shape: (n_combs_per_fit, n_fits, n_parameters).
+    param_keys : 2d list of str
+        Parameterized argument names with shape: (n_fits, n_parameters).
     """
 
     def __init__(self, y_array=None, x_array=None, **kwargs):
@@ -87,8 +92,24 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.results = None
         self.attrs = None
 
+        self.params = None
+        self.param_keys = None
 
-    def run(self, axis=None, attrs=None, flatten=False, n_jobs=-1, progress=None):
+        # Param grid
+        self.grid_common = None
+        self.grid_unique = None
+        self.grid_keys_common = None
+        self.grid_keys_unique = None
+
+    def __call__(self, y_array, x_array=None):
+        """Call class to update array inputs."""
+        self.y_array = y_array
+        if x_array is not None:
+            self.x_array = x_array
+
+
+    def run(self, axis=None, attrs=None, parameterize=False, flatten=False,
+            optimize=False, n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
@@ -98,6 +119,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Identical to numpy axis arguments.
         attrs : list of str, optional, default: None
             Model attributes to return.
+        parameterize : bool, optional, default: False
+            Attempt to parameterize the workflow if True.
+        optimize : bool, optional, default: False
+            Optimize parameters of the
         flatten : bool, optional, default: False
             Flattens all models and attributes into a 1d array, per y_array.
         n_jobs : int, optional, default: -1
@@ -105,6 +130,23 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
             Progress bar.
         """
+        if parameterize:
+
+            from .param import run_subflows
+
+            iterable = None
+
+            for attr in ['seeds', 'subjects']:
+
+                iterable = getattr(self, attr)
+
+                if iterable is not None:
+                    break
+
+            self.results = run_subflows(self, iterable, attr, axis=axis,
+                                        n_jobs=n_jobs, progress=progress)
+
+            return
 
         # Handle merges
         _merges = [ind for ind in range(len(self.nodes)) if self.nodes[ind][0] == 'merge']
@@ -174,7 +216,23 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             )
 
         if not use_pool:
-            _results = self._run((y_array, 0), x_array, node_type, flatten)
+            # Not using simulations, and y_array and axis don't require mp
+            _results = self._run((y_array, None), x_array, node_type, flatten)
+        elif n_jobs == 1 and self.seeds is None:
+            # Don't enter pool if n_jobs is 1 and y_array is 1d
+            _results = self._run((y_array, None), x_array=x_array,
+                                 node_type=node_type, flatten=flatten)
+        elif n_jobs == 1:
+            # Using random seeds to simulate
+            pfunc = partial(self._run, x_array=x_array, node_type=node_type, flatten=flatten)
+            _results = []
+            y_array = [y_array] if not isinstance(y_array, (np.ndarray, list)) else y_array
+            for ind, seed in enumerate(y_array):
+                _results.append(pfunc((seed, ind)))
+                # Clear before the next simulation
+                self.y_array = None
+                self.x_array = None
+                self.models = []
         else:
             # Parallel execution
             n_jobs = cpu_count() if n_jobs == -1 else n_jobs
@@ -198,7 +256,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
         # Workflow ends on transform or sim node
         if self.nodes[-1][0] in ['transform', 'simulate']:
-            self.y_array = np.squeeze(np.array(_results))
+            self.y_array = np.array(_results)
+
+            if self.y_array.size != 1:
+                # If array > 1 value, squeeze potential extraneous dimensions
+                self.y_array = np.squeeze(self.y_array)
+
             return
 
         # Flatten should return an even array (unless models produce sparse results)
@@ -368,11 +431,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             fit_kwargs = {} if fit_kwargs is None else fit_kwargs
 
             # Fit
-            self.fit(model, *fit_args, axis=None, **fit_kwargs)
-            self.run(axis, y_attrs, True, n_jobs, progress)
+            self.fit(model, *fit_args, axis=axis, **fit_kwargs)
+            self.run(axis, y_attrs, False, True, n_jobs, progress)
 
             # Transform
             self.y_array = self.results
+            self.x_array = None
 
             # Clear
             self.results = None
@@ -400,11 +464,14 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         args = () if args is None else args
         kwargs = {} if kwargs is None else kwargs
 
-        self.run_fit(self.x_array, self.y_array, *args, axis=axis, **kwargs)
+        if hasattr(self.node[1], 'fit_transform'):
+            self.y_array = self.node[1].fit_transform(self.y_array)
+        else:
+            self.run_fit(self.x_array, self.y_array, *args, axis=axis, **kwargs)
 
-        # Transform
-        self.y_array = extract_results(self.models, y_attrs, True)
-        self.x_array = extract_results(self.models, x_attrs, True) if x_attrs is not None else None
+            # Transform
+            self.y_array = extract_results(self.models, y_attrs, True)
+            self.x_array = extract_results(self.models, x_attrs, True) if x_attrs is not None else None
 
         # Clear
         self.results = None
@@ -423,6 +490,12 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
     def plot(self, npad=2, ax=None, draw_kwargs=None):
         """Plot workflow as a directed graph."""
+
+        try:
+            import networkx as nx
+        except ModuleNotFoundError:
+            warn("Install networkx for creating and plotting workflow graphs.")
+            return
 
         if self.graph is None:
             self.create_graph(npad)
@@ -443,3 +516,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
     def create_graph(self, npad=2):
         self.graph = create_graph(self, npad)
+
+    def copy(self):
+        return deepcopy(self)

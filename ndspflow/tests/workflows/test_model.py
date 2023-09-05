@@ -22,7 +22,7 @@ def test_Model(test_data):
 
     model.node = model.nodes[0]
     model.run_fit(freqs, powers, (1, 100), axis=-1)
-    assert isinstance(model.models[0].result[0], FOOOF)
+    assert isinstance(model.models[0].result, FOOOF)
 
     # 1d
     powers = test_data['powers_1d']
@@ -36,7 +36,7 @@ def test_Model(test_data):
     model = Model()
     model.fit(Bycycle(), sig, fs, (1, 100), axis=-1)
     model.run_fit(None, sig, fs, (5, 50), axis=-1)
-    assert isinstance(model.models[0].result[0], Bycycle)
+    assert isinstance(model.models[0].result, Bycycle)
 
     # 1d
     sig = test_data['sig_1d']
@@ -47,6 +47,5 @@ def test_Model(test_data):
 
 
 def test_Result():
-
     res = Result(0)
     assert res.result == 0

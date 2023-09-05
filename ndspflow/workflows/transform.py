@@ -3,7 +3,7 @@
 import numpy as np
 
 from .utils import parse_args, reshape
-
+from .param import check_is_parameterized
 
 class Transform:
     """Transformation class.
@@ -51,33 +51,10 @@ class Transform:
             Addional keyword arguements to func.
         """
 
-        if mode == 'notebook':
-            # This is a slimy hack to get funcs defined in notebooks to work
-            #   with mp pools. This should be in the mp package, not here.
-            import os
-            import inspect
-            import re
-
-            # Move func to a .py file
-            if os.path.isfile('_tmp_funcs_mp.py'):
-                os.remove('_tmp_funcs_mp.py')
-
-            lines = inspect.getsource(func)
-
-            # Ensure consistent func name for importing
-            func_name = func.__name__
-            lines = re.sub(f'def {func_name}', 'def func', lines)
-
-            # Write function
-            with open('_tmp_funcs_mp.py', 'w') as f:
-                for line in lines:
-                    f.write(line)
-
-            # Rereference
-            from _tmp_funcs_mp import func
-
+        is_parameterized = check_is_parameterized(args, kwargs)
+    
         self.nodes.append(['transform', func, args,
-                           {'axis': axis}, kwargs])
+                           {'axis': axis}, kwargs, is_parameterized])
 
 
     def run_transform(self, func, *args, axis=None, **kwargs):
