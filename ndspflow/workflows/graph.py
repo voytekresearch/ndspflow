@@ -86,6 +86,10 @@ def create_graph(wf, npad=2):
 
         for i, ind in enumerate(node_forks[fork]['branch_inds']):
             base_node = node_forks[fork]['base']
+
+            while base_node.startswith('fork'):
+                base_node = node_forks[base_node]['base']
+
             _xpos = xpos
 
             for j, lin_ind in enumerate(node_forks[fork]['range'][i]):

@@ -266,8 +266,11 @@ def parse_nodes(nodes):
         elif node[0] != 'fit':
             nodes_fork.append(node)
         elif node[0] == 'fit':
-            if in_fork is not None and in_fork in list(forks.keys()):
+            add_fork = in_fork is not None and in_fork in list(forks.keys())
+            if add_fork and len(nodes) == 0:
                 nodes_unique.append(forks[in_fork] + [node])
+            elif add_fork:
+                nodes_unique.append(forks[in_fork] + nodes_fork + [node])
             else:
                 nodes_unique.append([node])
 
@@ -363,7 +366,13 @@ def compute_grid(nodes):
 
             # Get model's initalized arguments
             params_init = get_init_params(node[1])
-            p = {attr: getattr(node[1], attr) for attr in params_init}
+            params = {attr: getattr(node[1], attr) for attr in params_init}
+
+            for k, v in params.items():
+                if isinstance(v, Param):
+                    locs.append([i_node, 1, k])
+                    grid.append(v.iterable)
+                    keys.append(k)
 
         for i_step, step in enumerate(node):
 

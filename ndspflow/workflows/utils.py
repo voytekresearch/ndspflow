@@ -160,6 +160,7 @@ def get_init_params(model):
         Names of parameters that are accepts by the model's init or
         by the model's super class.
     """
+
     # Search current class
     params_init = [i for i in list(signature(model.__init__).parameters)
                    if i not in ['self', 'args', 'kwargs']]
