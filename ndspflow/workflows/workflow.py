@@ -478,6 +478,43 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.models = []
 
 
+    def extract(self, attr):
+        """Extract attributes from results attribute after running workflow
+
+        Parameters
+        ----------
+        attr : str or list of str
+            Attribute(s) to extract from results.
+
+        Returns
+        -------
+        attr_vals : ndarray
+            Attribute values.
+
+        Notes
+        -----
+        Assumes non-ragged ndarray results attribute.
+        """
+        if not isinstance(self.results, np.ndarray):
+            return None
+
+        indices = list(product(*[list(range(i)) for i in self.results.shape]))
+
+        if isinstance(attr, str):
+            # Single attribute
+            attr_vals = np.zeros(self.results.shape)
+            for inds in indices:
+                attr_vals[inds] = getattr(self.results[inds], attr)
+        elif isinstance(attr, list):
+            # Multiple attributes
+            attr_vals = np.zeros([len(attr)] + list(self.results.shape))
+            for i in range(len(attr)):
+                for inds in indices:
+                    attr_vals[i][inds] = getattr(self.results[inds], attr[i])
+
+        return attr_vals
+
+
     def drop_x(self):
         """Clear x-array values."""
         self.x_array = None
