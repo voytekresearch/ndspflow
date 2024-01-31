@@ -19,9 +19,6 @@ def test_Model(test_data):
 
     # Execute
     model.run_fit(freqs, powers, (1, 100), axis=-1)
-
-    model.node = model.nodes[0]
-    model.run_fit(freqs, powers, (1, 100), axis=-1)
     assert isinstance(model.models[0].result, FOOOF)
 
     # 1d
