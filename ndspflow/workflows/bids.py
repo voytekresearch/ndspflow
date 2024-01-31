@@ -72,7 +72,7 @@ class BIDS:
 
         Parameters
         ----------
-        subject : int, optional, default: None
+        subject : str, optional, default: None
             Read a single subject into memory. If None, the entire BIDS dataset is read
             into memory at once.
         allow_ragged : bool, optional, default: True
@@ -82,13 +82,13 @@ class BIDS:
             Queue's reading into nodes if True. Otherwise reads y_array in.
         """
 
-        if isinstance(self.subjects, str):
+        if subject is None:
             subject = self.subjects
 
         if queue:
             # Queue for later execution
-            self.nodes.append(['read_bids', allow_ragged, False])
-        elif subject is not None:
+            self.nodes.append(['read_bids', subject, allow_ragged, False])
+        elif isinstance(subject, str):
             # Read single subject
             subject = subject.strip('sub-')
 
@@ -107,9 +107,9 @@ class BIDS:
 
             del raw
 
-        else:
+        elif isinstance(subject, list):
             # Read all subjects
-            for ind, sub in enumerate(self.subjects):
+            for ind, sub in enumerate(subject):
 
                 # Raw bids
                 with warnings.catch_warnings():

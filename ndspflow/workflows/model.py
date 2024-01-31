@@ -113,7 +113,12 @@ class Model:
                 else:
                     models.append(mfit)
 
-            self.models = [Result(m) for m in models]
+            models = [Result(m) for m in models]
+
+            if len(self.models) != 0 or self.models is None:
+                self.models = [self.models, models]
+            else:
+                self.models = models
         else:
             if x_array is not None:
                 mfit = self.model.fit(x_array, y_array, *args, **kwargs)

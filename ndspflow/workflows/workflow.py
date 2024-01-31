@@ -335,7 +335,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         for node in self.nodes:
             self.node = node
             if node[0] == 'read_bids':
-                getattr(self, node[0])(self.y_array, node[1], node[2])
+                getattr(self, node[0])(node[1], node[2], node[3])
             elif node[0] in ['simulate', 'transform']:
                 getattr(self, 'run_' + node[0])(node[1], *node[2],
                                                 **node[3], **node[4])
