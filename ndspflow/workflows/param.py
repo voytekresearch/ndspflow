@@ -41,10 +41,15 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
         Nested results with shape (n_inputs, (n_grid_common,) (n_grid_unique,) n_params).
     """
 
-    # If using an axis
+    # If y_array exists, pop to prevent full copies
+    #   from being passed to each mp pool.
     if axis is not None and iterable is None:
+        # If using an axis
         iterable = np.swapaxes(deepcopy(wf.y_array).T, 0, axis)
-        del wf.y_array
+        wf.y_array = None
+    elif iterable is None:
+        iterable = wf.y_array if wf.y_array.ndim > 1 else wf.y_array.reshape(1, -1)
+        wf.y_array = None
 
     # Split shared and forked nodes
     nodes_common, nodes_unique = parse_nodes(wf.nodes)
@@ -63,7 +68,7 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
         grid_unique.append(_grid)
         keys_unique.append(_keys)
 
-    pfunc = partial(_run_sub_wf, wf=deepcopy(wf), attr=attr,
+    pfunc = partial(_run_sub_wf, wf=wf, attr=attr,
                     nodes_common_grid=nodes_common_grid, nodes_unique_grid=nodes_unique_grid)
 
     if n_jobs == 1:
@@ -96,7 +101,7 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     wf.grid_keys_common = keys_common
     wf.grid_keys_unique = keys_unique
 
-    if (wf.nodes[0][0] == 'transform' and
+    if attr != 'y_array' and (wf.nodes[0][0] == 'transform' and
         all([res.shape == results[0][0].shape for res in results[0][1:]])):
         # Transforms will produce stackable arrays
         results = np.stack(results)
@@ -122,9 +127,6 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
 
     from .workflow import WorkFlow
 
-    if isinstance(index, np.ndarray):
-        wf.y_array = index
-
     wfs = []
 
     for nodes_common in nodes_common_grid:
@@ -144,7 +146,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
             if wf_pre.x_array is not None:
                 xs = wf_pre.x_array
         else:
-            ys = wf.y_array
+            ys = index
             xs = wf.x_array
 
         # Post fork workflow
@@ -172,6 +174,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
                 wf_param.y_array = ys
                 wf_param.x_array = xs
                 wf_param.nodes = nodes
+                wf_param._try_parameterize = False
                 wf_param.run(n_jobs=1)
 
                 if wf_param.results is None and wf_param.x_array is None:
