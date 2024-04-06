@@ -108,8 +108,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.x_array = x_array
 
 
-    def run(self, axis=None, attrs=None, parameterize=False, flatten=False,
-            optimize=False, n_jobs=-1, progress=None):
+    def run(self, axis=None, attrs=None, flatten=False,
+            n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
@@ -119,10 +119,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Identical to numpy axis arguments.
         attrs : list of str, optional, default: None
             Model attributes to return.
-        parameterize : bool, optional, default: False
-            Attempt to parameterize the workflow if True.
-        optimize : bool, optional, default: False
-            Optimize parameters of the
         flatten : bool, optional, default: False
             Flattens all models and attributes into a 1d array, per y_array.
         n_jobs : int, optional, default: -1
@@ -130,6 +126,16 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
             Progress bar.
         """
+
+        # Infer if the workflow is parameterized
+        parameterize = False
+
+        for node in self.nodes:
+            if node[0] == 'transform' or node[0] == 'fit':
+                if node[-1]:
+                    parameterize=True
+                    break
+
         if parameterize:
 
             from .param import run_subflows
