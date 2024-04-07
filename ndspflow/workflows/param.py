@@ -43,13 +43,14 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
 
     # If y_array exists, pop to prevent full copies
     #   from being passed to each mp pool.
-    if axis is not None and iterable is None:
-        # If using an axis
-        iterable = np.swapaxes(deepcopy(wf.y_array).T, 0, axis)
+    if iterable is None:
+        if axis is not None:
+            # If using an axis
+            iterable = np.swapaxes(deepcopy(wf.y_array).T, 0, axis)
+        else:
+            iterable = wf.y_array if wf.y_array.ndim > 1 else wf.y_array.reshape(1, -1)
         wf.y_array = None
-    elif iterable is None:
-        iterable = wf.y_array if wf.y_array.ndim > 1 else wf.y_array.reshape(1, -1)
-        wf.y_array = None
+        x_array = wf.x_array
 
     # Split shared and forked nodes
     nodes_common, nodes_unique = parse_nodes(wf.nodes)
@@ -68,7 +69,7 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
         grid_unique.append(_grid)
         keys_unique.append(_keys)
 
-    pfunc = partial(_run_sub_wf, wf=wf, attr=attr,
+    pfunc = partial(_run_sub_wf, wf=deepcopy(wf), attr=attr,
                     nodes_common_grid=nodes_common_grid, nodes_unique_grid=nodes_unique_grid)
 
     if n_jobs == 1:
@@ -107,17 +108,26 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
         results = np.stack(results)
         return results
 
-    shape_common = np.squeeze(np.array(grid_common)).shape
-    shape_unique = [len(np.unique(i)) for i in
-                    np.vectorize(id)(np.squeeze(np.array(grid_unique))).T]
+    try:
+        shape_common = np.squeeze(np.array(grid_common)).shape
+        shape_unique = [len(np.unique(i)) for i in
+                        np.vectorize(id)(np.squeeze(np.array(grid_unique))).T]
 
-    if np.all(np.array(shape_unique) == shape_unique[0]):
-        # Using forks
-        results = np.array(results)
-    else:
-        # Using Param objects
-        results = np.array(results, dtype='object')
-        results = results.reshape(len(iterable), *list(shape_common) + shape_unique)
+        if np.all(np.array(shape_unique) == shape_unique[0]):
+            # Using forks
+            results = np.array(results)
+        else:
+            # Using Param objects
+            results = np.array(results, dtype='object')
+            results = results.reshape(len(iterable), *list(shape_common) + shape_unique)
+    except ValueError:
+        # Inhomogeneous shape, give up and return a jagged array
+        results = np.array(results, dtype="object")
+
+    # Reattach y_array
+    if isinstance(iterable, np.ndarray):
+        wf.y_array = iterable
+        wf.x_array = x_array
 
     return results
 
@@ -192,11 +202,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
             wfs_sim.append(wfs_fit)
 
         wfs_sim = wfs_sim[0] if len(wfs_sim) == 1 else wfs_sim
-
-        if isinstance(wfs_sim, list) and isinstance(wfs_sim[0], list):
-            wfs.append(list(map(list, zip(*wfs_sim))))
-        else:
-            wfs.append(wfs_sim)
+        wfs.append(wfs_sim)
 
     wfs = wfs[0] if len(wfs) == 1 else wfs
 
@@ -237,6 +243,9 @@ def parse_nodes(nodes):
             nodes_common.append(node)
 
     # Get parameterized nodes
+    if i == 1 and node[0] == 'fork':
+        i = 0
+
     nodes_unique = []
     nodes_fork = []
     nodes_pre_shared = []
@@ -268,6 +277,7 @@ def parse_nodes(nodes):
             nodes_fork = []
         elif node[0] != 'fit':
             nodes_fork.append(node)
+
         elif node[0] == 'fit':
             add_fork = in_fork is not None and in_fork in list(forks.keys())
             if add_fork and len(nodes) == 0:

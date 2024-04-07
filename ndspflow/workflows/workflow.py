@@ -446,7 +446,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
             # Fit
             self.fit(model, *fit_args, axis=axis, **fit_kwargs)
-            self.run(axis, y_attrs, False, True, n_jobs, progress)
+            self.run(axis, y_attrs, True, n_jobs, progress)
 
             # Transform
             self.y_array = self.results
