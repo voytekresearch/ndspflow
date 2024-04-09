@@ -128,6 +128,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Progress bar.
         """
 
+        self.attrs = attrs
+
         # Infer if the workflow is parameterized
         parameterize = False
         if self._try_parameterize:
@@ -154,7 +156,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             if iterable is None and self.y_array is not None:
                 iterable = None
                 attr = 'y_array'
-            else:
+            elif iterable is None:
                 raise ValueError("Either .y_array, .read_bids, or .simulate must be defined.")
 
             self.results = run_subflows(self, iterable, attr, axis=axis,
@@ -187,8 +189,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         if self.fork_inds is not None:
             self.y_array_stash = [None] * len(self.fork_inds)
             self.x_array_stash = [None] * len(self.fork_inds)
-
-        self.attrs = attrs
 
         # Infer input array type
         origshape = None
@@ -279,7 +279,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             return
 
         # Flatten should return an even array (unless models produce sparse results)
-        if flatten:
+        if isinstance(_results, (float, int)):
+            self.results = _results
+            return
+        elif flatten:
             self.results = np.array(_results)
             return
 

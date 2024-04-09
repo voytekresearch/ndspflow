@@ -43,6 +43,7 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
 
     # If y_array exists, pop to prevent full copies
     #   from being passed to each mp pool.
+    x_array = None
     if iterable is None:
         if axis is not None:
             # If using an axis
@@ -127,7 +128,8 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     # Reattach y_array
     if isinstance(iterable, np.ndarray):
         wf.y_array = iterable
-        wf.x_array = x_array
+        if x_array is not None:
+            wf.x_array = x_array
 
     return results
 
@@ -185,7 +187,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
                 wf_param.x_array = xs
                 wf_param.nodes = nodes
                 wf_param._try_parameterize = False
-                wf_param.run(n_jobs=1)
+                wf_param.run(n_jobs=1, attrs=wf.attrs)
 
                 if wf_param.results is None and wf_param.x_array is None:
                     # Workflow ended on a transform node.
@@ -243,9 +245,6 @@ def parse_nodes(nodes):
             nodes_common.append(node)
 
     # Get parameterized nodes
-    if i == 1 and node[0] == 'fork':
-        i = 0
-
     nodes_unique = []
     nodes_fork = []
     nodes_pre_shared = []
@@ -253,7 +252,7 @@ def parse_nodes(nodes):
     has_fork = False
     forks = {}
     in_fork = None
-
+    i -= 1
     for node in nodes[i:]:
 
         if not has_fork:
