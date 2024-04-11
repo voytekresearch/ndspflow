@@ -100,6 +100,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.grid_unique = None
         self.grid_keys_common = None
         self.grid_keys_unique = None
+        self.is_parameterized = False
 
     def __call__(self, y_array, x_array=None):
         """Call class to update array inputs."""
@@ -108,8 +109,8 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             self.x_array = x_array
 
 
-    def run(self, axis=None, attrs=None, parameterize=False, flatten=False,
-            optimize=False, n_jobs=-1, progress=None):
+    def run(self, axis=None, attrs=None, flatten=False,
+            n_jobs=-1, progress=None):
         """Run workflow.
 
         Parameters
@@ -119,10 +120,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             Identical to numpy axis arguments.
         attrs : list of str, optional, default: None
             Model attributes to return.
-        parameterize : bool, optional, default: False
-            Attempt to parameterize the workflow if True.
-        optimize : bool, optional, default: False
-            Optimize parameters of the
         flatten : bool, optional, default: False
             Flattens all models and attributes into a 1d array, per y_array.
         n_jobs : int, optional, default: -1
@@ -130,12 +127,17 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         progress : {None, tqdm.notebook.tqdm, tqdm.tqdm}
             Progress bar.
         """
-        if parameterize:
+
+        self.attrs = attrs
+
+        # Infer if the workflow is parameterized
+        if self.is_parameterized:
 
             from .param import run_subflows
 
             iterable = None
 
+            # Iterate over seeds or subjects
             for attr in ['seeds', 'subjects']:
 
                 iterable = getattr(self, attr)
@@ -143,8 +145,20 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
                 if iterable is not None:
                     break
 
+            if iterable is None and self.y_array is not None:
+                iterable = None
+                attr = 'y_array'
+            elif iterable is None:
+                raise ValueError("Either .y_array, .read_bids, or .simulate must be defined.")
+
+            # Sub-flow will be ran and will jump back the to this method,
+            #   this if-block should be skipped or infinite recursion will happen
+            self.is_parameterized = False
+
             self.results = run_subflows(self, iterable, attr, axis=axis,
                                         n_jobs=n_jobs, progress=progress)
+
+            self.is_parameterized = True
 
             return
 
@@ -173,8 +187,6 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         if self.fork_inds is not None:
             self.y_array_stash = [None] * len(self.fork_inds)
             self.x_array_stash = [None] * len(self.fork_inds)
-
-        self.attrs = attrs
 
         # Infer input array type
         origshape = None
@@ -265,7 +277,10 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             return
 
         # Flatten should return an even array (unless models produce sparse results)
-        if flatten:
+        if isinstance(_results, (float, int)):
+            self.results = _results
+            return
+        elif flatten:
             self.results = np.array(_results)
             return
 
@@ -432,7 +447,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
 
             # Fit
             self.fit(model, *fit_args, axis=axis, **fit_kwargs)
-            self.run(axis, y_attrs, False, True, n_jobs, progress)
+            self.run(axis, y_attrs, True, n_jobs, progress)
 
             # Transform
             self.y_array = self.results

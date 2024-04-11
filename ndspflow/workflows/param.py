@@ -41,10 +41,17 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
         Nested results with shape (n_inputs, (n_grid_common,) (n_grid_unique,) n_params).
     """
 
-    # If using an axis
-    if axis is not None and iterable is None:
-        iterable = np.swapaxes(deepcopy(wf.y_array).T, 0, axis)
-        del wf.y_array
+    # If y_array exists, pop to prevent full copies
+    #   from being passed to each mp pool.
+    x_array = None
+    if iterable is None:
+        if axis is not None:
+            # If using an axis
+            iterable = np.swapaxes(deepcopy(wf.y_array).T, 0, axis)
+        else:
+            iterable = wf.y_array if wf.y_array.ndim > 1 else wf.y_array.reshape(1, -1)
+        wf.y_array = None
+        x_array = wf.x_array
 
     # Split shared and forked nodes
     nodes_common, nodes_unique = parse_nodes(wf.nodes)
@@ -96,23 +103,33 @@ def run_subflows(wf, iterable, attr, axis=None, n_jobs=-1, progress=None):
     wf.grid_keys_common = keys_common
     wf.grid_keys_unique = keys_unique
 
-    if (wf.nodes[0][0] == 'transform' and
+    if attr != 'y_array' and (wf.nodes[0][0] == 'transform' and
         all([res.shape == results[0][0].shape for res in results[0][1:]])):
         # Transforms will produce stackable arrays
         results = np.stack(results)
         return results
 
-    shape_common = np.squeeze(np.array(grid_common)).shape
-    shape_unique = [len(np.unique(i)) for i in
-                    np.vectorize(id)(np.squeeze(np.array(grid_unique))).T]
+    try:
+        shape_common = np.squeeze(np.array(grid_common)).shape
+        shape_unique = [len(np.unique(i)) for i in
+                        np.vectorize(id)(np.squeeze(np.array(grid_unique))).T]
 
-    if np.all(np.array(shape_unique) == shape_unique[0]):
-        # Using forks
-        results = np.array(results)
-    else:
-        # Using Param objects
-        results = np.array(results, dtype='object')
-        results = results.reshape(len(iterable), *list(shape_common) + shape_unique)
+        if np.all(np.array(shape_unique) == shape_unique[0]):
+            # Using forks
+            results = np.array(results)
+        else:
+            # Using Param objects
+            results = np.array(results, dtype='object')
+            results = results.reshape(len(iterable), *list(shape_common) + shape_unique)
+    except ValueError:
+        # Inhomogeneous shape, give up and return a jagged array
+        results = np.array(results, dtype="object")
+
+    # Reattach y_array
+    if isinstance(iterable, np.ndarray):
+        wf.y_array = iterable
+        if x_array is not None:
+            wf.x_array = x_array
 
     return results
 
@@ -121,9 +138,6 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
     """Map-able run function for parallel processing."""
 
     from .workflow import WorkFlow
-
-    if isinstance(index, np.ndarray):
-        wf.y_array = index
 
     wfs = []
 
@@ -144,7 +158,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
             if wf_pre.x_array is not None:
                 xs = wf_pre.x_array
         else:
-            ys = wf.y_array
+            ys = index
             xs = wf.x_array
 
         # Post fork workflow
@@ -172,7 +186,8 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
                 wf_param.y_array = ys
                 wf_param.x_array = xs
                 wf_param.nodes = nodes
-                wf_param.run(n_jobs=1)
+                wf_param._try_parameterize = False
+                wf_param.run(n_jobs=1, attrs=wf.attrs)
 
                 if wf_param.results is None and wf_param.x_array is None:
                     # Workflow ended on a transform node.
@@ -189,11 +204,7 @@ def _run_sub_wf(index, wf=None, attr=None, nodes_common_grid=None, nodes_unique_
             wfs_sim.append(wfs_fit)
 
         wfs_sim = wfs_sim[0] if len(wfs_sim) == 1 else wfs_sim
-
-        if isinstance(wfs_sim, list) and isinstance(wfs_sim[0], list):
-            wfs.append(list(map(list, zip(*wfs_sim))))
-        else:
-            wfs.append(wfs_sim)
+        wfs.append(wfs_sim)
 
     wfs = wfs[0] if len(wfs) == 1 else wfs
 
@@ -241,7 +252,7 @@ def parse_nodes(nodes):
     has_fork = False
     forks = {}
     in_fork = None
-
+    i -= 1
     for node in nodes[i:]:
 
         if not has_fork:
@@ -265,6 +276,7 @@ def parse_nodes(nodes):
             nodes_fork = []
         elif node[0] != 'fit':
             nodes_fork.append(node)
+
         elif node[0] == 'fit':
             add_fork = in_fork is not None and in_fork in list(forks.keys())
             if add_fork and len(nodes) == 0:
@@ -425,10 +437,11 @@ def check_is_parameterized(args, kwargs):
         if isinstance(arg, Param):
             is_parameterized = True
             break
-        for v in kwargs.values():
-            if isinstance(v, Param):
-                is_parameterized = True
-                break
+
+    for v in kwargs.values():
+        if isinstance(v, Param):
+            is_parameterized = True
+            break
 
     return is_parameterized
 
