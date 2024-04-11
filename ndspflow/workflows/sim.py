@@ -53,7 +53,7 @@ class Simulate:
             args, kwargs = parse_args(list(args), kwargs, self)
 
         is_parameterized = check_is_parameterized(args, kwargs)
-
+        self.is_parameterized = True
         self.nodes.append(['simulate', func, args,
                            {'operator': operator}, kwargs, is_parameterized])
 

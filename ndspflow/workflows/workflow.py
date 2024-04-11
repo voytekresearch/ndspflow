@@ -100,7 +100,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.grid_unique = None
         self.grid_keys_common = None
         self.grid_keys_unique = None
-        self._try_parameterize = True
+        self.is_parameterized = False
 
     def __call__(self, y_array, x_array=None):
         """Call class to update array inputs."""
@@ -131,15 +131,7 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
         self.attrs = attrs
 
         # Infer if the workflow is parameterized
-        parameterize = False
-        if self._try_parameterize:
-            for node in self.nodes:
-                if node[0] == 'transform' or node[0] == 'fit':
-                    if node[-1]:
-                        parameterize=True
-                        break
-
-        if parameterize:
+        if self.is_parameterized:
 
             from .param import run_subflows
 
@@ -159,8 +151,14 @@ class WorkFlow(BIDS, Simulate, Transform, Model):
             elif iterable is None:
                 raise ValueError("Either .y_array, .read_bids, or .simulate must be defined.")
 
+            # Sub-flow will be ran and will jump back the to this method,
+            #   this if-block should be skipped or infinite recursion will happen
+            self.is_parameterized = False
+
             self.results = run_subflows(self, iterable, attr, axis=axis,
                                         n_jobs=n_jobs, progress=progress)
+
+            self.is_parameterized = True
 
             return
 

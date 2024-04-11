@@ -437,10 +437,11 @@ def check_is_parameterized(args, kwargs):
         if isinstance(arg, Param):
             is_parameterized = True
             break
-        for v in kwargs.values():
-            if isinstance(v, Param):
-                is_parameterized = True
-                break
+
+    for v in kwargs.values():
+        if isinstance(v, Param):
+            is_parameterized = True
+            break
 
     return is_parameterized
 

@@ -52,7 +52,7 @@ class Transform:
         """
 
         is_parameterized = check_is_parameterized(args, kwargs)
-    
+        self.is_parameterized = True
         self.nodes.append(['transform', func, args,
                            {'axis': axis}, kwargs, is_parameterized])
 
